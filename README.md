@@ -50,4 +50,16 @@ mosquitto_pub \
 
 ```
 
-![mqtt chat message example](docs/images/hello_I_am_mqttbot.png "a title")
+![mqtt chat message example](docs/images/hello_I_am_mqttbot.png "send a message to chat")
+
+
+```shell
+
+mosquitto_pub \
+  -h mosquitto.lan \
+  -t "mqttbot/bots/command" \
+   -m '{"service":"commands","method":"sendCommand","params":{"message":"time set midnight"}}'
+
+```
+
+![mqtt common example](docs/images/command_time_set_midnight.png "Set the time to midnight using a command")

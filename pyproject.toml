@@ -1,0 +1,10 @@
+[project]
+name = "mqttbot"
+version = "0.1.0"
+description = "A package for communicating with an mqttbot instance"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "paho-mqtt>=2.1.0",
+    "pyyaml>=6.0.2",
+]

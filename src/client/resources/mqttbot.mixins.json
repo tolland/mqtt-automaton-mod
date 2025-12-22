@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.limepepper.mqttbot.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+      "ExampleMixin",
+      "ClientPlayerEntityMixin",
+      "DeathScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

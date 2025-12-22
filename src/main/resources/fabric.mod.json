@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "mqttbot",
+  "version": "${version}",
+
+  "name": "Mqtt automaton Mod",
+  "description": "This mod bridges client chat to mqtt topic!",
+  "authors": [
+    "Tolland"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/tolland/mqtt-bot-mod"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/modid/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+        "org.limepepper.mqttbot.ExampleMod"
+    ],
+    "client": [
+      "org.limepepper.mqttbot.MqttBotClientModInitializer"
+    ]
+  },
+  "mixins": [
+    "mqttbot.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "fabric-api": "*",
+    "minecraft": ">=1.21.8",
+    "java": ">=21"
+  }
+}

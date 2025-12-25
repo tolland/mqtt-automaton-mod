@@ -10,7 +10,6 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import org.limepepper.mqttbot.watchers.InventoryWatcher;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -71,8 +70,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         int fullSlots = 0;
 
         // Scan all inventory slots
-        for (int i = 0; i < inventory.main.size(); i++) {
-            ItemStack stack = inventory.main.get(i);
+        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
+            ItemStack stack = inventory.getMainStacks().get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;
@@ -117,8 +116,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         int totalCount = 0;
 
         // Count the specific item
-        for (int i = 0; i < inventory.main.size(); i++) {
-            ItemStack stack = inventory.main.get(i);
+        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
+            ItemStack stack = inventory.getMainStacks().get(i);
 
             if (!stack.isEmpty()) {
                 String itemId = Registries.ITEM.getId(stack.getItem()).toString();
@@ -147,8 +146,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         PlayerInventory inventory = MC.player.getInventory();
         int emptySlots = 0;
 
-        for (int i = 0; i < inventory.main.size(); i++) {
-            if (inventory.main.get(i).isEmpty()) {
+        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
+            if (inventory.getMainStacks().get(i).isEmpty()) {
                 emptySlots++;
             }
         }

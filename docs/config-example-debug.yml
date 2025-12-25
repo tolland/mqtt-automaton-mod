@@ -1,0 +1,16 @@
+# MqttBot Configuration File - DEBUG Example
+# 
+# Log levels: TRACE, DEBUG, INFO, WARN, ERROR
+# Set to DEBUG or TRACE to enable verbose logging
+log_level: DEBUG
+
+# MQTT Configuration
+mqtt:
+  broker: "tcp://mosquitto.lan:1883"
+  qos: 2
+  
+# Bot Configuration  
+bot:
+  # Enable/disable specific debug categories
+  debug_events: true
+  debug_mqtt: true

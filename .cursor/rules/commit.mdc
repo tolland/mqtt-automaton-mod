@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+- before making changes, working directory must be clean
+- current branch should be a feature or fix branch
+- commit messages should be "checkpoint: <description>" or "fix: <description>"

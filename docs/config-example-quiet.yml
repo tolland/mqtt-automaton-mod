@@ -1,0 +1,16 @@
+# MqttBot Configuration File - QUIET Example
+# 
+# Log levels: TRACE, DEBUG, INFO, WARN, ERROR
+# Set to WARN or ERROR to minimize logging output
+log_level: WARN
+
+# MQTT Configuration
+mqtt:
+  broker: "tcp://mosquitto.lan:1883"
+  qos: 2
+  
+# Bot Configuration  
+bot:
+  # Disable debug categories for quiet operation
+  debug_events: false
+  debug_mqtt: false

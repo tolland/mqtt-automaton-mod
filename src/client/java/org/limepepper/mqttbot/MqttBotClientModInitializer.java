@@ -13,8 +13,10 @@ import org.limepepper.mqttbot.integrations.baritone.BaritonePathing;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.limepepper.mqttbot.integrations.wurst.WurstHandler;
+import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
 import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.watchers.ClientNightWatcher;
+import org.limepepper.mqttbot.watchers.InventoryWatcher;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.text.Text;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -33,6 +35,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         MqttCore.INSTANCE.initialize();
 
         ClientNightWatcher.init();
+        InventoryWatcher.init();
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             EventManager.fire(ClientListener.ClientJoinEvent.INSTANCE);
         });
@@ -40,6 +43,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         SleepMessageHandler.init();
         WarpMessageHandler.init();
         SendCommandHandler.init();
+        InventoryQueryHandler.init();
         initialized = true;
 
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("baritone")) {

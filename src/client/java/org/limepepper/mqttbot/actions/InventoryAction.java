@@ -37,6 +37,16 @@ public class InventoryAction extends Action implements InventoryListener {
             var mc = MinecraftClient.getInstance();
             String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
 
+            // Determine primary item (the one with highest count)
+            String primaryItem = null;
+            int maxCount = 0;
+            for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
+                if (entry.getValue() > maxCount) {
+                    maxCount = entry.getValue();
+                    primaryItem = entry.getKey();
+                }
+            }
+
             // Create structured response data
             JsonObject responseData = new JsonObject();
             responseData.addProperty("event", eventType);
@@ -45,6 +55,12 @@ public class InventoryAction extends Action implements InventoryListener {
             responseData.addProperty("totalSlots", emptySlots + fullSlots);
             responseData.addProperty("player", playerName);
             responseData.addProperty("timestamp", System.currentTimeMillis());
+
+            // Add primary item information
+            if (primaryItem != null) {
+                responseData.addProperty("primaryItem", primaryItem);
+                responseData.addProperty("primaryItemCount", maxCount);
+            }
 
             // Add item counts
             JsonObject itemCountsJson = new JsonObject();

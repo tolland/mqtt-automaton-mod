@@ -162,17 +162,17 @@ class PathingClient:
         
         # Parse as structured MessageData
         message_data = MessageData.from_json(payload)
-        if message_data and message_data.service in ["baritone", "events", "sleep", "warp", "commands", "wurst"]:
+        if message_data and message_data.service in ["baritone", "events", "sleep", "warp", "commands", "wurst", "inventory"]:
             data = self._extract_data_from_message(message_data)
-            
+
             # Check if this is a response to a pending request
             if message_data.request_id and message_data.request_id in self._pending_requests:
                 print(f"[event] Received response for request {message_data.request_id}")
                 # Mark this request as completed
                 del self._pending_requests[message_data.request_id]
-            
-            # Handle events
-            if message_data.service == "events":
+
+            # Handle events from "events" service or "inventory" service
+            if message_data.service == "events" or message_data.service == "inventory":
                 self._handle_event(message_data, data)
                 return  # Don't process events as regular messages
                 

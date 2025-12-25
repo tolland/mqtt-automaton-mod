@@ -28,6 +28,7 @@ from patterns.pattern_engine import PatternEngine
 @dataclass
 class MessageData:
     """Python equivalent of the Java MessageData class for structured MQTT communication"""
+
     service: str
     method: str
     request_id: str = None
@@ -55,7 +56,7 @@ class MessageData:
             "params": self.params,
             "response": self.response,
             "identity": self.identity,
-            "message": self.message
+            "message": self.message,
         }
         # Remove None values to keep JSON clean
         return json.dumps({k: v for k, v in data.items() if v is not None})
@@ -64,7 +65,7 @@ class MessageData:
 class ModularBotClient:
     """
     Modular bot client that uses behavior-based architecture.
-    
+
     This client:
     - Manages MQTT communication
     - Orchestrates behaviors through the behavior engine
@@ -109,14 +110,18 @@ class ModularBotClient:
 
         # Store topic information
         self.topic_cmd = f"mqttbot/{client_id}/command"
-        self.topic_reply = f"mqttbot/{self.config.get('expected_player_name', client_id)}/reply"
-        self.topic_pos = f"mqttbot/{self.config.get('expected_player_name', client_id)}/pos"
+        self.topic_reply = (
+            f"mqttbot/{self.config.get('expected_player_name', client_id)}/reply"
+        )
+        self.topic_pos = (
+            f"mqttbot/{self.config.get('expected_player_name', client_id)}/pos"
+        )
 
     def _setup_pattern_engine(self) -> None:
         """Setup pattern engine"""
         self.pattern_engine = PatternEngine(
             message_sender=self._send_mqtt_message,
-            position_tracker=self._get_current_position
+            position_tracker=self._get_current_position,
         )
 
     def _setup_behaviors(self) -> None:
@@ -125,17 +130,14 @@ class ModularBotClient:
         farming_config = {
             "waypoints": self.config.get("waypoints", []),
             "patterns": self.config.get("patterns", {}),
-            "priority": 5
+            "priority": 5,
         }
         farming_behavior = FarmingBehavior("farming", farming_config)
         farming_behavior.set_pattern_engine(self.pattern_engine)
         self.behavior_engine.add_behavior(farming_behavior)
 
         # Create emergency behavior
-        emergency_config = {
-            "priority": 1,
-            "interruptible": False
-        }
+        emergency_config = {"priority": 1, "interruptible": False}
         emergency_behavior = EmergencyBehavior("emergency", emergency_config)
         self.behavior_engine.add_behavior(emergency_behavior)
 
@@ -174,7 +176,7 @@ class ModularBotClient:
                 "service": message_data.service,
                 "method": message_data.method,
                 "params": message_data.params,
-                "response": message_data.response
+                "response": message_data.response,
             }
 
             # Update position if available
@@ -182,18 +184,24 @@ class ModularBotClient:
                 x = message_data.response.get("x")
                 y = message_data.response.get("y")
                 z = message_data.response.get("z")
-                if isinstance(x, (int, float)) and isinstance(y, (int, float)) and isinstance(z, (int, float)):
+                if (
+                    isinstance(x, (int, float))
+                    and isinstance(y, (int, float))
+                    and isinstance(z, (int, float))
+                ):
                     self._last_position = (float(x), float(y), float(z))
 
         # Update behavior engine context
         context_updates = {
             "current_position": self._last_position,
-            "last_event": self._last_event
+            "last_event": self._last_event,
         }
 
         # Check for emergency conditions
         if message_data.service == "events":
-            event_type = message_data.response.get("event") if message_data.response else None
+            event_type = (
+                message_data.response.get("event") if message_data.response else None
+            )
             if event_type == "pillager_attack":
                 context_updates["pillager_attack"] = True
                 context_updates["pillager_data"] = message_data.response
@@ -231,7 +239,9 @@ class ModularBotClient:
             time.sleep(0.1)
 
         if not self._mqtt_connected:
-            raise Exception(f"Failed to connect to MQTT broker within {timeout} seconds")
+            raise Exception(
+                f"Failed to connect to MQTT broker within {timeout} seconds"
+            )
 
         print(f"[mqtt] Connection established successfully")
 
@@ -280,7 +290,7 @@ class ModularBotClient:
             "running": self.running,
             "mqtt_connected": self._mqtt_connected,
             "current_position": self._last_position,
-            "behavior_engine": self.behavior_engine.get_status()
+            "behavior_engine": self.behavior_engine.get_status(),
         }
 
     def run(self) -> int:

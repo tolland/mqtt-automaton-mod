@@ -19,9 +19,10 @@ from core.behavior_engine import BehaviorEngine
 
 class MockMessageSender:
     """Mock message sender for testing"""
+
     def __init__(self):
         self.messages = []
-    
+
     def __call__(self, message: str):
         self.messages.append(message)
         print(f"[mock] Sent: {message}")
@@ -29,9 +30,10 @@ class MockMessageSender:
 
 class MockPositionTracker:
     """Mock position tracker for testing"""
+
     def __init__(self):
         self.position = (100.0, 64.0, -200.0)
-    
+
     def __call__(self):
         return self.position
 
@@ -39,21 +41,21 @@ class MockPositionTracker:
 def test_pattern_engine():
     """Test the pattern engine with dwell functionality"""
     print("=== Testing Pattern Engine ===")
-    
+
     message_sender = MockMessageSender()
     position_tracker = MockPositionTracker()
     pattern_engine = PatternEngine(message_sender, position_tracker)
     pattern_engine.set_correlation_id("test-123")
-    
+
     # Test pattern with dwell
     test_pattern = [
         "~ ~ ~2",
         "~ ~ ~-1",
         {"type": "dwell", "period": "1s"},  # 1 second dwell for testing
         "~ ~ ~2",
-        "~ ~ ~-1"
+        "~ ~ ~-1",
     ]
-    
+
     print("Executing pattern with dwell...")
     success = pattern_engine.execute_pattern("test_pattern", test_pattern)
     print(f"Pattern execution: {'SUCCESS' if success else 'FAILED'}")
@@ -64,46 +66,46 @@ def test_pattern_engine():
 def test_behavior_system():
     """Test the behavior system"""
     print("=== Testing Behavior System ===")
-    
+
     # Create mock components
     message_sender = MockMessageSender()
     position_tracker = MockPositionTracker()
     pattern_engine = PatternEngine(message_sender, position_tracker)
-    
+
     # Create behavior engine
     behavior_engine = BehaviorEngine()
-    
+
     # Create farming behavior
     farming_config = {
         "waypoints": [
             {"x": 100, "y": 64, "z": -200, "run": ["test_pattern"]},
-            {"x": 102, "y": 64, "z": -202, "run": ["test_pattern"]}
+            {"x": 102, "y": 64, "z": -202, "run": ["test_pattern"]},
         ],
         "patterns": {
             "test_pattern": [
                 "~ ~ ~1",
                 {"type": "dwell", "period": "0.5s"},  # Short dwell for testing
-                "~ ~ ~-1"
+                "~ ~ ~-1",
             ]
-        }
+        },
     }
     farming_behavior = FarmingBehavior("farming", farming_config)
     farming_behavior.set_pattern_engine(pattern_engine)
-    
+
     # Create emergency behavior
     emergency_behavior = EmergencyBehavior("emergency")
-    
+
     # Add behaviors
     behavior_engine.add_behavior(farming_behavior)
     behavior_engine.add_behavior(emergency_behavior)
-    
+
     # Set up context
     context = {
         "current_position": (100.0, 64.0, -200.0),
-        "safe_locations": [{"name": "home", "x": 0, "y": 64, "z": 0}]
+        "safe_locations": [{"name": "home", "x": 0, "y": 64, "z": 0}],
     }
     behavior_engine.update_context(context)
-    
+
     # Test farming behavior
     print("Testing farming behavior...")
     if farming_behavior.can_start(context):
@@ -113,13 +115,13 @@ def test_behavior_system():
         print("Farming behavior cleaned up")
     else:
         print("Farming behavior cannot start")
-    
+
     # Test emergency behavior
     print("\nTesting emergency behavior...")
     emergency_context = context.copy()
     emergency_context["pillager_attack"] = True
     emergency_context["pillager_data"] = {"threat_level": "high"}
-    
+
     if emergency_behavior.can_start(emergency_context):
         emergency_behavior.start(emergency_context)
         print("Emergency behavior started successfully")
@@ -127,26 +129,26 @@ def test_behavior_system():
         print("Emergency behavior cleaned up")
     else:
         print("Emergency behavior cannot start")
-    
+
     print()
 
 
 def test_dwell_parsing():
     """Test dwell period parsing"""
     print("=== Testing Dwell Parsing ===")
-    
+
     message_sender = MockMessageSender()
     position_tracker = MockPositionTracker()
     pattern_engine = PatternEngine(message_sender, position_tracker)
-    
+
     test_cases = [
         ("3s", 3.0),
         ("1.5s", 1.5),
         ("500ms", 0.5),
         ("1000ms", 1.0),
-        ("2", 2.0)
+        ("2", 2.0),
     ]
-    
+
     for period_str, expected in test_cases:
         try:
             result = pattern_engine.parse_dwell_period(period_str)
@@ -154,7 +156,7 @@ def test_dwell_parsing():
             print(f"  {status} '{period_str}' → {result}s (expected {expected}s)")
         except Exception as e:
             print(f"  ✗ '{period_str}' → ERROR: {e}")
-    
+
     print()
 
 
@@ -163,12 +165,12 @@ def main():
     print("Modular Bot System Test")
     print("=" * 40)
     print()
-    
+
     try:
         test_dwell_parsing()
         test_pattern_engine()
         test_behavior_system()
-        
+
         print("All tests completed successfully!")
         print()
         print("The modular architecture is working correctly:")
@@ -177,18 +179,16 @@ def main():
         print("✓ Behaviors can start and stop properly")
         print("✓ Emergency handling is functional")
         print("✓ Import paths are fixed")
-        
+
     except Exception as e:
         print(f"Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-

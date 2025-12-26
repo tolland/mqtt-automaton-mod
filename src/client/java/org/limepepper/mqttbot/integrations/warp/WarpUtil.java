@@ -4,7 +4,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.Vec3d;
 import com.google.gson.JsonObject;
 
@@ -81,7 +81,7 @@ public final class WarpUtil {
     /**
      * Main tick handler - checks player position against target
      */
-    private static void tick(MinecraftClient client) {
+    private static void tick(Minecraft client) {
         if (!enabled || phase != Phase.WAITING_FOR_TELEPORT || client.player == null) {
             return;
         }
@@ -135,8 +135,8 @@ public final class WarpUtil {
      */
     private static void sendStandardResponse(String status, String message, String reason) {
         try {
-            var mc = MinecraftClient.getInstance();
-            String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
+            var mc = Minecraft.getInstance();
+            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
             
             JsonObject response = new JsonObject();
             response.addProperty("status", status);

@@ -3,7 +3,7 @@ package org.limepepper.mqttbot.watchers;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.DayNightListener;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
 
 public final class ClientNightWatcher {
@@ -33,13 +33,13 @@ public final class ClientNightWatcher {
         });
     }
 
-    private static void onNightStart(MinecraftClient client) {
+    private static void onNightStart(Minecraft client) {
         // e.g., send MQTT, notify UI, start a route, etc.
         System.out.println("[ClientNightWatcher] Night started");
         EventManager.fire(DayNightListener.NightStartEvent.INSTANCE);
     }
 
-    private static void onDayStart(MinecraftClient client) {
+    private static void onDayStart(Minecraft client) {
         System.out.println("[ClientNightWatcher] Day started");
         EventManager.fire(DayNightListener.DayStartEvent.INSTANCE);
     }

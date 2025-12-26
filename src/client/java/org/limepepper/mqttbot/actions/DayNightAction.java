@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.actions;
 
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.DayNightListener;
@@ -24,8 +24,8 @@ public class DayNightAction extends Action implements DayNightListener {
 
     private void sendTimeEvent(String eventType, String message) {
         try {
-            var mc = MinecraftClient.getInstance();
-            String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
+            var mc = Minecraft.getInstance();
+            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
 
             // Create structured response data
             JsonObject responseData = new JsonObject();

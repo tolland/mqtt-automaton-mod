@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.watchers;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -47,7 +47,7 @@ public final class InventoryWatcher {
         });
     }
 
-    private static void checkInventoryChanges(MinecraftClient client) {
+    private static void checkInventoryChanges(Minecraft client) {
         PlayerInventory inventory = client.player.getInventory();
 
         // Build current inventory snapshot

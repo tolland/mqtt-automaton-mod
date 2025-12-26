@@ -15,12 +15,12 @@ import org.limepepper.mqttbot.events.DayNightListener;
 import org.limepepper.mqttbot.events.DeathListener;
 import org.limepepper.mqttbot.events.InventoryListener;
 import org.limepepper.mqttbot.mqtt.MqttClientInternal;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public enum MqttCore {
     INSTANCE;
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     public void initialize() {
         System.out.println("Starting MqttBot Client...");

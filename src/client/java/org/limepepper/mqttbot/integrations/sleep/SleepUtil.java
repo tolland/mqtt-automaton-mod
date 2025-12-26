@@ -8,7 +8,7 @@ import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import com.google.gson.JsonObject;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 public final class SleepUtil {
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     // --- config ---
     private static final long DAY_TICKS = 24_000L;
@@ -58,7 +58,7 @@ public final class SleepUtil {
 
     // Your MQTT handler should call this when it receives {"cmd":"sleep", "requestId":"...", "radius":N}
     public static void start(String reqId, @Nullable Integer radiusOverride) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         enabled = true;
         requestId = reqId;
         scanRadius = (radiusOverride != null && radiusOverride > 0) ? radiusOverride : DEFAULT_RADIUS;
@@ -79,7 +79,7 @@ public final class SleepUtil {
         phase = Phase.IDLE;
     }
 
-    private static void tick(MinecraftClient client) {
+    private static void tick(Minecraft client) {
         if (client.world == null || client.player == null || client.interactionManager == null) {
             fail("no_client");
             return;
@@ -186,14 +186,14 @@ public final class SleepUtil {
         return nightByTime || w.isThundering();
     }
 
-    private static boolean withinInteractDistance(MinecraftClient client, BlockPos pos) {
+    private static boolean withinInteractDistance(Minecraft client, BlockPos pos) {
         var p = client.player;
         double distSq = p.squaredDistanceTo(Vec3d.ofCenter(pos));
         return distSq <= MAX_INTERACT_DISTANCE_SQ;
     }
 
     @Nullable
-    private static BlockPos findNearestBed(MinecraftClient client, int radius) {
+    private static BlockPos findNearestBed(Minecraft client, int radius) {
         if (client.world == null || client.player == null) return null;
         BlockPos player = client.player.getBlockPos();
         BlockPos best = null;
@@ -228,8 +228,8 @@ public final class SleepUtil {
      */
     private static void sendStandardResponse(String status, String message, String reason) {
         try {
-            var mc = MinecraftClient.getInstance();
-            String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
+            var mc = Minecraft.getInstance();
+            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
             
             JsonObject response = new JsonObject();
             response.addProperty("status", status);

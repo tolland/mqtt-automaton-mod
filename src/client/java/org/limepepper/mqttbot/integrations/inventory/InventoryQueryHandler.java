@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.integrations.inventory;
 
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 public final class InventoryQueryHandler extends Action implements MqttMessageListener {
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     public static void init() {
         EventManager.INSTANCE.add(MqttMessageListener.class, new InventoryQueryHandler());
@@ -163,7 +163,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
     }
 
     private void sendResponse(MessageData originalData, JsonObject responseData) {
-        String playerName = MC.getSession().getUsername();
+        String playerName = MC.getUser().getName();
 
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName, new MessageData(
                 "inventory",

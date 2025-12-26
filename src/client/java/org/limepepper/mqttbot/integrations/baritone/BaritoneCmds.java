@@ -4,7 +4,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * The purpose of this enum class is to control baritone by
@@ -17,7 +17,7 @@ import net.minecraft.client.MinecraftClient;
 public final class BaritoneCmds extends Action implements MqttMessageListener {
     public static final BaritoneCmds INSTANCE = new BaritoneCmds();
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     private BaritoneCmds() {
     }
@@ -43,20 +43,20 @@ public final class BaritoneCmds extends Action implements MqttMessageListener {
                 handleGotoCommand(data);
                 break;
             case "pause":
-                MC.getNetworkHandler().sendChatMessage("#pause");
+                MC.getConnection().sendChatMessage("#pause");
                 break;
             case "resume":
-                MC.getNetworkHandler().sendChatMessage("#resume");
+                MC.getConnection().sendChatMessage("#resume");
                 break;
             case "cancel":
-                MC.getNetworkHandler().sendChatMessage("#cancel");
+                MC.getConnection().sendChatMessage("#cancel");
                 break;
             case "chat":
                 // Legacy support - will be removed soon
                 String cmd = data.getParams().get("message").getAsString();
                 System.out.println("Legacy chat cmd: " + cmd);
                 if (MC.player != null) {
-                    MC.getNetworkHandler().sendChatMessage(cmd);
+                    MC.getConnection().sendChatMessage(cmd);
                 }
                 break;
             default:
@@ -84,9 +84,9 @@ public final class BaritoneCmds extends Action implements MqttMessageListener {
             // Build the goto command string (temporary shim)
             String gotoCmd = String.format("#goto %d %d %d", x, y, z);
             System.out.println("Executing goto command: " + gotoCmd);
-            
+
             if (MC.player != null) {
-                MC.getNetworkHandler().sendChatMessage(gotoCmd);
+                MC.getConnection().sendChatMessage(gotoCmd);
             } else {
                 System.out.println("Error: Player is null, cannot execute goto command");
             }

@@ -12,7 +12,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.Objects;
@@ -148,7 +148,7 @@ public final class BaritonePathing {
                     mqttSend("{\"type\": \"pos\", \"x\":" + x + ",\"y\":" + y + ",\"z\":" + z + "}");
                     lastSentPos = bp;
                 }
-                // String.format("baritone/%s/event", mc.getSession().getUsername()
+                // String.format("baritone/%s/event", mc.getUser().getName()
             }
 
         });
@@ -167,7 +167,7 @@ public final class BaritonePathing {
      */
     private static void mqttSendSuccess(String message, int x, int y, int z) {
         try {
-            var mc = MinecraftClient.getInstance();
+            var mc = Minecraft.getInstance();
             
             JsonObject response = new JsonObject();
             response.addProperty("status", "success");
@@ -175,9 +175,9 @@ public final class BaritonePathing {
             response.addProperty("x", x);
             response.addProperty("y", y);
             response.addProperty("z", z);
-            response.addProperty("player", mc.getSession().getUsername());
+            response.addProperty("player", mc.getUser().getName());
             
-            EventManager.fire(new MqttReplyListener.MqttReplyEvent(mc.getSession().getUsername(), new MessageData(
+            EventManager.fire(new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(), new MessageData(
                             "baritone",
                             "goto",
                             UUID.randomUUID().toString(),
@@ -199,15 +199,15 @@ public final class BaritonePathing {
      */
     private static void mqttSendFailure(String message, String reason) {
         try {
-            var mc = MinecraftClient.getInstance();
+            var mc = Minecraft.getInstance();
             
             JsonObject response = new JsonObject();
             response.addProperty("status", "failure");
             response.addProperty("message", message);
             response.addProperty("reason", reason);
-            response.addProperty("player", mc.getSession().getUsername());
+            response.addProperty("player", mc.getUser().getName());
             
-            EventManager.fire(new MqttReplyListener.MqttReplyEvent(mc.getSession().getUsername(), new MessageData(
+            EventManager.fire(new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(), new MessageData(
                             "baritone",
                             "goto",
                             UUID.randomUUID().toString(),
@@ -226,12 +226,12 @@ public final class BaritonePathing {
 
     private static boolean mqttSend(String payload, String detail) {
         try {
-            var mc = MinecraftClient.getInstance();
+            var mc = Minecraft.getInstance();
             
             // Create structured response data
             JsonObject responseData = createStructuredResponse(payload, pathing.getGoal(), detail);
             
-            EventManager.fire(new MqttReplyListener.MqttReplyEvent(mc.getSession().getUsername(), new MessageData(
+            EventManager.fire(new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(), new MessageData(
                             "baritone",
                             "pathing",
                             UUID.randomUUID().toString(),
@@ -254,8 +254,8 @@ public final class BaritonePathing {
      * Create structured response data as JsonObject
      */
     private static JsonObject createStructuredResponse(String type, Goal goal, String detail) {
-        var mc = MinecraftClient.getInstance();
-        String player = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
+        var mc = Minecraft.getInstance();
+        String player = (mc.player != null) ? mc.getUser().getName() : "unknown";
 
         JsonObject response = new JsonObject();
         response.addProperty("type", type);

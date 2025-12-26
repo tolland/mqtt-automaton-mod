@@ -229,6 +229,17 @@ class FarmingBehavior(BaseBehavior):
         if self.pattern_engine:
             self.pattern_engine.cancel()
 
+        # Cancel baritone pathing to clear command queue
+        if self.message_sender:
+            print(f"[farming] Cancelling baritone pathing")
+            cancel_cmd = MessageData(
+                service="baritone",
+                method="cancel",
+                correlation_id=self.correlation_id,
+                params={},
+            )
+            self.message_sender(cancel_cmd.to_json())
+
         # Stop any ongoing farming activities
         self._stop_autofarm()
 

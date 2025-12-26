@@ -32,7 +32,7 @@ public final class SendCommandHandler extends Action implements MqttMessageListe
                 System.out.println("cmd is " + cmd);
                 if (MC.player != null) {
 
-                    MC.getConnection().sendChatMessage(cmd);
+                    MC.getConnection().sendChat(cmd);
                 }
 
                 break;
@@ -41,7 +41,7 @@ public final class SendCommandHandler extends Action implements MqttMessageListe
                 System.out.println("cmd is " + chatCommand);
                 if (MC.player != null) {
 
-                    MC.getConnection().sendChatCommand(chatCommand);
+                    MC.getConnection().sendCommand(chatCommand);
                 }
 
                 break;
@@ -50,7 +50,7 @@ public final class SendCommandHandler extends Action implements MqttMessageListe
                 System.out.println("cmd is " + sendCommand);
                 if (MC.player != null) {
 
-                    MC.getConnection().sendChatCommand(sendCommand);
+                    MC.getConnection().sendCommand(sendCommand);
                 }
 
                 break;

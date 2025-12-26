@@ -43,20 +43,20 @@ public final class BaritoneCmds extends Action implements MqttMessageListener {
                 handleGotoCommand(data);
                 break;
             case "pause":
-                MC.getConnection().sendChatMessage("#pause");
+                MC.getConnection().sendChat("#pause");
                 break;
             case "resume":
-                MC.getConnection().sendChatMessage("#resume");
+                MC.getConnection().sendChat("#resume");
                 break;
             case "cancel":
-                MC.getConnection().sendChatMessage("#cancel");
+                MC.getConnection().sendChat("#cancel");
                 break;
             case "chat":
                 // Legacy support - will be removed soon
                 String cmd = data.getParams().get("message").getAsString();
                 System.out.println("Legacy chat cmd: " + cmd);
                 if (MC.player != null) {
-                    MC.getConnection().sendChatMessage(cmd);
+                    MC.getConnection().sendChat(cmd);
                 }
                 break;
             default:
@@ -86,7 +86,7 @@ public final class BaritoneCmds extends Action implements MqttMessageListener {
             System.out.println("Executing goto command: " + gotoCmd);
 
             if (MC.player != null) {
-                MC.getConnection().sendChatMessage(gotoCmd);
+                MC.getConnection().sendChat(gotoCmd);
             } else {
                 System.out.println("Error: Player is null, cannot execute goto command");
             }

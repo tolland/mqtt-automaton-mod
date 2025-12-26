@@ -90,7 +90,7 @@ public final class WarpMessageHandler extends Action implements MqttMessageListe
             System.out.println("Executing warp command: " + warpCommand);
 
             // Send the warp command
-            MC.getConnection().sendChatCommand(warpCommand);
+            MC.getConnection().sendCommand(warpCommand);
             
             // Start position monitoring
             WarpUtil.start(data.getRequestId(), warpName, targetX, targetY, targetZ, radius);

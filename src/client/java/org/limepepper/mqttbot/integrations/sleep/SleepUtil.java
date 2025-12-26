@@ -195,7 +195,7 @@ public final class SleepUtil {
     @Nullable
     private static BlockPos findNearestBed(Minecraft client, int radius) {
         if (client.world == null || client.player == null) return null;
-        BlockPos player = client.player.getBlockPos();
+        BlockPos player = client.player.blockPosition();
         BlockPos best = null;
         double bestSq = Double.POSITIVE_INFINITY;
 

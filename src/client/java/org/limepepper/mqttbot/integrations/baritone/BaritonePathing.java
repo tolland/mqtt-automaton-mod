@@ -143,7 +143,7 @@ public final class BaritonePathing {
                 double z = client.player.getZ();
 
                 // only send if moved at least one block (tweak threshold if needed)
-                BlockPos bp = client.player.getBlockPos();
+                BlockPos bp = client.player.blockPosition();
                 if (!bp.equals(lastSentPos)) {
                     mqttSend("{\"type\": \"pos\", \"x\":" + x + ",\"y\":" + y + ",\"z\":" + z + "}");
                     lastSentPos = bp;

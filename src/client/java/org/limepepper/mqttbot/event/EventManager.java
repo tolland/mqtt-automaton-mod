@@ -1,9 +1,9 @@
 package org.limepepper.mqttbot.event;
 
 import org.limepepper.mqttbot.util.MqttBotLogger;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.ReportedException;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,10 +79,10 @@ public final class EventManager {
             LOGGER.error("Error firing MqttBot event: {}", event.getClass().getName(), e);
 
             CrashReport report = CrashReport.create(e, "Firing MqttBot event");
-            CrashReportSection section = report.addElement("Affected event");
+            CrashReportCategory section = report.addElement("Affected event");
             section.add("Event class", () -> event.getClass().getName());
 
-            throw new CrashException(report);
+            throw new ReportedException(report);
         }
     }
 
@@ -104,11 +104,11 @@ public final class EventManager {
 
             CrashReport report =
                     CrashReport.create(e, "Adding MqttBot event listener");
-            CrashReportSection section = report.addElement("Affected listener");
+            CrashReportCategory section = report.addElement("Affected listener");
             section.add("Listener type", () -> type.getName());
             section.add("Listener class", () -> listener.getClass().getName());
 
-            throw new CrashException(report);
+            throw new ReportedException(report);
         }
     }
 
@@ -125,11 +125,11 @@ public final class EventManager {
 
             CrashReport report =
                     CrashReport.create(e, "Removing MqttBot event listener");
-            CrashReportSection section = report.addElement("Affected listener");
+            CrashReportCategory section = report.addElement("Affected listener");
             section.add("Listener type", () -> type.getName());
             section.add("Listener class", () -> listener.getClass().getName());
 
-            throw new CrashException(report);
+            throw new ReportedException(report);
         }
     }
 

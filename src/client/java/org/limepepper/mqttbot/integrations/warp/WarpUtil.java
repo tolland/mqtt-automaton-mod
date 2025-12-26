@@ -95,7 +95,7 @@ public final class WarpUtil {
         }
         
         // Get current player position
-        Vec3d playerPos = client.player.getPos();
+        Vec3d playerPos = client.player.position();
         double distance = playerPos.distanceTo(targetPos);
         
         // Check if player is within target radius
@@ -158,7 +158,7 @@ public final class WarpUtil {
             
             // Include current player position
             if (mc.player != null) {
-                Vec3d pos = mc.player.getPos();
+                Vec3d pos = mc.player.position();
                 response.addProperty("x", pos.x);
                 response.addProperty("y", pos.y);
                 response.addProperty("z", pos.z);

@@ -2,8 +2,8 @@ package org.limepepper.mqttbot.watchers;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import org.limepepper.mqttbot.event.EventManager;
@@ -34,7 +34,7 @@ public final class InventoryWatcher {
             tickCounter = 0;
 
             // Don't monitor when container/inventory screens are open to avoid conflicts
-            if (client.currentScreen instanceof HandledScreen) {
+            if (client.currentScreen instanceof AbstractContainerScreen) {
                 return;
             }
 
@@ -48,7 +48,7 @@ public final class InventoryWatcher {
     }
 
     private static void checkInventoryChanges(Minecraft client) {
-        PlayerInventory inventory = client.player.getInventory();
+        Inventory inventory = client.player.getInventory();
 
         // Build current inventory snapshot
         Map<String, Integer> currentItemCounts = new HashMap<>();
@@ -57,7 +57,7 @@ public final class InventoryWatcher {
         int fullSlots = 0;
 
         // Check main inventory (0-35) and hotbar (already included in main)
-        // PlayerInventory.main contains all 36 slots (0-8 hotbar, 9-35 main inventory)
+        // Inventory.main contains all 36 slots (0-8 hotbar, 9-35 main inventory)
         for (int i = 0; i < inventory.getMainStacks().size(); i++) {
             ItemStack stack = inventory.getMainStacks().get(i);
 

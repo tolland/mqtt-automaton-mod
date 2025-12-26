@@ -223,9 +223,9 @@ class FarmingBehavior(BaseBehavior):
 
     def cleanup(self, context: Dict[str, Any]) -> None:
         """Clean up after farming behavior"""
-        print(f"[farming] Cleaning up farming behavior")
+        print(f"[farming] Cleaning up farming behavior (state: {self.state.value})")
 
-        # Cancel any ongoing pattern execution
+        # Always cancel ongoing operations
         if self.pattern_engine:
             self.pattern_engine.cancel()
 
@@ -240,7 +240,14 @@ class FarmingBehavior(BaseBehavior):
             )
             self.message_sender(cancel_cmd.to_json())
 
-        # Stop any ongoing farming activities
+        # If suspended, preserve state for resume
+        if self.state == BehaviorState.SUSPENDED:
+            print(f"[farming] Suspended at waypoint {self.current_waypoint_index}/{len(self.waypoints)}")
+            # Don't stop autofarm, don't reset waypoint index
+            return
+
+        # Full cleanup for completed/failed behaviors
+        print(f"[farming] Full cleanup - stopping autofarm and resetting state")
         self._stop_autofarm()
 
         # Reset state

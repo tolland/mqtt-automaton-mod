@@ -24,6 +24,7 @@ class BehaviorEngine:
         self.behaviors: List[BaseBehavior] = []
         self.active_behavior: Optional[BaseBehavior] = None
         self.behavior_queue: List[BaseBehavior] = []
+        self.suspended_behaviors: List[BaseBehavior] = []  # Track suspended behaviors
         self.context: Dict[str, Any] = {}
         self.running = False
         self.emergency_mode = False
@@ -208,7 +209,10 @@ class BehaviorEngine:
 
         if self.active_behavior.can_be_interrupted():
             self.active_behavior.suspend()
-            self.active_behavior.cleanup(self.context)
+            # Don't cleanup - preserve state for resume
+            # Add to suspended list
+            self.suspended_behaviors.append(self.active_behavior)
+            print(f"[behavior_engine] Suspended behavior: {self.active_behavior.name}")
         else:
             print(
                 f"[behavior_engine] Cannot interrupt behavior: {self.active_behavior.name}"
@@ -236,6 +240,13 @@ class BehaviorEngine:
         """Execute a behavior"""
         try:
             success = behavior.execute(self.context)
+
+            # Check if behavior was suspended during execution
+            if behavior.state == BehaviorState.SUSPENDED:
+                print(f"[behavior_engine] Behavior suspended during execution: {behavior.name}")
+                # Don't mark as complete/failed, don't cleanup
+                return
+
             behavior.complete(success=success)
 
             if success:
@@ -249,7 +260,9 @@ class BehaviorEngine:
             print(f"[behavior_engine] Error executing behavior {behavior.name}: {e}")
             behavior.complete(success=False)
         finally:
-            behavior.cleanup(self.context)
+            # Only cleanup if not suspended
+            if behavior.state != BehaviorState.SUSPENDED:
+                behavior.cleanup(self.context)
 
     def _complete_behavior(self) -> None:
         """Handle completion of active behavior"""
@@ -279,6 +292,15 @@ class BehaviorEngine:
 
         self.active_behavior = None
 
+        # Resume suspended behaviors (highest priority first)
+        if self.suspended_behaviors:
+            # Sort by priority (lower number = higher priority)
+            self.suspended_behaviors.sort(key=lambda b: b.priority)
+            to_resume = self.suspended_behaviors.pop(0)
+            print(f"[behavior_engine] Resuming suspended behavior: {to_resume.name}")
+            to_resume.resume()
+            self.queue_behavior(to_resume)
+
     def update_context(self, updates: Dict[str, Any]) -> None:
         """Update the shared context"""
         with self.lock:
@@ -294,6 +316,7 @@ class BehaviorEngine:
                     self.active_behavior.get_status() if self.active_behavior else None
                 ),
                 "queued_behaviors": [b.get_status() for b in self.behavior_queue],
+                "suspended_behaviors": [b.get_status() for b in self.suspended_behaviors],
                 "available_behaviors": [
                     b.get_status()
                     for b in self.behaviors

@@ -2,10 +2,11 @@
 Behavior engine for orchestrating multiple bot behaviors
 """
 
-from typing import Dict, Any, List, Optional
-import time
 import threading
-from behaviors.base_behavior import BaseBehavior, BehaviorState
+import time
+from typing import Dict, Any, List, Optional
+
+from mqttbot.scripts.behaviors.base_behavior import BaseBehavior, BehaviorState
 
 
 class BehaviorEngine:

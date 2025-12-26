@@ -1,14 +1,18 @@
-import json
 import os
 import sys
 import threading
 import time
 import uuid
-from dataclasses import dataclass
 from typing import Any, Dict, Tuple
 
 import yaml
 from paho.mqtt import client as mqtt
+
+from mqttbot import MessageData
+from mqttbot.scripts.behaviors.emergency_behavior import EmergencyBehavior
+from mqttbot.scripts.behaviors.farming_behavior import FarmingBehavior
+from mqttbot.scripts.core.behavior_engine import BehaviorEngine
+from mqttbot.scripts.patterns.pattern_engine import PatternEngine
 
 """
 Modular bot client using the new behavior-based architecture
@@ -19,47 +23,6 @@ script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
-from core.behavior_engine import BehaviorEngine
-from behaviors.farming_behavior import FarmingBehavior
-from behaviors.emergency_behavior import EmergencyBehavior
-from patterns.pattern_engine import PatternEngine
-
-
-@dataclass
-class MessageData:
-    """Python equivalent of the Java MessageData class for structured MQTT communication"""
-
-    service: str
-    method: str
-    request_id: str = None
-    correlation_id: str = None
-    params: Dict[str, Any] = None
-    response: Dict[str, Any] = None
-    identity: str = "python_client"
-    message: str = None
-
-    def __post_init__(self):
-        if self.request_id is None:
-            self.request_id = str(uuid.uuid4())
-        if self.params is None:
-            self.params = {}
-        if self.response is None:
-            self.response = {}
-
-    def to_json(self) -> str:
-        """Convert to JSON string matching Java MessageData format"""
-        data = {
-            "service": self.service,
-            "method": self.method,
-            "requestId": self.request_id,
-            "correlationId": self.correlation_id,
-            "params": self.params,
-            "response": self.response,
-            "identity": self.identity,
-            "message": self.message,
-        }
-        # Remove None values to keep JSON clean
-        return json.dumps({k: v for k, v in data.items() if v is not None})
 
 
 class ModularBotClient:
@@ -185,9 +148,9 @@ class ModularBotClient:
                 y = message_data.response.get("y")
                 z = message_data.response.get("z")
                 if (
-                    isinstance(x, (int, float))
-                    and isinstance(y, (int, float))
-                    and isinstance(z, (int, float))
+                        isinstance(x, (int, float))
+                        and isinstance(y, (int, float))
+                        and isinstance(z, (int, float))
                 ):
                     self._last_position = (float(x), float(y), float(z))
 

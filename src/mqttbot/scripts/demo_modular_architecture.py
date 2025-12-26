@@ -2,14 +2,13 @@
 """
 Demonstration of the modular bot architecture
 """
-import sys
 import os
+import sys
 import time
 
 # Add the scripts directory to the path
 sys.path.append(os.path.dirname(__file__))
 
-from behaviors.base_behavior import BaseBehavior, BehaviorState
 from behaviors.farming_behavior import FarmingBehavior
 from behaviors.emergency_behavior import EmergencyBehavior
 from patterns.pattern_engine import PatternEngine

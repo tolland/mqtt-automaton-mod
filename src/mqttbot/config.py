@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 import yaml
 
-from mqttbot.models import Settings
+from mqttbot.models.settings import Settings
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:

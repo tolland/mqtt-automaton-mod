@@ -2,10 +2,10 @@
 Pattern execution engine for reusable movement and action patterns
 """
 
-from typing import Dict, Any, List, Tuple, Union, Callable
 import time
 import uuid
 from dataclasses import dataclass
+from typing import Dict, Any, List, Tuple, Union, Callable
 
 
 @dataclass
@@ -33,9 +33,9 @@ class PatternEngine:
     """
 
     def __init__(
-        self,
-        message_sender: Callable[[str], None],
-        position_tracker: Callable[[], Tuple[float, float, float]],
+            self,
+            message_sender: Callable[[str], None],
+            position_tracker: Callable[[], Tuple[float, float, float]],
     ):
         """
         Initialize pattern engine.
@@ -65,7 +65,7 @@ class PatternEngine:
             return float(period_str)
 
     def resolve_coordinates(
-        self, step: str, base_xyz: Tuple[float, float, float]
+            self, step: str, base_xyz: Tuple[float, float, float]
     ) -> Tuple[int, int, int]:
         """
         Parse a pattern step "a b c" → absolute target from current (x,y,z)
@@ -179,10 +179,10 @@ class PatternEngine:
         return True
 
     def execute_pattern(
-        self,
-        pattern_name: str,
-        pattern_steps: List[Union[str, Dict[str, Any]]],
-        start_position: Tuple[float, float, float] = None,
+            self,
+            pattern_name: str,
+            pattern_steps: List[Union[str, Dict[str, Any]]],
+            start_position: Tuple[float, float, float] = None,
     ) -> bool:
         """
         Execute a complete pattern.

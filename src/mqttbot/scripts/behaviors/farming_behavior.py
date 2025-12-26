@@ -2,8 +2,9 @@
 Farming behavior for automated crop farming
 """
 
-from typing import Dict, Any, List, Tuple
-from behaviors.base_behavior import BaseBehavior, BehaviorState
+from typing import Dict, Any, List
+
+from mqttbot.scripts.behaviors.base_behavior import BaseBehavior, BehaviorState
 
 
 class FarmingBehavior(BaseBehavior):

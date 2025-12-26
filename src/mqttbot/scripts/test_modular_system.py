@@ -4,12 +4,7 @@ Test script for the modular bot system without MQTT dependency
 """
 import os
 import sys
-import time
 
-# Add current directory to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
 
 from behaviors.farming_behavior import FarmingBehavior
 from behaviors.emergency_behavior import EmergencyBehavior

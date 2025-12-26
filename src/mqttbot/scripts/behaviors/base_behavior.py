@@ -2,10 +2,10 @@
 Base behavior class for modular bot behaviors
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
-from enum import Enum
 import time
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Dict, Any, Optional
 
 
 class BehaviorState(Enum):

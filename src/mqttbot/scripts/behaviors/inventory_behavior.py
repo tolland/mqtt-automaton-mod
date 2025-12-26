@@ -175,18 +175,20 @@ class InventoryManagementBehavior(BaseBehavior):
         """Handle item trading/depositing"""
         print(f"[{self.name}] Handling trading...")
 
-        # TODO: Implement actual trading logic
-        # This would involve:
-        # 1. Opening merchant GUI
-        # 2. Detecting tradeable items
-        # 3. Executing trades
-        # 4. Closing GUI
+        message_data = MessageData(
+            service="wurst",
+            method="command",
+            correlation_id=self.correlation_id,
+            params={"command": "t", "args": ["autoshopgui", "on"]},
+        )
+
+        self.message_sender(message_data.to_json())
 
         # Placeholder: just wait a bit
         print(
-            f"[{self.name}] Trading logic not yet implemented - sleeping as placeholder"
+            f"[{self.name}] sleeping as placeholder"
         )
-        time.sleep(2)
+        time.sleep(10)
         self.completed_trade = True
 
         return True

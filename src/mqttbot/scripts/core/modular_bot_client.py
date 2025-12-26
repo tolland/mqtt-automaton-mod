@@ -91,10 +91,15 @@ class ModularBotClient:
     def _setup_behaviors(self) -> None:
         """Setup and register behaviors"""
         # Create farming behavior
+        behaviors_config = self.config.get("behaviors", {})
+        farming_behavior_config = behaviors_config.get("farming", {})
+
         farming_config = {
-            "waypoints": self.config.get("waypoints", []),
+            # Use waypoints from behaviors.farming.waypoints, fallback to top-level for legacy configs
+            "waypoints": farming_behavior_config.get("waypoints", self.config.get("waypoints", [])),
             "patterns": self.config.get("patterns", {}),
-            "priority": 5,
+            "priority": farming_behavior_config.get("priority", 5),
+            "interruptible": farming_behavior_config.get("interruptible", True),
             "repeatable": True,  # Automatically re-queue when complete for continuous farming
         }
         farming_behavior = FarmingBehavior("farming", farming_config)
@@ -112,7 +117,12 @@ class ModularBotClient:
         self.behavior_engine.add_behavior(inventory_behavior)
 
         # Create emergency behavior
-        emergency_config = {"priority": 1, "interruptible": False}
+        emergency_behavior_config = behaviors_config.get("emergency", {})
+        emergency_config = {
+            "priority": emergency_behavior_config.get("priority", 1),
+            "interruptible": emergency_behavior_config.get("interruptible", False),
+            **emergency_behavior_config,  # Pass through any additional config
+        }
         emergency_behavior = EmergencyBehavior("emergency", emergency_config)
         self.behavior_engine.add_behavior(emergency_behavior)
 

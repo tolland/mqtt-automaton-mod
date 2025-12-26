@@ -1,0 +1,26 @@
+{
+    "hooks": {
+        "PostToolUse": [
+            {
+                "matcher": "Edit|MultiEdit|Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "./gradlew spotlessApply -x test"
+                    }
+                ]
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "Bash(git commit:*)",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "./gradlew spotlessApply && git add -A"
+                    }
+                ]
+            }
+        ]
+    }
+}

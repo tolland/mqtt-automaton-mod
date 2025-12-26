@@ -1,0 +1,128 @@
+---
+# Example configuration for the modular bot system
+
+# Basic bot settings
+client_id: "modular_bot"
+expected_player_name: "modular_bot"
+broker: "127.0.0.1"
+port: 1883
+
+# Timeout settings
+timeout_seconds: 300
+max_retries: 2
+retry_delay_seconds: 3
+
+# Service definitions (same as before)
+services:
+  baritone:
+    commands:
+      pause: { type: "no-reply" }
+      resume: { type: "no-reply" }
+      goto: { type: "reply-expected", timeout: 60 }
+  sleep:
+    commands:
+      start: { type: "reply-expected", timeout: 30 }
+  warp:
+    commands:
+      teleport:
+        type: "reply-expected"
+        timeout: 15
+        command_template: "/home {name}"
+  wurst:
+    commands:
+      command: { type: "reply-expected", timeout: 5 }
+
+# Event handlers (same as before)
+events:
+  waypoints_start:
+    enabled: true
+    steps:
+      - service: baritone
+        method: cancel
+        description: "Cancel any paused pathing operations"
+  pattern_start:
+    enabled: true
+    steps:
+      - service: wurst
+        method: command
+        description: "Start autofarming"
+        params:
+          command: t
+          args:
+            - autofarm
+            - "on"
+
+# Behavior configurations
+behaviors:
+  farming:
+    priority: 5
+    interruptible: true
+    waypoints: &farming_waypoints
+      - x: 579
+        y: 64
+        z: -2375
+        run: [ cane_row_002 ]
+      - x: 581
+        y: 64
+        z: -2448
+        run: [ cactus_row_001 ]
+      - x: 583
+        y: 64
+        z: -2375
+        run: [ cane_row_002 ]
+      - x: 585
+        y: 64
+        z: -2448
+        run: [ cactus_row_001 ]
+  
+  emergency:
+    priority: 1
+    interruptible: false
+    safe_locations:
+      - name: "home"
+        x: 345
+        y: 64
+        z: -2493
+    discrete_locations:
+      - x: 400
+        y: 64
+        z: -2500
+
+# Patterns (same as before, but now reusable)
+patterns:
+  nothing:
+    - "~ ~ ~"
+
+  cactus_row_001:
+    - "~ ~ ~2"
+    - "~ ~ ~-1"
+    - "~ ~ ~2"
+    - type: dwell
+      period: 3s
+    - "~ ~ ~-1"
+    - "~ ~ ~2"
+    - "~ ~ ~-1"
+    - "~ ~ ~2"
+    - "~ ~ ~-1"
+    - "~ ~ ~2"
+    - "~ ~ ~-1"
+    - "~ ~ ~2"
+    - "~ ~ ~-1"
+    - "~ ~ ~2"
+    - "~ ~ ~-1"
+
+  cane_row_002:
+    - "~ ~ ~-2"
+    - "~ ~ ~1"
+
+# Context settings
+context:
+  safe_locations:
+    - name: "home"
+      x: 345
+      y: 64
+      z: -2493
+  discrete_locations:
+    - x: 400
+      y: 64
+      z: -2500

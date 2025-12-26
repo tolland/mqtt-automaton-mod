@@ -225,6 +225,10 @@ class FarmingBehavior(BaseBehavior):
         """Clean up after farming behavior"""
         print(f"[farming] Cleaning up farming behavior")
 
+        # Cancel any ongoing pattern execution
+        if self.pattern_engine:
+            self.pattern_engine.cancel()
+
         # Stop any ongoing farming activities
         self._stop_autofarm()
 

@@ -206,14 +206,24 @@ class ModularBotClient:
                 message_data.response.get("event") if message_data.response else None
             )
             if event_type == "inventory_full":
-                print(f"[mqtt] Inventory full event detected, queuing inventory management behavior")
+                print(f"[mqtt] Inventory full event detected")
                 context_updates["inventory_full"] = True
                 context_updates["inventory_data"] = message_data.response
 
-                # Queue inventory management behavior
+                # Queue inventory management behavior if not already queued/running
                 for behavior in self.behavior_engine.behaviors:
-                    if behavior.name == "inventory_management" and behavior.state.value == "idle":
-                        self.behavior_engine.queue_behavior(behavior)
+                    if behavior.name == "inventory_management":
+                        # Check if already running or queued
+                        if behavior.state.value == "running":
+                            print(f"[mqtt] Inventory management already running, skipping queue")
+                            break
+                        if behavior in self.behavior_engine.behavior_queue:
+                            print(f"[mqtt] Inventory management already queued, skipping")
+                            break
+                        # Only queue if idle and not in queue
+                        if behavior.state.value == "idle":
+                            print(f"[mqtt] Queuing inventory management behavior")
+                            self.behavior_engine.queue_behavior(behavior)
                         break
 
         self.behavior_engine.update_context(context_updates)

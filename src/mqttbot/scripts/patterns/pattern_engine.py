@@ -51,6 +51,7 @@ class PatternEngine:
         self.correlation_id = None
         self.arrival_event = threading.Event()
         self.arrival_timeout = 60  # Default timeout in seconds
+        self.cancelled = False  # Flag to cancel ongoing pattern execution
 
     def set_correlation_id(self, correlation_id: str) -> None:
         """Set correlation ID for this pattern execution"""
@@ -60,6 +61,16 @@ class PatternEngine:
         """Signal that the bot has arrived at the target location"""
         self.arrival_event.set()
 
+    def cancel(self) -> None:
+        """Cancel the currently executing pattern"""
+        print(f"[pattern] Cancelling pattern execution")
+        self.cancelled = True
+        self.arrival_event.set()  # Unblock any waiting arrivals
+
+    def reset(self) -> None:
+        """Reset cancellation flag for new pattern execution"""
+        self.cancelled = False
+
     def wait_for_arrival(self, timeout: int = None) -> bool:
         """
         Wait for the bot to arrive at the target location.
@@ -68,13 +79,20 @@ class PatternEngine:
             timeout: Timeout in seconds (uses self.arrival_timeout if not specified)
 
         Returns:
-            bool: True if arrival was signaled, False if timeout
+            bool: True if arrival was signaled, False if timeout or cancelled
         """
         if timeout is None:
             timeout = self.arrival_timeout
 
         self.arrival_event.clear()  # Clear before waiting
-        return self.arrival_event.wait(timeout=timeout)
+        arrived = self.arrival_event.wait(timeout=timeout)
+
+        # If cancelled, return False
+        if self.cancelled:
+            print(f"[pattern] Arrival wait cancelled")
+            return False
+
+        return arrived
 
     def parse_dwell_period(self, period_str: str) -> float:
         """Parse dwell period string like '3s', '1.5s', '500ms' into seconds"""
@@ -228,6 +246,9 @@ class PatternEngine:
         Returns:
             bool: True if pattern completed successfully
         """
+        # Reset cancellation flag at start of pattern
+        self.reset()
+
         if start_position is None:
             start_position = self.position_tracker()
 
@@ -237,6 +258,11 @@ class PatternEngine:
         current_pos = start_position
 
         for step_idx, step in enumerate(pattern_steps, 1):
+            # Check for cancellation
+            if self.cancelled:
+                print(f"[pattern] Pattern '{pattern_name}' cancelled at step {step_idx}")
+                return False
+
             print(f"[pattern] Step {step_idx}/{len(pattern_steps)}: {step}")
 
             # Handle different step types

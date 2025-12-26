@@ -268,6 +268,15 @@ class BehaviorEngine:
             self.emergency_mode = False
             print(f"[behavior_engine] Emergency mode cleared")
 
+        # Re-queue repeatable behaviors that completed successfully
+        if behavior.repeatable and behavior.state == BehaviorState.COMPLETED:
+            print(f"[behavior_engine] Re-queuing repeatable behavior: {behavior.name}")
+            # Reset behavior state to idle for next execution
+            behavior.state = BehaviorState.IDLE
+            behavior.started_at = None
+            behavior.completed_at = None
+            self.queue_behavior(behavior)
+
         self.active_behavior = None
 
     def update_context(self, updates: Dict[str, Any]) -> None:

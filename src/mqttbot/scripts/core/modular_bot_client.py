@@ -95,9 +95,11 @@ class ModularBotClient:
             "waypoints": self.config.get("waypoints", []),
             "patterns": self.config.get("patterns", {}),
             "priority": 5,
+            "repeatable": True,  # Automatically re-queue when complete for continuous farming
         }
         farming_behavior = FarmingBehavior("farming", farming_config)
         farming_behavior.set_pattern_engine(self.pattern_engine)
+        farming_behavior.set_message_sender(self._send_mqtt_message)
         self.behavior_engine.add_behavior(farming_behavior)
 
         # Create inventory management behavior

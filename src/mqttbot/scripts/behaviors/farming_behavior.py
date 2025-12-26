@@ -2,8 +2,10 @@
 Farming behavior for automated crop farming
 """
 
+import uuid
 from typing import Dict, Any, List
 
+from mqttbot import MessageData
 from mqttbot.scripts.behaviors.base_behavior import BaseBehavior, BehaviorState
 
 
@@ -24,10 +26,16 @@ class FarmingBehavior(BaseBehavior):
         self.patterns = config.get("patterns", {}) if config else {}
         self.current_waypoint_index = 0
         self.pattern_engine = None
+        self.message_sender = None
+        self.correlation_id = None
 
     def set_pattern_engine(self, pattern_engine):
         """Set the pattern engine for this behavior"""
         self.pattern_engine = pattern_engine
+
+    def set_message_sender(self, sender):
+        """Set the MQTT message sender function"""
+        self.message_sender = sender
 
     def can_start(self, context: Dict[str, Any]) -> bool:
         """Check if farming can start"""
@@ -53,6 +61,14 @@ class FarmingBehavior(BaseBehavior):
         print(
             f"[farming] Starting farming behavior with {len(self.waypoints)} waypoints"
         )
+
+        # Generate correlation ID for this execution
+        self.correlation_id = str(uuid.uuid4())
+
+        # Start autofarm
+        if not self._start_autofarm():
+            print(f"[farming] Failed to start autofarm")
+            return False
 
         try:
             for wp_idx, waypoint in enumerate(self.waypoints):
@@ -96,38 +112,36 @@ class FarmingBehavior(BaseBehavior):
         waypoint_name = waypoint.get("name", "unnamed")
         print(f"[farming] Navigating to waypoint: {waypoint_name}")
 
+        if not self.message_sender:
+            print(f"[farming] No message sender configured, skipping navigation")
+            return True
+
         # Create navigation command
         if "name" in waypoint and waypoint["name"]:
             # Named waypoint - use chat command
             nav_cmd = f"#wp goto {waypoint['name']}"
-            message_data = {
-                "service": "baritone",
-                "method": "chat",
-                "correlationId": (
-                    self.pattern_engine.correlation_id if self.pattern_engine else None
-                ),
-                "params": {"message": nav_cmd},
-            }
+            message_data = MessageData(
+                service="baritone",
+                method="chat",
+                correlation_id=self.correlation_id,
+                params={"message": nav_cmd},
+            )
         else:
             # Coordinate waypoint
             x, y, z = waypoint["x"], waypoint["y"], waypoint["z"]
-            message_data = {
-                "service": "baritone",
-                "method": "goto",
-                "correlationId": (
-                    self.pattern_engine.correlation_id if self.pattern_engine else None
-                ),
-                "params": {"x": int(x), "y": int(y), "z": int(z)},
-            }
+            message_data = MessageData(
+                service="baritone",
+                method="goto",
+                correlation_id=self.correlation_id,
+                params={"x": int(x), "y": int(y), "z": int(z)},
+            )
 
         # Send navigation command
-        cmd = str(message_data).replace("'", '"')
-        print(f"[farming] Navigation command: {cmd}")
-        # Note: In real implementation, this would use the actual message sender
-        # self.message_sender(cmd)
+        print(f"[farming] Sending navigation command: {message_data.to_json()}")
+        self.message_sender(message_data.to_json())
 
-        # For now, simulate successful navigation
-        print(f"[farming] Successfully reached waypoint: {waypoint_name}")
+        # Note: Actual arrival detection handled by pattern engine
+        print(f"[farming] Navigation command sent for waypoint: {waypoint_name}")
         return True
 
     def _execute_patterns_at_waypoint(
@@ -169,27 +183,54 @@ class FarmingBehavior(BaseBehavior):
 
         return True
 
+    def _start_autofarm(self) -> bool:
+        """Start autofarm using wurst"""
+        if not self.message_sender:
+            print(f"[farming] No message sender configured, skipping autofarm start")
+            return True  # Don't fail if message sender isn't set
+
+        print(f"[farming] Starting autofarm...")
+
+        message_data = MessageData(
+            service="wurst",
+            method="command",
+            correlation_id=self.correlation_id,
+            params={"command": "t", "args": ["autofarm", "on"]},
+        )
+
+        self.message_sender(message_data.to_json())
+        print(f"[farming] Autofarm command sent")
+        return True
+
+    def _stop_autofarm(self) -> bool:
+        """Stop autofarm using wurst"""
+        if not self.message_sender:
+            print(f"[farming] No message sender configured, skipping autofarm stop")
+            return True
+
+        print(f"[farming] Stopping autofarm...")
+
+        message_data = MessageData(
+            service="wurst",
+            method="command",
+            correlation_id=self.correlation_id,
+            params={"command": "t", "args": ["autofarm", "off"]},
+        )
+
+        self.message_sender(message_data.to_json())
+        print(f"[farming] Autofarm stop command sent")
+        return True
+
     def cleanup(self, context: Dict[str, Any]) -> None:
         """Clean up after farming behavior"""
         print(f"[farming] Cleaning up farming behavior")
 
         # Stop any ongoing farming activities
-        stop_cmd = {
-            "service": "wurst",
-            "method": "command",
-            "correlationId": (
-                self.pattern_engine.correlation_id if self.pattern_engine else None
-            ),
-            "params": {"command": "t", "args": ["autofarm", "off"]},
-        }
-
-        cmd = str(stop_cmd).replace("'", '"')
-        print(f"[farming] Sending stop command: {cmd}")
-        # Note: In real implementation, this would use the actual message sender
-        # self.message_sender(cmd)
+        self._stop_autofarm()
 
         # Reset state
         self.current_waypoint_index = 0
+        self.correlation_id = None
 
     def get_progress(self) -> Dict[str, Any]:
         """Get current farming progress"""

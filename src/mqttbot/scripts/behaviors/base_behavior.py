@@ -33,6 +33,7 @@ class BaseBehavior(ABC):
         self.state = BehaviorState.IDLE
         self.priority = self.config.get("priority", 5)  # 1-10, lower = higher priority
         self.interruptible = self.config.get("interruptible", True)
+        self.repeatable = self.config.get("repeatable", False)  # Auto re-queue on completion
         self.created_at = time.time()
         self.started_at = None
         self.completed_at = None

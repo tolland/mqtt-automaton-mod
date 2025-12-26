@@ -2,21 +2,22 @@ package org.limepepper.mqttbot.integrations.sleep;
 
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.UnknownNullability;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import com.google.gson.JsonObject;
-import net.minecraft.block.BlockState;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+
 
 public final class SleepUtil {
 
@@ -80,11 +81,11 @@ public final class SleepUtil {
     }
 
     private static void tick(Minecraft client) {
-        if (client.world == null || client.player == null || client.interactionManager == null) {
+        if (Minecraft.getInstance().level == null || client.player == null || client.interactionManager == null) {
             fail("no_client");
             return;
         }
-        World w = client.world;
+        Level w = Minecraft.getInstance().level;
 
         switch (phase) {
             case ARMED -> {
@@ -110,7 +111,7 @@ public final class SleepUtil {
             }
             case APPROACHING -> {
                 // If we drifted, re-scan (e.g., moved radius away)
-                if (bedPos == null || client.world.getBlockState(bedPos).isAir()) {
+                if (bedPos == null || (Minecraft.getInstance().level != null && Minecraft.getInstance().level.getBlockState(bedPos).isAir())) {
                     bedPos = findNearestBed(client, scanRadius);
                     if (bedPos == null) {
                         fail("bed_missing");
@@ -178,7 +179,7 @@ public final class SleepUtil {
 
     // -------- helpers --------
 
-    private static boolean isNightish(World w) {
+    private static boolean isNightish(@UnknownNullability Level w) {
         if (w.getRegistryKey() != World.OVERWORLD) return true; // be permissive in other dims
         if (!w.getDimension().hasSkyLight() || w.getDimension().hasFixedTime()) return true;
         long tod = w.getTimeOfDay() % DAY_TICKS;

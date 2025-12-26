@@ -1,6 +1,6 @@
 package org.limepepper.mqttbot.mixinterface;
 
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 
 public interface IClientPlayerEntity
 {
@@ -10,7 +10,7 @@ public interface IClientPlayerEntity
 
     public float getLastPitch();
 
-    public void setMovementMultiplier(Vec3d movementMultiplier);
+    public void setMovementMultiplier(Vec3 movementMultiplier);
 
     public boolean isTouchingWaterBypass();
 }

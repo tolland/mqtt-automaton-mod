@@ -11,6 +11,7 @@ from paho.mqtt import client as mqtt
 from mqttbot import MessageData
 from mqttbot.scripts.behaviors.emergency_behavior import EmergencyBehavior
 from mqttbot.scripts.behaviors.farming_behavior import FarmingBehavior
+from mqttbot.scripts.behaviors.inventory_behavior import InventoryManagementBehavior
 from mqttbot.scripts.core.behavior_engine import BehaviorEngine
 from mqttbot.scripts.patterns.pattern_engine import PatternEngine
 
@@ -99,6 +100,15 @@ class ModularBotClient:
         farming_behavior.set_pattern_engine(self.pattern_engine)
         self.behavior_engine.add_behavior(farming_behavior)
 
+        # Create inventory management behavior
+        inventory_config = self.config.get("inventory_management", {})
+        inventory_config.setdefault("priority", 2)  # Higher priority than farming
+        inventory_config.setdefault("interruptible", False)
+        inventory_behavior = InventoryManagementBehavior("inventory_management", inventory_config)
+        inventory_behavior.set_message_sender(self._send_mqtt_message)
+        inventory_behavior.set_pattern_engine(self.pattern_engine)
+        self.behavior_engine.add_behavior(inventory_behavior)
+
         # Create emergency behavior
         emergency_config = {"priority": 1, "interruptible": False}
         emergency_behavior = EmergencyBehavior("emergency", emergency_config)
@@ -174,6 +184,22 @@ class ModularBotClient:
             elif event_type == "low_health":
                 context_updates["low_health"] = True
                 context_updates["health_data"] = message_data.response
+
+        # Check for inventory events
+        elif message_data.service == "inventory":
+            event_type = (
+                message_data.response.get("event") if message_data.response else None
+            )
+            if event_type == "inventory_full":
+                print(f"[mqtt] Inventory full event detected, queuing inventory management behavior")
+                context_updates["inventory_full"] = True
+                context_updates["inventory_data"] = message_data.response
+
+                # Queue inventory management behavior
+                for behavior in self.behavior_engine.behaviors:
+                    if behavior.name == "inventory_management" and behavior.state.value == "idle":
+                        self.behavior_engine.queue_behavior(behavior)
+                        break
 
         self.behavior_engine.update_context(context_updates)
 

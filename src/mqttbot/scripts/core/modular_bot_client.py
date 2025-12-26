@@ -164,6 +164,9 @@ class ModularBotClient:
                 ):
                     self._last_position = (float(x), float(y), float(z))
 
+        # Check for arrival events (baritone goto completion)
+        self._check_arrival(message_data)
+
         # Update behavior engine context
         context_updates = {
             "current_position": self._last_position,
@@ -202,6 +205,29 @@ class ModularBotClient:
                         break
 
         self.behavior_engine.update_context(context_updates)
+
+    def _check_arrival(self, message_data: MessageData) -> None:
+        """Check if message indicates arrival at destination"""
+        if not message_data.response:
+            return
+
+        # Check for baritone arrival indicators
+        is_arrival = False
+
+        # Check for success status with coordinates
+        if message_data.response.get("status") == "success":
+            if all(k in message_data.response for k in ("x", "y", "z")):
+                is_arrival = True
+
+        # Check for traditional arrival keys
+        if message_data.response.get("type") in ("arrived", "reached"):
+            is_arrival = True
+
+        if is_arrival:
+            print(f"[mqtt] Arrival detected: {message_data.response}")
+            # Signal pattern engine
+            if self.pattern_engine:
+                self.pattern_engine.signal_arrival()
 
     def _send_mqtt_message(self, message: str) -> None:
         """Send MQTT message"""

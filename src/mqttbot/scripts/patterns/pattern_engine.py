@@ -2,6 +2,7 @@
 Pattern execution engine for reusable movement and action patterns
 """
 
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -48,10 +49,32 @@ class PatternEngine:
         self.position_tracker = position_tracker
         self.current_position = (0.0, 0.0, 0.0)
         self.correlation_id = None
+        self.arrival_event = threading.Event()
+        self.arrival_timeout = 60  # Default timeout in seconds
 
     def set_correlation_id(self, correlation_id: str) -> None:
         """Set correlation ID for this pattern execution"""
         self.correlation_id = correlation_id
+
+    def signal_arrival(self) -> None:
+        """Signal that the bot has arrived at the target location"""
+        self.arrival_event.set()
+
+    def wait_for_arrival(self, timeout: int = None) -> bool:
+        """
+        Wait for the bot to arrive at the target location.
+
+        Args:
+            timeout: Timeout in seconds (uses self.arrival_timeout if not specified)
+
+        Returns:
+            bool: True if arrival was signaled, False if timeout
+        """
+        if timeout is None:
+            timeout = self.arrival_timeout
+
+        self.arrival_event.clear()  # Clear before waiting
+        return self.arrival_event.wait(timeout=timeout)
 
     def parse_dwell_period(self, period_str: str) -> float:
         """Parse dwell period string like '3s', '1.5s', '500ms' into seconds"""
@@ -116,6 +139,9 @@ class PatternEngine:
         """Execute a movement to the given coordinates"""
         x, y, z = coordinates
 
+        # Clear arrival event before sending command
+        self.arrival_event.clear()
+
         # Create structured JSON command for movement
         message_data = {
             "service": "baritone",
@@ -128,6 +154,13 @@ class PatternEngine:
         print(f"[pattern] Movement: goto {x} {y} {z}")
         self.message_sender(cmd)
 
+        # Wait for arrival
+        print(f"[pattern] Waiting for arrival at {x} {y} {z}...")
+        if not self.wait_for_arrival():
+            print(f"[pattern] Timeout waiting for arrival at {x} {y} {z}")
+            return False
+
+        print(f"[pattern] Arrived at {x} {y} {z}")
         # Update current position
         self.current_position = (float(x), float(y), float(z))
         return True

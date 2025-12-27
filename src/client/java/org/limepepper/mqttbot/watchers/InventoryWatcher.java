@@ -58,8 +58,8 @@ public final class InventoryWatcher {
 
         // Check main inventory (0-35) and hotbar (already included in main)
         // Inventory.items contains all 36 slots (0-8 hotbar, 9-35 main inventory)
-        for (int i = 0; i < inventory.items.size(); i++) {
-            ItemStack stack = inventory.items.get(i);
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            ItemStack stack = inventory.getNonEquipmentItems().get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;

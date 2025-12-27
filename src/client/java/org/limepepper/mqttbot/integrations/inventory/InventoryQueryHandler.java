@@ -70,8 +70,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         int fullSlots = 0;
 
         // Scan all inventory slots
-        for (int i = 0; i < inventory.items.size(); i++) {
-            ItemStack stack = inventory.items.get(i);
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            ItemStack stack = inventory.getNonEquipmentItems().get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;
@@ -116,8 +116,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         int totalCount = 0;
 
         // Count the specific item
-        for (int i = 0; i < inventory.items.size(); i++) {
-            ItemStack stack = inventory.items.get(i);
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            ItemStack stack = inventory.getNonEquipmentItems().get(i);
 
             if (!stack.isEmpty()) {
                 String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
@@ -146,8 +146,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         Inventory inventory = MC.player.getInventory();
         int emptySlots = 0;
 
-        for (int i = 0; i < inventory.items.size(); i++) {
-            if (inventory.items.get(i).isEmpty()) {
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            if (inventory.getNonEquipmentItems().get(i).isEmpty()) {
                 emptySlots++;
             }
         }

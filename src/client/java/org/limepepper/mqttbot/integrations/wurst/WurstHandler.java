@@ -7,7 +7,7 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.wurstclient.WurstClient;
 import net.wurstclient.command.CmdException;
 import net.wurstclient.command.CmdList;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WurstHandler extends Action implements MqttMessageListener {
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
     
     // Queue to hold commands that need to be executed on the main thread
     private static final ConcurrentLinkedQueue<CommandTask> commandQueue = new ConcurrentLinkedQueue<>();
@@ -163,7 +163,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
      */
     private static void sendErrorReplyStatic(MessageData originalData, String errorMessage, String errorCode) {
         try {
-            String botId = MC.getSession().getUsername();
+            String botId = MC.getUser().getName();
             
             JsonObject errorParams = new JsonObject();
             errorParams.addProperty("success", false);
@@ -195,7 +195,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
      */
     private static void sendSuccessReplyStatic(MessageData originalData, String successMessage) {
         try {
-            String botId = MC.getSession().getUsername();
+            String botId = MC.getUser().getName();
             
             JsonObject successParams = new JsonObject();
             successParams.addProperty("success", true);

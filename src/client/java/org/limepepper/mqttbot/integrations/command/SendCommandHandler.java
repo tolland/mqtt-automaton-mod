@@ -5,7 +5,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /**
  * handlers a request over mqtt for the client to send a command to the server
@@ -13,7 +13,7 @@ import net.minecraft.client.MinecraftClient;
  */
 public final class SendCommandHandler extends Action implements MqttMessageListener {
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     public static void init() {
         EventManager.INSTANCE.add(MqttMessageListener.class, new SendCommandHandler());
@@ -32,7 +32,7 @@ public final class SendCommandHandler extends Action implements MqttMessageListe
                 System.out.println("cmd is " + cmd);
                 if (MC.player != null) {
 
-                    MC.getNetworkHandler().sendChatMessage(cmd);
+                    MC.getConnection().sendChat(cmd);
                 }
 
                 break;
@@ -41,7 +41,7 @@ public final class SendCommandHandler extends Action implements MqttMessageListe
                 System.out.println("cmd is " + chatCommand);
                 if (MC.player != null) {
 
-                    MC.getNetworkHandler().sendChatCommand(chatCommand);
+                    MC.getConnection().sendCommand(chatCommand);
                 }
 
                 break;
@@ -50,7 +50,7 @@ public final class SendCommandHandler extends Action implements MqttMessageListe
                 System.out.println("cmd is " + sendCommand);
                 if (MC.player != null) {
 
-                    MC.getNetworkHandler().sendChatCommand(sendCommand);
+                    MC.getConnection().sendCommand(sendCommand);
                 }
 
                 break;

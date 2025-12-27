@@ -6,7 +6,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
@@ -28,7 +28,7 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
     MqttClient sampleClient;
     int qos = 2;
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     void init() {
         LOGGER.info("Initializing MQTT client");
@@ -37,20 +37,20 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
         qos = config.getMqttQos();
         MemoryPersistence persistence = new MemoryPersistence();
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        Minecraft mc = Minecraft.getInstance();
         if (mc == null) {
-            LOGGER.error("MinecraftClient.getInstance() returned null!");
+            LOGGER.error("Minecraft.getInstance() returned null!");
             return;
         }
-        if (mc.getSession() == null) {
-            LOGGER.error("mc.getSession() returned null!");
+        if (mc.getUser() == null) {
+            LOGGER.error("mc.getUser() returned null!");
             return;
         }
-        String clientId = mc.getSession().getUsername();
+        String clientId = mc.getUser().getName();
         LOGGER.info("MQTT ClientId: {}", clientId);
 
         try {
-            LOGGER.debugMqtt("Creating MQTT client for user: {}", mc.getSession().getUsername());
+            LOGGER.debugMqtt("Creating MQTT client for user: {}", mc.getUser().getName());
 
             sampleClient = new MqttClient(broker, clientId, persistence);
             MqttConnectOptions connOpts = new MqttConnectOptions();

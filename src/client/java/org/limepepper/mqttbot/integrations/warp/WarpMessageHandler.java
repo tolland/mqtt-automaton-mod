@@ -4,7 +4,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import com.google.gson.JsonObject;
 
 /**
@@ -12,9 +12,9 @@ import com.google.gson.JsonObject;
  * Processes MQTT messages for the warp service
  */
 public final class WarpMessageHandler extends Action implements MqttMessageListener {
-    
+
     public static final WarpMessageHandler INSTANCE = new WarpMessageHandler();
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     private WarpMessageHandler() {
     }
@@ -88,9 +88,9 @@ public final class WarpMessageHandler extends Action implements MqttMessageListe
             // Examples: "warp {name}", "home tp {name}", "/warp {name}", "/home {name}"
             String warpCommand = commandTemplate.replace("{name}", warpName);
             System.out.println("Executing warp command: " + warpCommand);
-            
+
             // Send the warp command
-            MC.getNetworkHandler().sendChatCommand(warpCommand);
+            MC.getConnection().sendCommand(warpCommand);
             
             // Start position monitoring
             WarpUtil.start(data.getRequestId(), warpName, targetX, targetY, targetZ, radius);

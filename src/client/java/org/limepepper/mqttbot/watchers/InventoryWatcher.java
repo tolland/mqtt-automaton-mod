@@ -1,11 +1,11 @@
 package org.limepepper.mqttbot.watchers;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
 
@@ -34,12 +34,12 @@ public final class InventoryWatcher {
             tickCounter = 0;
 
             // Don't monitor when container/inventory screens are open to avoid conflicts
-            if (client.currentScreen instanceof HandledScreen) {
+            if (client.screen instanceof AbstractContainerScreen) {
                 return;
             }
 
             // Need a valid player
-            if (client.player == null || client.world == null) {
+            if (client.player == null || client.level == null) {
                 return;
             }
 
@@ -47,8 +47,8 @@ public final class InventoryWatcher {
         });
     }
 
-    private static void checkInventoryChanges(MinecraftClient client) {
-        PlayerInventory inventory = client.player.getInventory();
+    private static void checkInventoryChanges(Minecraft client) {
+        Inventory inventory = client.player.getInventory();
 
         // Build current inventory snapshot
         Map<String, Integer> currentItemCounts = new HashMap<>();
@@ -57,19 +57,19 @@ public final class InventoryWatcher {
         int fullSlots = 0;
 
         // Check main inventory (0-35) and hotbar (already included in main)
-        // PlayerInventory.main contains all 36 slots (0-8 hotbar, 9-35 main inventory)
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            ItemStack stack = inventory.getMainStacks().get(i);
+        // Inventory.items contains all 36 slots (0-8 hotbar, 9-35 main inventory)
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            ItemStack stack = inventory.getNonEquipmentItems().get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;
             } else {
                 fullSlots++;
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 currentItemCounts.merge(itemId, stack.getCount(), Integer::sum);
 
                 // Track stackable space: how much more of this item can fit in this slot
-                int maxStackSize = stack.getMaxCount();
+                int maxStackSize = stack.getMaxStackSize();
                 int currentSize = stack.getCount();
                 int spaceRemaining = maxStackSize - currentSize;
                 maxStackableSpace.merge(itemId, spaceRemaining, Integer::sum);

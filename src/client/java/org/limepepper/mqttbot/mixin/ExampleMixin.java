@@ -1,6 +1,6 @@
 package org.limepepper.mqttbot.mixin;
 
-import net.minecraft.client.gui.screen.TitleScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import org.limepepper.mqttbot.ExampleMod;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

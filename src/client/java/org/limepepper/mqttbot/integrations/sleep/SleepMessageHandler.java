@@ -5,12 +5,12 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public final class SleepMessageHandler extends Action implements MqttMessageListener {
 
     public static final SleepMessageHandler INSTANCE = new SleepMessageHandler();
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     private SleepMessageHandler() {
     }

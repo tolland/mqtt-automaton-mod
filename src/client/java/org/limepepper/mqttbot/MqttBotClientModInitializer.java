@@ -17,8 +17,8 @@ import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
 import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.watchers.ClientNightWatcher;
 import org.limepepper.mqttbot.watchers.InventoryWatcher;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.text.Text;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 
 public class MqttBotClientModInitializer implements ClientModInitializer {
@@ -62,11 +62,11 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         }
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(CommandManager.literal("test_command").executes(context -> {
-                context.getSource().sendFeedback(() -> Text.literal("Called /test_command."), false);
+            dispatcher.register(Commands.literal("test_command").executes(context -> {
+                context.getSource().sendSuccess(() -> Component.literal("Called /test_command."), false);
                 return 1;
             }));
-            dispatcher.register(CommandManager.literal("test_reply").executes(context -> {
+            dispatcher.register(Commands.literal("test_reply").executes(context -> {
                 LOGGER.debug("test_reply command executed");
                 LOGGER.debug("Firing MqttReplyEvent for testing");
                 EventManager.fire(new MqttReplyListener.MqttReplyEvent("botId", new MessageData(
@@ -82,7 +82,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
                 LOGGER.debug("MqttReplyEvent fired successfully");
                 return 1;
             }));
-            dispatcher.register(CommandManager.literal("test_sleep").executes(context -> {
+            dispatcher.register(Commands.literal("test_sleep").executes(context -> {
                 LOGGER.debug("test_sleep command executed");
                 SleepUtil.start("bot id", 3);
                 LOGGER.debug("Sleep utility started");

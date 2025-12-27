@@ -1,10 +1,10 @@
 package org.limepepper.mqttbot.integrations.inventory;
 
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 public final class InventoryQueryHandler extends Action implements MqttMessageListener {
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     public static void init() {
         EventManager.INSTANCE.add(MqttMessageListener.class, new InventoryQueryHandler());
@@ -64,20 +64,20 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
             return;
         }
 
-        PlayerInventory inventory = MC.player.getInventory();
+        Inventory inventory = MC.player.getInventory();
         Map<String, Integer> itemCounts = new HashMap<>();
         int emptySlots = 0;
         int fullSlots = 0;
 
         // Scan all inventory slots
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            ItemStack stack = inventory.getMainStacks().get(i);
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            ItemStack stack = inventory.getNonEquipmentItems().get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;
             } else {
                 fullSlots++;
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 itemCounts.merge(itemId, stack.getCount(), Integer::sum);
             }
         }
@@ -112,15 +112,15 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         }
 
         String targetItemId = data.getParams().get("itemId").getAsString();
-        PlayerInventory inventory = MC.player.getInventory();
+        Inventory inventory = MC.player.getInventory();
         int totalCount = 0;
 
         // Count the specific item
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            ItemStack stack = inventory.getMainStacks().get(i);
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            ItemStack stack = inventory.getNonEquipmentItems().get(i);
 
             if (!stack.isEmpty()) {
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 if (itemId.equals(targetItemId)) {
                     totalCount += stack.getCount();
                 }
@@ -143,11 +143,11 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
             return;
         }
 
-        PlayerInventory inventory = MC.player.getInventory();
+        Inventory inventory = MC.player.getInventory();
         int emptySlots = 0;
 
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            if (inventory.getMainStacks().get(i).isEmpty()) {
+        for (int i = 0; i < inventory.getNonEquipmentItems().size(); i++) {
+            if (inventory.getNonEquipmentItems().get(i).isEmpty()) {
                 emptySlots++;
             }
         }
@@ -163,7 +163,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
     }
 
     private void sendResponse(MessageData originalData, JsonObject responseData) {
-        String playerName = MC.getSession().getUsername();
+        String playerName = MC.getUser().getName();
 
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName, new MessageData(
                 "inventory",

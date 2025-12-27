@@ -1,9 +1,9 @@
 package org.limepepper.mqttbot.event;
 
 import org.limepepper.mqttbot.util.MqttBotLogger;
-import net.minecraft.util.crash.CrashException;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.ReportedException;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,11 +78,13 @@ public final class EventManager {
         } catch (Throwable e) {
             LOGGER.error("Error firing MqttBot event: {}", event.getClass().getName(), e);
 
-            CrashReport report = CrashReport.create(e, "Firing MqttBot event");
-            CrashReportSection section = report.addElement("Affected event");
-            section.add("Event class", () -> event.getClass().getName());
+            String message = "Firing MqttBot event";
+            CrashReport report = CrashReport.forThrowable(e, message);
 
-            throw new CrashException(report);
+            CrashReportCategory section = report.addCategory("Affected event");
+            section.setDetail("Event class", () -> event.getClass().getName());
+
+            throw new ReportedException(report);
         }
     }
 
@@ -102,13 +104,14 @@ public final class EventManager {
         } catch (Throwable e) {
             LOGGER.error("Error adding event listener: {} -> {}", type.getName(), listener.getClass().getName(), e);
 
-            CrashReport report =
-                    CrashReport.create(e, "Adding MqttBot event listener");
-            CrashReportSection section = report.addElement("Affected listener");
-            section.add("Listener type", () -> type.getName());
-            section.add("Listener class", () -> listener.getClass().getName());
+            String message = "Adding MqttBot event listener";
+            CrashReport report = CrashReport.forThrowable(e, message);
 
-            throw new CrashException(report);
+            CrashReportCategory section = report.addCategory("Affected listener");
+            section.setDetail("Listener type", type::getName);
+            section.setDetail("Listener class", () -> listener.getClass().getName());
+
+            throw new ReportedException(report);
         }
     }
 
@@ -123,13 +126,14 @@ public final class EventManager {
         } catch (Throwable e) {
             LOGGER.error("Error removing event listener: {} -> {}", type.getName(), listener.getClass().getName(), e);
 
-            CrashReport report =
-                    CrashReport.create(e, "Removing MqttBot event listener");
-            CrashReportSection section = report.addElement("Affected listener");
-            section.add("Listener type", () -> type.getName());
-            section.add("Listener class", () -> listener.getClass().getName());
+            String message = "Removing MqttBot event listener";
+            CrashReport report = CrashReport.forThrowable(e, message);
 
-            throw new CrashException(report);
+            CrashReportCategory section = report.addCategory("Affected listener");
+            section.setDetail("Listener type", type::getName);
+            section.setDetail("Listener class", () -> listener.getClass().getName());
+
+            throw new ReportedException(report);
         }
     }
 

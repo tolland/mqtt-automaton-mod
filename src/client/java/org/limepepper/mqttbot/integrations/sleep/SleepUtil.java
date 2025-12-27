@@ -1,26 +1,32 @@
 package org.limepepper.mqttbot.integrations.sleep;
 
 
+import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.wurstclient.WurstClient;
+import net.wurstclient.util.BlockBreaker;
+import net.wurstclient.util.InteractionSimulator;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnknownNullability;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import com.google.gson.JsonObject;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
+import org.limepepper.mqttbot.mqtt.MessageData;
+
 
 public final class SleepUtil {
 
-    public static final MinecraftClient MC = MinecraftClient.getInstance();
+    public static final Minecraft MC = Minecraft.getInstance();
 
     // --- config ---
     private static final long DAY_TICKS = 24_000L;
@@ -40,6 +46,8 @@ public final class SleepUtil {
     private static BlockPos bedPos = null;
     private static Phase phase = Phase.IDLE;
 
+    private static final WurstClient WURST = WurstClient.INSTANCE;
+
     private enum Phase {
         IDLE, ARMED, WAIT_NIGHT, APPROACHING, INTERACTING, SLEEPING, DONE, FAILED
     }
@@ -58,7 +66,7 @@ public final class SleepUtil {
 
     // Your MQTT handler should call this when it receives {"cmd":"sleep", "requestId":"...", "radius":N}
     public static void start(String reqId, @Nullable Integer radiusOverride) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         enabled = true;
         requestId = reqId;
         scanRadius = (radiusOverride != null && radiusOverride > 0) ? radiusOverride : DEFAULT_RADIUS;
@@ -79,12 +87,12 @@ public final class SleepUtil {
         phase = Phase.IDLE;
     }
 
-    private static void tick(MinecraftClient client) {
-        if (client.world == null || client.player == null || client.interactionManager == null) {
+    private static void tick(Minecraft client) {
+        if (Minecraft.getInstance().level == null || client.player == null) {
             fail("no_client");
             return;
         }
-        World w = client.world;
+        Level w = Minecraft.getInstance().level;
 
         switch (phase) {
             case ARMED -> {
@@ -110,7 +118,7 @@ public final class SleepUtil {
             }
             case APPROACHING -> {
                 // If we drifted, re-scan (e.g., moved radius away)
-                if (bedPos == null || client.world.getBlockState(bedPos).isAir()) {
+                if (bedPos == null || Minecraft.getInstance().level.getBlockState(bedPos).isAir()) {
                     bedPos = findNearestBed(client, scanRadius);
                     if (bedPos == null) {
                         fail("bed_missing");
@@ -131,13 +139,14 @@ public final class SleepUtil {
                     // still daylight or not storming: throttle messages; stay in INTERACTING until night or thunder
                     return;
                 }
-                long now = w.getTime();
+                long now = w.getGameTime();
                 if (lastTryGameTime != -1 && (now - lastTryGameTime) < TRY_COOLDOWN_TICKS) {
                     return; // cooldown
                 }
                 // Try to sleep: right-click the bed
-                var hit = new BlockHitResult(Vec3d.ofCenter(bedPos), Direction.UP, bedPos, false);
-                var res = client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
+                rightClickBlockLegit(bedPos);
+                var hit = new BlockHitResult(Vec3.atCenterOf(bedPos), Direction.UP, bedPos, false);
+                var res = client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
                 lastTryGameTime = now;
                 emit("sleep_try", bedPosJson());
                 // If the interaction succeeded, client will transition to sleeping shortly.
@@ -160,6 +169,25 @@ public final class SleepUtil {
         }
     }
 
+    private static boolean rightClickBlockLegit(BlockPos pos) {
+        // if breaking or riding, stop and don't try other blocks
+        if (MC.player != null && MC.gameMode != null && (MC.gameMode.isDestroying() || MC.player.isHandsBusy()))
+            return true;
+
+        double range = 3;
+        // if this block is unreachable, try the next one
+        BlockBreaker.BlockBreakingParams params = BlockBreaker.getBlockBreakingParams(pos);
+        if (params == null || params.distanceSq() > Mth.square(range)
+                || !params.lineOfSight())
+            return false;
+
+        // face and right click the block
+        MC.rightClickDelay = 4;
+        WURST.getRotationFaker().faceVectorPacket(params.hitVec());
+        InteractionSimulator.rightClickBlock(params.toHitResult());
+        return true;
+    }
+
     private static void done() {
         sendStandardResponse("success", "Sleep completed successfully", null);
         enabled = false;
@@ -178,24 +206,24 @@ public final class SleepUtil {
 
     // -------- helpers --------
 
-    private static boolean isNightish(World w) {
-        if (w.getRegistryKey() != World.OVERWORLD) return true; // be permissive in other dims
-        if (!w.getDimension().hasSkyLight() || w.getDimension().hasFixedTime()) return true;
-        long tod = w.getTimeOfDay() % DAY_TICKS;
+    private static boolean isNightish(@UnknownNullability Level w) {
+        if (w.dimension() != Level.OVERWORLD) return true; // be permissive in other dims
+        if (!w.dimensionType().hasSkyLight() || w.dimensionType().hasFixedTime()) return true;
+        long tod = w.getDayTime() % DAY_TICKS;
         boolean nightByTime = (tod >= NIGHT_START && tod < NIGHT_END);
         return nightByTime || w.isThundering();
     }
 
-    private static boolean withinInteractDistance(MinecraftClient client, BlockPos pos) {
+    private static boolean withinInteractDistance(Minecraft client, BlockPos pos) {
         var p = client.player;
-        double distSq = p.squaredDistanceTo(Vec3d.ofCenter(pos));
+        double distSq = p.distanceToSqr(Vec3.atCenterOf(pos));
         return distSq <= MAX_INTERACT_DISTANCE_SQ;
     }
 
     @Nullable
-    private static BlockPos findNearestBed(MinecraftClient client, int radius) {
-        if (client.world == null || client.player == null) return null;
-        BlockPos player = client.player.getBlockPos();
+    private static BlockPos findNearestBed(Minecraft client, int radius) {
+        if (client.level == null || client.player == null) return null;
+        BlockPos player = client.player.blockPosition();
         BlockPos best = null;
         double bestSq = Double.POSITIVE_INFINITY;
 
@@ -203,10 +231,10 @@ public final class SleepUtil {
         for (int dx = -r; dx <= r; dx++) {
             for (int dy = -1; dy <= 2; dy++) { // search a small vertical window
                 for (int dz = -r; dz <= r; dz++) {
-                    BlockPos bp = player.add(dx, dy, dz);
-                    BlockState st = client.world.getBlockState(bp);
-                    if (!st.isIn(BlockTags.BEDS)) continue;
-                    double d2 = bp.getSquaredDistance(player);
+                    BlockPos bp = player.offset(dx, dy, dz);
+                    BlockState st = client.level.getBlockState(bp);
+                    if (!st.is(BlockTags.BEDS)) continue;
+                    double d2 = bp.distSqr(player);
                     if (d2 < bestSq) {
                         best = bp;
                         bestSq = d2;
@@ -223,14 +251,15 @@ public final class SleepUtil {
     }
 
     // Replace this with your actual MQTT publish; include requestId if present
+
     /**
      * Send standard success/failure response
      */
     private static void sendStandardResponse(String status, String message, String reason) {
         try {
-            var mc = MinecraftClient.getInstance();
-            String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
-            
+            var mc = Minecraft.getInstance();
+            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
+
             JsonObject response = new JsonObject();
             response.addProperty("status", status);
             response.addProperty("message", message);
@@ -238,13 +267,13 @@ public final class SleepUtil {
                 response.addProperty("reason", reason);
             }
             response.addProperty("player", playerName);
-            
+
             if (bedPos != null) {
                 response.addProperty("bedX", bedPos.getX());
                 response.addProperty("bedY", bedPos.getY());
                 response.addProperty("bedZ", bedPos.getZ());
             }
-            
+
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName, new MessageData(
                     "sleep",
                     "start",
@@ -255,13 +284,13 @@ public final class SleepUtil {
                     "mqttbot",
                     null)
             ));
-            
+
         } catch (Exception e) {
             System.err.println("Error sending sleep response: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /**
      * Legacy emit method - kept for other notifications
      */

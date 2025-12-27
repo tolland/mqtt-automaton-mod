@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.actions;
 
 import com.google.gson.JsonObject;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
@@ -34,8 +34,8 @@ public class InventoryAction extends Action implements InventoryListener {
     private void sendInventoryEvent(String eventType, Map<String, Integer> itemCounts,
                                     int emptySlots, int fullSlots) {
         try {
-            var mc = MinecraftClient.getInstance();
-            String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
+            var mc = Minecraft.getInstance();
+            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
 
             // Determine primary item (the one with highest count)
             String primaryItem = null;
@@ -91,8 +91,8 @@ public class InventoryAction extends Action implements InventoryListener {
 
     private void sendItemCountEvent(String itemId, int oldCount, int newCount, int totalCount) {
         try {
-            var mc = MinecraftClient.getInstance();
-            String playerName = (mc.player != null) ? mc.getSession().getUsername() : "unknown";
+            var mc = Minecraft.getInstance();
+            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
 
             // Create structured response data
             JsonObject responseData = new JsonObject();

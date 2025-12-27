@@ -39,7 +39,7 @@ public final class InventoryWatcher {
             }
 
             // Need a valid player
-            if (client.player == null || client.world == null) {
+            if (client.player == null || client.level == null) {
                 return;
             }
 

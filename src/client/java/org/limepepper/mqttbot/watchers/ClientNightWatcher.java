@@ -4,7 +4,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.DayNightListener;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 
 public final class ClientNightWatcher {
     private static final long DAY_TICKS = 24_000L;
@@ -14,13 +14,13 @@ public final class ClientNightWatcher {
 
     public static void init() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.world == null) return;
-            World w = client.world;
+            if (client.level == null) return;
+            Level w = client.level;
 
-            if (w.getRegistryKey() != World.OVERWORLD) return;
-            if (!w.getDimension().hasSkyLight() || w.getDimension().hasFixedTime()) return;
+            if (w.dimension() != Level.OVERWORLD) return;
+            if (!w.dimensionType().hasSkyLight() || w.dimensionType().hasFixedTime()) return;
 
-            long tod = w.getTimeOfDay() % DAY_TICKS;
+            long tod = w.getDayTime() % DAY_TICKS;
             boolean nightByTime = (tod >= NIGHT_START && tod < NIGHT_END);
             boolean isNightish  = nightByTime || w.isThundering();
 

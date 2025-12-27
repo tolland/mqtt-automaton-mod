@@ -70,14 +70,14 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         int fullSlots = 0;
 
         // Scan all inventory slots
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            ItemStack stack = inventory.getMainStacks().get(i);
+        for (int i = 0; i < inventory.items.size(); i++) {
+            ItemStack stack = inventory.items.get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;
             } else {
                 fullSlots++;
-                String itemId = BuiltInRegistries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 itemCounts.merge(itemId, stack.getCount(), Integer::sum);
             }
         }
@@ -116,11 +116,11 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         int totalCount = 0;
 
         // Count the specific item
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            ItemStack stack = inventory.getMainStacks().get(i);
+        for (int i = 0; i < inventory.items.size(); i++) {
+            ItemStack stack = inventory.items.get(i);
 
             if (!stack.isEmpty()) {
-                String itemId = BuiltInRegistries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 if (itemId.equals(targetItemId)) {
                     totalCount += stack.getCount();
                 }
@@ -146,8 +146,8 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         Inventory inventory = MC.player.getInventory();
         int emptySlots = 0;
 
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            if (inventory.getMainStacks().get(i).isEmpty()) {
+        for (int i = 0; i < inventory.items.size(); i++) {
+            if (inventory.items.get(i).isEmpty()) {
                 emptySlots++;
             }
         }

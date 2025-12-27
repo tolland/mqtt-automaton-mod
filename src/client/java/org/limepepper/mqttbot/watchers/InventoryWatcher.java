@@ -57,19 +57,19 @@ public final class InventoryWatcher {
         int fullSlots = 0;
 
         // Check main inventory (0-35) and hotbar (already included in main)
-        // Inventory.main contains all 36 slots (0-8 hotbar, 9-35 main inventory)
-        for (int i = 0; i < inventory.getMainStacks().size(); i++) {
-            ItemStack stack = inventory.getMainStacks().get(i);
+        // Inventory.items contains all 36 slots (0-8 hotbar, 9-35 main inventory)
+        for (int i = 0; i < inventory.items.size(); i++) {
+            ItemStack stack = inventory.items.get(i);
 
             if (stack.isEmpty()) {
                 emptySlots++;
             } else {
                 fullSlots++;
-                String itemId = BuiltInRegistries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
                 currentItemCounts.merge(itemId, stack.getCount(), Integer::sum);
 
                 // Track stackable space: how much more of this item can fit in this slot
-                int maxStackSize = stack.getMaxCount();
+                int maxStackSize = stack.getMaxStackSize();
                 int currentSize = stack.getCount();
                 int spaceRemaining = maxStackSize - currentSize;
                 maxStackableSpace.merge(itemId, spaceRemaining, Integer::sum);

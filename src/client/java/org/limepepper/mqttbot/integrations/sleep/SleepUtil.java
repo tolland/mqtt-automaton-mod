@@ -1,22 +1,25 @@
 package org.limepepper.mqttbot.integrations.sleep;
 
 
+import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.wurstclient.WurstClient;
+import net.wurstclient.util.BlockBreaker;
+import net.wurstclient.util.InteractionSimulator;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import com.google.gson.JsonObject;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.client.Minecraft;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.util.Hand;
-import net.minecraft.world.phys.BlockHitResult;
-import org.jetbrains.annotations.Nullable;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import org.limepepper.mqttbot.mqtt.MessageData;
 
 
 public final class SleepUtil {
@@ -40,6 +43,8 @@ public final class SleepUtil {
     @Nullable
     private static BlockPos bedPos = null;
     private static Phase phase = Phase.IDLE;
+
+    private static final WurstClient WURST = WurstClient.INSTANCE;
 
     private enum Phase {
         IDLE, ARMED, WAIT_NIGHT, APPROACHING, INTERACTING, SLEEPING, DONE, FAILED
@@ -81,7 +86,7 @@ public final class SleepUtil {
     }
 
     private static void tick(Minecraft client) {
-        if (Minecraft.getInstance().level == null || client.player == null || client.interactionManager == null) {
+        if (Minecraft.getInstance().level == null || client.player == null) {
             fail("no_client");
             return;
         }
@@ -111,7 +116,7 @@ public final class SleepUtil {
             }
             case APPROACHING -> {
                 // If we drifted, re-scan (e.g., moved radius away)
-                if (bedPos == null || (Minecraft.getInstance().level != null && Minecraft.getInstance().level.getBlockState(bedPos).isAir())) {
+                if (bedPos == null || Minecraft.getInstance().level.getBlockState(bedPos).isAir()) {
                     bedPos = findNearestBed(client, scanRadius);
                     if (bedPos == null) {
                         fail("bed_missing");
@@ -137,6 +142,7 @@ public final class SleepUtil {
                     return; // cooldown
                 }
                 // Try to sleep: right-click the bed
+                rightClickBlockLegit(bedPos);
                 var hit = new BlockHitResult(Vec3d.ofCenter(bedPos), Direction.UP, bedPos, false);
                 var res = client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
                 lastTryGameTime = now;
@@ -159,6 +165,25 @@ public final class SleepUtil {
                 // nothing
             }
         }
+    }
+
+    private static boolean rightClickBlockLegit(BlockPos pos) {
+        // if breaking or riding, stop and don't try other blocks
+        if (MC.player != null && MC.gameMode != null && (MC.gameMode.isDestroying() || MC.player.isHandsBusy()))
+            return true;
+
+        double range = 3;
+        // if this block is unreachable, try the next one
+        BlockBreaker.BlockBreakingParams params = BlockBreaker.getBlockBreakingParams(pos);
+        if (params == null || params.distanceSq() > Mth.square(range)
+                || !params.lineOfSight())
+            return false;
+
+        // face and right click the block
+        MC.rightClickDelay = 4;
+        WURST.getRotationFaker().faceVectorPacket(params.hitVec());
+        InteractionSimulator.rightClickBlock(params.toHitResult());
+        return true;
     }
 
     private static void done() {
@@ -224,6 +249,7 @@ public final class SleepUtil {
     }
 
     // Replace this with your actual MQTT publish; include requestId if present
+
     /**
      * Send standard success/failure response
      */
@@ -231,7 +257,7 @@ public final class SleepUtil {
         try {
             var mc = Minecraft.getInstance();
             String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
-            
+
             JsonObject response = new JsonObject();
             response.addProperty("status", status);
             response.addProperty("message", message);
@@ -239,13 +265,13 @@ public final class SleepUtil {
                 response.addProperty("reason", reason);
             }
             response.addProperty("player", playerName);
-            
+
             if (bedPos != null) {
                 response.addProperty("bedX", bedPos.getX());
                 response.addProperty("bedY", bedPos.getY());
                 response.addProperty("bedZ", bedPos.getZ());
             }
-            
+
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName, new MessageData(
                     "sleep",
                     "start",
@@ -256,13 +282,13 @@ public final class SleepUtil {
                     "mqttbot",
                     null)
             ));
-            
+
         } catch (Exception e) {
             System.err.println("Error sending sleep response: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
+
     /**
      * Legacy emit method - kept for other notifications
      */

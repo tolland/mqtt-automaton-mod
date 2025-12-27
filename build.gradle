@@ -31,6 +31,9 @@ repositories {
 }
 
 loom {
+
+    accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
+
     splitEnvironmentSourceSets()
 
     mods {
@@ -63,7 +66,6 @@ dependencies {
 
     implementation group: 'org.eclipse.paho', name: 'org.eclipse.paho.client.mqttv3', version: '1.2.5'
     implementation 'org.yaml:snakeyaml:2.0'
-//    modCompileOnly name: "baritone-api-fabric", version: "1.15.0"
     modCompileOnly "cabaletta:baritone-api-fabric:1.15.0"
     modCompileOnly name: "Wurst-Client", version: "v7.51.2-MC1.21.8"
     modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {

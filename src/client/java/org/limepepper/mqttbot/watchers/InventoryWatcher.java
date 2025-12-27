@@ -4,7 +4,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
 
@@ -64,7 +65,7 @@ public final class InventoryWatcher {
                 emptySlots++;
             } else {
                 fullSlots++;
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getId(stack.getItem()).toString();
                 currentItemCounts.merge(itemId, stack.getCount(), Integer::sum);
 
                 // Track stackable space: how much more of this item can fit in this slot

@@ -2,9 +2,9 @@ package org.limepepper.mqttbot.integrations.inventory;
 
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
@@ -64,7 +64,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
             return;
         }
 
-        PlayerInventory inventory = MC.player.getInventory();
+        Inventory inventory = MC.player.getInventory();
         Map<String, Integer> itemCounts = new HashMap<>();
         int emptySlots = 0;
         int fullSlots = 0;
@@ -77,7 +77,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
                 emptySlots++;
             } else {
                 fullSlots++;
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getId(stack.getItem()).toString();
                 itemCounts.merge(itemId, stack.getCount(), Integer::sum);
             }
         }
@@ -112,7 +112,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
         }
 
         String targetItemId = data.getParams().get("itemId").getAsString();
-        PlayerInventory inventory = MC.player.getInventory();
+        Inventory inventory = MC.player.getInventory();
         int totalCount = 0;
 
         // Count the specific item
@@ -120,7 +120,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
             ItemStack stack = inventory.getMainStacks().get(i);
 
             if (!stack.isEmpty()) {
-                String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+                String itemId = BuiltInRegistries.ITEM.getId(stack.getItem()).toString();
                 if (itemId.equals(targetItemId)) {
                     totalCount += stack.getCount();
                 }
@@ -143,7 +143,7 @@ public final class InventoryQueryHandler extends Action implements MqttMessageLi
             return;
         }
 
-        PlayerInventory inventory = MC.player.getInventory();
+        Inventory inventory = MC.player.getInventory();
         int emptySlots = 0;
 
         for (int i = 0; i < inventory.getMainStacks().size(); i++) {

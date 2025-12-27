@@ -78,9 +78,11 @@ public final class EventManager {
         } catch (Throwable e) {
             LOGGER.error("Error firing MqttBot event: {}", event.getClass().getName(), e);
 
-            CrashReport report = CrashReport.create(e, "Firing MqttBot event");
-            CrashReportCategory section = report.addElement("Affected event");
-            section.add("Event class", () -> event.getClass().getName());
+            String message = "Firing MqttBot event";
+            CrashReport report = CrashReport.forThrowable(e, message);
+
+            CrashReportCategory section = report.addCategory("Affected event");
+            section.setDetail("Event class", () -> event.getClass().getName());
 
             throw new ReportedException(report);
         }
@@ -102,11 +104,12 @@ public final class EventManager {
         } catch (Throwable e) {
             LOGGER.error("Error adding event listener: {} -> {}", type.getName(), listener.getClass().getName(), e);
 
-            CrashReport report =
-                    CrashReport.create(e, "Adding MqttBot event listener");
-            CrashReportCategory section = report.addElement("Affected listener");
-            section.add("Listener type", () -> type.getName());
-            section.add("Listener class", () -> listener.getClass().getName());
+            String message = "Adding MqttBot event listener";
+            CrashReport report = CrashReport.forThrowable(e, message);
+
+            CrashReportCategory section = report.addCategory("Affected listener");
+            section.setDetail("Listener type", type::getName);
+            section.setDetail("Listener class", () -> listener.getClass().getName());
 
             throw new ReportedException(report);
         }
@@ -123,11 +126,12 @@ public final class EventManager {
         } catch (Throwable e) {
             LOGGER.error("Error removing event listener: {} -> {}", type.getName(), listener.getClass().getName(), e);
 
-            CrashReport report =
-                    CrashReport.create(e, "Removing MqttBot event listener");
-            CrashReportCategory section = report.addElement("Affected listener");
-            section.add("Listener type", () -> type.getName());
-            section.add("Listener class", () -> listener.getClass().getName());
+            String message = "Removing MqttBot event listener";
+            CrashReport report = CrashReport.forThrowable(e, message);
+
+            CrashReportCategory section = report.addCategory("Affected listener");
+            section.setDetail("Listener type", type::getName);
+            section.setDetail("Listener class", () -> listener.getClass().getName());
 
             throw new ReportedException(report);
         }

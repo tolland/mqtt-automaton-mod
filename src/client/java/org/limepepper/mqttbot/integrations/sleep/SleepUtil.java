@@ -8,9 +8,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.wurstclient.WurstClient;
 import net.wurstclient.util.BlockBreaker;
 import net.wurstclient.util.InteractionSimulator;
@@ -137,14 +139,14 @@ public final class SleepUtil {
                     // still daylight or not storming: throttle messages; stay in INTERACTING until night or thunder
                     return;
                 }
-                long now = w.getTime();
+                long now = w.getGameTime();
                 if (lastTryGameTime != -1 && (now - lastTryGameTime) < TRY_COOLDOWN_TICKS) {
                     return; // cooldown
                 }
                 // Try to sleep: right-click the bed
                 rightClickBlockLegit(bedPos);
-                var hit = new BlockHitResult(Vec3d.ofCenter(bedPos), Direction.UP, bedPos, false);
-                var res = client.interactionManager.interactBlock(client.player, Hand.MAIN_HAND, hit);
+                var hit = new BlockHitResult(Vec3.atCenterOf(bedPos), Direction.UP, bedPos, false);
+                var res = client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
                 lastTryGameTime = now;
                 emit("sleep_try", bedPosJson());
                 // If the interaction succeeded, client will transition to sleeping shortly.
@@ -205,22 +207,22 @@ public final class SleepUtil {
     // -------- helpers --------
 
     private static boolean isNightish(@UnknownNullability Level w) {
-        if (w.getRegistryKey() != World.OVERWORLD) return true; // be permissive in other dims
-        if (!w.getDimension().hasSkyLight() || w.getDimension().hasFixedTime()) return true;
-        long tod = w.getTimeOfDay() % DAY_TICKS;
+        if (w.dimension() != Level.OVERWORLD) return true; // be permissive in other dims
+        if (!w.dimensionType().hasSkyLight() || w.dimensionType().hasFixedTime()) return true;
+        long tod = w.getDayTime() % DAY_TICKS;
         boolean nightByTime = (tod >= NIGHT_START && tod < NIGHT_END);
         return nightByTime || w.isThundering();
     }
 
     private static boolean withinInteractDistance(Minecraft client, BlockPos pos) {
         var p = client.player;
-        double distSq = p.squaredDistanceTo(Vec3d.ofCenter(pos));
+        double distSq = p.distanceToSqr(Vec3.atCenterOf(pos));
         return distSq <= MAX_INTERACT_DISTANCE_SQ;
     }
 
     @Nullable
     private static BlockPos findNearestBed(Minecraft client, int radius) {
-        if (client.world == null || client.player == null) return null;
+        if (client.level == null || client.player == null) return null;
         BlockPos player = client.player.blockPosition();
         BlockPos best = null;
         double bestSq = Double.POSITIVE_INFINITY;
@@ -229,10 +231,10 @@ public final class SleepUtil {
         for (int dx = -r; dx <= r; dx++) {
             for (int dy = -1; dy <= 2; dy++) { // search a small vertical window
                 for (int dz = -r; dz <= r; dz++) {
-                    BlockPos bp = player.add(dx, dy, dz);
-                    BlockState st = client.world.getBlockState(bp);
-                    if (!st.isIn(BlockTags.BEDS)) continue;
-                    double d2 = bp.getSquaredDistance(player);
+                    BlockPos bp = player.offset(dx, dy, dz);
+                    BlockState st = client.level.getBlockState(bp);
+                    if (!st.is(BlockTags.BEDS)) continue;
+                    double d2 = bp.distSqr(player);
                     if (d2 < bestSq) {
                         best = bp;
                         bestSq = d2;

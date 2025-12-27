@@ -5,7 +5,7 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec3;
 import com.google.gson.JsonObject;
 
 /**
@@ -16,7 +16,7 @@ public final class WarpUtil {
     
     private static boolean enabled = false;
     private static String requestId = null;
-    private static Vec3d targetPos = null;
+    private static Vec3 targetPos = null;
     private static int radius = 5;
     private static String warpName = null;
     private static long startTime = 0;
@@ -50,7 +50,7 @@ public final class WarpUtil {
         enabled = true;
         requestId = reqId;
         warpName = name;
-        targetPos = new Vec3d(targetX, targetY, targetZ);
+        targetPos = new Vec3(targetX, targetY, targetZ);
         radius = (radiusOverride != null && radiusOverride > 0) ? radiusOverride : 5;
         startTime = System.currentTimeMillis();
         waitTicks = 0;
@@ -95,7 +95,7 @@ public final class WarpUtil {
         }
         
         // Get current player position
-        Vec3d playerPos = client.player.position();
+        Vec3 playerPos = client.player.position();
         double distance = playerPos.distanceTo(targetPos);
         
         // Check if player is within target radius
@@ -158,7 +158,7 @@ public final class WarpUtil {
             
             // Include current player position
             if (mc.player != null) {
-                Vec3d pos = mc.player.position();
+                Vec3 pos = mc.player.position();
                 response.addProperty("x", pos.x);
                 response.addProperty("y", pos.y);
                 response.addProperty("z", pos.z);

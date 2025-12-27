@@ -63,7 +63,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(Commands.literal("test_command").executes(context -> {
-                context.getSource().sendFeedback(() -> Component.literal("Called /test_command."), false);
+                context.getSource().sendSuccess(() -> Component.literal("Called /test_command."), false);
                 return 1;
             }));
             dispatcher.register(Commands.literal("test_reply").executes(context -> {

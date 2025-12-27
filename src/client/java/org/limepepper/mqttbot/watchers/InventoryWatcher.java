@@ -34,7 +34,7 @@ public final class InventoryWatcher {
             tickCounter = 0;
 
             // Don't monitor when container/inventory screens are open to avoid conflicts
-            if (client.currentScreen instanceof AbstractContainerScreen) {
+            if (client.screen instanceof AbstractContainerScreen) {
                 return;
             }
 

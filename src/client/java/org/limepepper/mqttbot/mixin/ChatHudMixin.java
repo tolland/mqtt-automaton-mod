@@ -15,6 +15,8 @@ import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
 import org.jetbrains.annotations.Nullable;
+import org.limepepper.mqttbot.event.EventManager;
+import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,9 +45,13 @@ public class ChatHudMixin {
         @Local(argsOnly = true) LocalRef<Component> message,
         @Local(argsOnly = true) LocalRef<GuiMessageTag> indicator)
     {
-        
-        System.out
-            .println("ChatHudMixin onAddMessage: " + message.get().getString());
+        String messageText = message.get().getString();
+        System.out.println("ChatHudMixin onAddMessage: " + messageText);
+
+        // Fire ChatMessageEvent for listeners to process
+        EventManager
+            .fire(new ChatMessageListener.ChatMessageEvent(messageText));
+
         // ChatInputEvent event =
         // new ChatInputEvent(message.get(), trimmedMessages);
         //

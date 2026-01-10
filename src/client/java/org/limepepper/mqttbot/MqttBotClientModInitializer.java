@@ -47,7 +47,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         
         SleepUtil.init();
         SleepMessageHandler.init();
-
+        
         WarpMessageHandler.init();
         SendCommandHandler.init();
         InventoryQueryHandler.init();

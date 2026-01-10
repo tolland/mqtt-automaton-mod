@@ -19,27 +19,27 @@ import java.util.regex.Pattern;
  * Filters for completion messages and sends them as MQTT events.
  */
 public class ChatMessageAction extends Action implements ChatMessageListener {
-
+    
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(ChatMessageAction.class);
-
+    
     // Message patterns to watch for
     private static final List<MessagePattern> MESSAGE_PATTERNS =
         new ArrayList<>();
-
+    
     static
     {
         // Baritone completion messages
-        MESSAGE_PATTERNS.add(new MessagePattern(
-            Pattern.compile("\\[Baritone\\] Done building"),
-            "baritone", "building_complete"));
-        MESSAGE_PATTERNS.add(new MessagePattern(
-            Pattern.compile("\\[Baritone\\] Goal reached"),
-            "baritone", "goal_reached"));
-        MESSAGE_PATTERNS.add(new MessagePattern(
-            Pattern.compile("\\[Baritone\\] .* completed"),
-            "baritone", "task_complete"));
-
+        MESSAGE_PATTERNS.add(
+            new MessagePattern(Pattern.compile("\\[Baritone\\] Done building"),
+                "baritone", "building_complete"));
+        MESSAGE_PATTERNS.add(
+            new MessagePattern(Pattern.compile("\\[Baritone\\] Goal reached"),
+                "baritone", "goal_reached"));
+        MESSAGE_PATTERNS.add(
+            new MessagePattern(Pattern.compile("\\[Baritone\\] .* completed"),
+                "baritone", "task_complete"));
+        
         // Wurst completion messages (strip color codes for matching)
         MESSAGE_PATTERNS.add(new MessagePattern(
             Pattern.compile("\\[Wurst\\].*AutoShopGUI completed successfully!"),
@@ -48,26 +48,26 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             Pattern.compile("\\[Wurst\\].*All items sold successfully!"),
             "wurst", "items_sold"));
         MESSAGE_PATTERNS.add(new MessagePattern(
-            Pattern.compile("\\[Wurst\\].*completed successfully!"),
-            "wurst", "task_complete"));
-
+            Pattern.compile("\\[Wurst\\].*completed successfully!"), "wurst",
+            "task_complete"));
+        
         // Server restart messages
         MESSAGE_PATTERNS.add(new MessagePattern(
-            Pattern.compile("The server will restart in \\d+ minute"),
-            "server", "restart_warning"));
-        MESSAGE_PATTERNS.add(new MessagePattern(
-            Pattern.compile("Server is restarting"),
-            "server", "restart_imminent"));
+            Pattern.compile("The server will restart in \\d+ minute"), "server",
+            "restart_warning"));
+        MESSAGE_PATTERNS
+            .add(new MessagePattern(Pattern.compile("Server is restarting"),
+                "server", "restart_imminent"));
     }
-
+    
     @Override
     public void onChatMessage(ChatMessageEvent event)
     {
         String message = event.getMessage();
-
+        
         // Strip Minecraft color codes for pattern matching
         String cleanMessage = stripColorCodes(message);
-
+        
         // Check each pattern
         for(MessagePattern pattern : MESSAGE_PATTERNS)
         {
@@ -82,7 +82,7 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             }
         }
     }
-
+    
     /**
      * Strip Minecraft color codes from a message
      * Color codes are in the format §x where x is a character
@@ -93,7 +93,7 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             return "";
         return message.replaceAll("§[0-9a-fk-or]", "");
     }
-
+    
     /**
      * Send a chat event via MQTT
      */
@@ -105,7 +105,7 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             var mc = Minecraft.getInstance();
             String playerName =
                 (mc.player != null) ? mc.getUser().getName() : "unknown";
-
+            
             // Create structured response data
             JsonObject responseData = new JsonObject();
             responseData.addProperty("source", source);
@@ -114,20 +114,20 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             responseData.addProperty("clean_message", cleanMessage);
             responseData.addProperty("player", playerName);
             responseData.addProperty("timestamp", System.currentTimeMillis());
-
+            
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
                 new MessageData("events", "chat_message",
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
-
+            
             LOGGER.debug("Sent chat event: {} / {}", source, eventType);
-
+            
         }catch(Exception e)
         {
             LOGGER.error("Error sending chat event: {}", e.getMessage(), e);
         }
     }
-
+    
     /**
      * Helper class to store message patterns
      */
@@ -135,14 +135,14 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
         final Pattern pattern;
         final String source;
         final String eventType;
-
+        
         MessagePattern(Pattern pattern, String source, String eventType)
         {
             this.pattern = pattern;
             this.source = source;
             this.eventType = eventType;
         }
-
+        
         boolean matches(String message)
         {
             return pattern.matcher(message).find();

@@ -24,90 +24,96 @@ import org.limepepper.mqttbot.watchers.ClientNightWatcher;
 import org.limepepper.mqttbot.watchers.InventoryWatcher;
 
 public class MqttBotClientModInitializer implements ClientModInitializer {
-    private static final MqttBotLogger LOGGER = new MqttBotLogger(MqttBotClientModInitializer.class);
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(MqttBotClientModInitializer.class);
     private static boolean initialized;
-
+    
     @Override
-    public void onInitializeClient() {
-
-        if (initialized)
+    public void onInitializeClient()
+    {
+        
+        if(initialized)
             throw new RuntimeException(
-                    "MqttBotInitializer.onInitialize() ran twice!");
-
+                "MqttBotInitializer.onInitialize() ran twice!");
+        
         MqttCore.INSTANCE.initialize();
-
+        
         ClientNightWatcher.init();
         InventoryWatcher.init();
-
-        ClientPlayConnectionEvents.JOIN.register((
-                handler,
-                sender,
-                client) -> {
+        
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             EventManager.fire(ClientListener.ClientJoinEvent.INSTANCE);
         });
-
+        
         SleepUtil.init();
         SleepMessageHandler.init();
-
+        
         WarpMessageHandler.init();
         SendCommandHandler.init();
         InventoryQueryHandler.init();
         initialized = true;
-
-        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("baritone")) {
-            LOGGER.info("Baritone mod detected, initializing Baritone integration");
+        
+        if(net.fabricmc.loader.api.FabricLoader.getInstance()
+            .isModLoaded("baritone"))
+        {
+            LOGGER.info(
+                "Baritone mod detected, initializing Baritone integration");
             BaritonePathing.init();
             BaritoneCmds.init();
-        } else {
-            LOGGER.info("Baritone mod not loaded, skipping Baritone integration");
+        }else
+        {
+            LOGGER
+                .info("Baritone mod not loaded, skipping Baritone integration");
         }
-
-        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("wurst")) {
+        
+        if(net.fabricmc.loader.api.FabricLoader.getInstance()
+            .isModLoaded("wurst"))
+        {
             LOGGER.info("Wurst mod detected, initializing Wurst integration");
             WurstHandler.init();
-        } else {
+        }else
+        {
             LOGGER.info("Wurst mod not loaded, skipping Wurst integration");
         }
-
-        ClientSendMessageEvents.CHAT.register((message -> LOGGER.info("Sent chat message: " + message)));
-
-        ClientReceiveMessageEvents.CHAT.register((
-                message,
-                signedMessage,
-                sender,
-                params,
-                receptionTimestamp
-        ) -> LOGGER.info("Received chat message sent by {} at time {}: {}", sender == null ? "null" : sender.getName(), receptionTimestamp.toEpochMilli(), message.getString()));
-
-
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(Commands.literal("test_command").executes(context -> {
-                context.getSource().sendSuccess(() -> Component.literal("Called /test_command."), false);
-                return 1;
-            }));
-            dispatcher.register(Commands.literal("test_reply").executes(context -> {
-                LOGGER.debug("test_reply command executed");
-                LOGGER.debug("Firing MqttReplyEvent for testing");
-                EventManager.fire(new MqttReplyListener.MqttReplyEvent("botId", new MessageData(
-                                "baritone",
-                                "pathing",
-                                "123",
-                                null,
-                                null,
-                                null,
-                                "Test reply from /test_reply")
-                        )
-                );
-                LOGGER.debug("MqttReplyEvent fired successfully");
-                return 1;
-            }));
-            dispatcher.register(Commands.literal("test_sleep").executes(context -> {
-                LOGGER.debug("test_sleep command executed");
-                SleepUtil.start("bot id", 3);
-                LOGGER.debug("Sleep utility started");
-                return 1;
-            }));
-        });
-
+        
+        ClientSendMessageEvents.CHAT.register(
+            (message -> LOGGER.info("Sent chat message: " + message)));
+        
+        ClientReceiveMessageEvents.CHAT.register((message, signedMessage,
+            sender, params, receptionTimestamp) -> LOGGER.info(
+                "Received chat message sent by {} at time {}: {}",
+                sender == null ? "null" : sender.getName(),
+                receptionTimestamp.toEpochMilli(), message.getString()));
+        
+        CommandRegistrationCallback.EVENT
+            .register((dispatcher, registryAccess, environment) -> {
+                dispatcher.register(
+                    Commands.literal("test_command").executes(context -> {
+                        context.getSource().sendSuccess(
+                            () -> Component.literal("Called /test_command."),
+                            false);
+                        return 1;
+                    }));
+                dispatcher.register(
+                    Commands.literal("test_reply").executes(context -> {
+                        LOGGER.debug("test_reply command executed");
+                        LOGGER.debug("Firing MqttReplyEvent for testing");
+                        EventManager
+                            .fire(new MqttReplyListener.MqttReplyEvent("botId",
+                                new MessageData("baritone", "pathing", "123",
+                                    null, null, null,
+                                    "Test reply from /test_reply")));
+                        LOGGER.debug("MqttReplyEvent fired successfully");
+                        return 1;
+                    }));
+                dispatcher.register(
+                    Commands.literal("test_sleep").executes(context -> {
+                        LOGGER.debug("test_sleep command executed");
+                        SleepUtil.start("bot id", 3);
+                        LOGGER.debug("Sleep utility started");
+                        return 1;
+                    }));
+            });
+        
     }
 }

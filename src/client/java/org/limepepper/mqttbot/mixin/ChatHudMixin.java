@@ -14,9 +14,6 @@ import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
-import net.wurstclient.WurstClient;
-import net.wurstclient.event.EventManager;
-import net.wurstclient.events.ChatInputListener.ChatInputEvent;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,39 +26,38 @@ import java.util.List;
 
 /**
  * try and hook this
- *             Minecraft.getInstance().gui.getChat().addMessage(msg, null, tag);
+ * Minecraft.getInstance().gui.getChat().addMessage(msg, null, tag);
  */
 @Mixin(ChatComponent.class)
-public class ChatHudMixin
-{
-	@Shadow
-	@Final
-	private List<GuiMessage.Line> trimmedMessages;
-	
-	@Inject(at = @At("HEAD"),
-		method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
-		cancellable = false)
-	private void onAddMessage(Component messageDontUse,
-		@Nullable MessageSignature signature,
-		@Nullable GuiMessageTag indicatorDontUse, CallbackInfo ci,
-		@Local(argsOnly = true) LocalRef<Component> message,
-		@Local(argsOnly = true) LocalRef<GuiMessageTag> indicator)
-	{
-
-
-		System.out.println("ChatHudMixin onAddMessage: " + message.get().getString());
-//		ChatInputEvent event =
-//			new ChatInputEvent(message.get(), trimmedMessages);
-//
-//		EventManager.fire(event);
-//		if(event.isCancelled())
-//		{
-//			ci.cancel();
-//			return;
-//		}
-//
-//		message.set(event.getComponent());
-//		indicator.set(WurstClient.INSTANCE.getOtfs().noChatReportsOtf
-//			.modifyIndicator(message.get(), signature, indicator.get()));
-	}
+public class ChatHudMixin {
+    @Shadow
+    @Final
+    private List<GuiMessage.Line> trimmedMessages;
+    
+    @Inject(at = @At("HEAD"),
+        method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
+        cancellable = false)
+    private void onAddMessage(Component messageDontUse,
+        @Nullable MessageSignature signature,
+        @Nullable GuiMessageTag indicatorDontUse, CallbackInfo ci,
+        @Local(argsOnly = true) LocalRef<Component> message,
+        @Local(argsOnly = true) LocalRef<GuiMessageTag> indicator)
+    {
+        
+        System.out
+            .println("ChatHudMixin onAddMessage: " + message.get().getString());
+        // ChatInputEvent event =
+        // new ChatInputEvent(message.get(), trimmedMessages);
+        //
+        // EventManager.fire(event);
+        // if(event.isCancelled())
+        // {
+        // ci.cancel();
+        // return;
+        // }
+        //
+        // message.set(event.getComponent());
+        // indicator.set(WurstClient.INSTANCE.getOtfs().noChatReportsOtf
+        // .modifyIndicator(message.get(), signature, indicator.get()));
+    }
 }

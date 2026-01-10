@@ -1,6 +1,5 @@
 package org.limepepper.mqttbot.integrations.sleep;
 
-
 import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
@@ -23,219 +22,286 @@ import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 
-
 public final class SleepUtil {
-
+    
     public static final Minecraft MC = Minecraft.getInstance();
-
+    
     // --- config ---
     private static final long DAY_TICKS = 24_000L;
-    private static final long NIGHT_START = 13_000L; // adjust if you want earlier
+    private static final long NIGHT_START = 13_000L; // adjust if you want
+                                                     // earlier
     private static final long NIGHT_END = 23_000L;
-    private static final int DEFAULT_RADIUS = 2;    // scan nearest bed within N blocks
-    private static final int MAX_INTERACT_DISTANCE_SQ = (int) Math.round(4.5 * 4.5); // ~4.5 blocks
+    private static final int DEFAULT_RADIUS = 2; // scan nearest bed within N
+                                                 // blocks
+    private static final int MAX_INTERACT_DISTANCE_SQ =
+        (int)Math.round(4.5 * 4.5); // ~4.5 blocks
     private static final int TRY_COOLDOWN_TICKS = 100; // 5 seconds @20TPS
-
+    
     // --- state ---
     private static boolean enabled = false;
     private static String requestId = null;
     private static int scanRadius = DEFAULT_RADIUS;
-
+    
     private static long lastTryGameTime = -1;
     @Nullable
     private static BlockPos bedPos = null;
     private static Phase phase = Phase.IDLE;
-
+    
     private static final WurstClient WURST = WurstClient.INSTANCE;
-
-    private enum Phase {
-        IDLE, ARMED, WAIT_NIGHT, APPROACHING, INTERACTING, SLEEPING, DONE, FAILED
+    
+    private enum Phase
+    {
+        IDLE,
+        ARMED,
+        WAIT_NIGHT,
+        APPROACHING,
+        INTERACTING,
+        SLEEPING,
+        DONE,
+        FAILED
     }
-
-    private SleepUtil() {
-    }
-
+    
+    private SleepUtil()
+    {}
+    
     // Call once from your client initializer
-    public static void init() {
+    public static void init()
+    {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (!enabled) return;
+            if(!enabled)
+                return;
             tick(client);
         });
-        EventManager.INSTANCE.add(MqttMessageListener.class, SleepMessageHandler.INSTANCE);
+        EventManager.INSTANCE.add(MqttMessageListener.class,
+            SleepMessageHandler.INSTANCE);
     }
-
-    // Your MQTT handler should call this when it receives {"cmd":"sleep", "requestId":"...", "radius":N}
-    public static void start(String reqId, @Nullable Integer radiusOverride) {
+    
+    // Your MQTT handler should call this when it receives {"cmd":"sleep",
+    // "requestId":"...", "radius":N}
+    public static void start(String reqId, @Nullable Integer radiusOverride)
+    {
         Minecraft client = Minecraft.getInstance();
         enabled = true;
         requestId = reqId;
-        scanRadius = (radiusOverride != null && radiusOverride > 0) ? radiusOverride : DEFAULT_RADIUS;
+        scanRadius = (radiusOverride != null && radiusOverride > 0)
+            ? radiusOverride : DEFAULT_RADIUS;
         bedPos = null;
         lastTryGameTime = -1;
         phase = Phase.ARMED;
         emit("sleep_armed", null);
         // immediate tick to reduce latency
-        if (client != null) tick(client);
+        if(client != null)
+            tick(client);
     }
-
+    
     // Optional cancel/stop
-    public static void stop(@Nullable String reason) {
+    public static void stop(@Nullable String reason)
+    {
         enabled = false;
         emit("sleep_stopped", reason);
         requestId = null;
         bedPos = null;
         phase = Phase.IDLE;
     }
-
-    private static void tick(Minecraft client) {
-        if (Minecraft.getInstance().level == null || client.player == null) {
+    
+    private static void tick(Minecraft client)
+    {
+        if(Minecraft.getInstance().level == null || client.player == null)
+        {
             fail("no_client");
             return;
         }
         Level w = Minecraft.getInstance().level;
-
-        switch (phase) {
-            case ARMED -> {
-                // Find nearest bed first; if none, fail early (controller can decide what to do)
+        
+        switch(phase)
+        {
+            case ARMED ->
+            {
+                // Find nearest bed first; if none, fail early (controller can
+                // decide what to do)
                 bedPos = findNearestBed(client, scanRadius);
-                if (bedPos == null) {
+                if(bedPos == null)
+                {
                     fail("no_bed_nearby");
                     return;
                 }
                 emit("sleep_bed_found", bedPosJson());
                 // If it's night-ish, proceed; else wait
-                if (isNightish(w)) {
+                if(isNightish(w))
+                {
                     phase = Phase.APPROACHING;
-                } else {
+                }else
+                {
                     phase = Phase.WAIT_NIGHT;
                     emit("sleep_waiting_night", null);
                 }
             }
-            case WAIT_NIGHT -> {
-                if (isNightish(w)) {
+            case WAIT_NIGHT ->
+            {
+                if(isNightish(w))
+                {
                     phase = Phase.APPROACHING;
                 }
             }
-            case APPROACHING -> {
+            case APPROACHING ->
+            {
                 // If we drifted, re-scan (e.g., moved radius away)
-                if (bedPos == null || Minecraft.getInstance().level.getBlockState(bedPos).isAir()) {
+                if(bedPos == null || Minecraft.getInstance().level
+                    .getBlockState(bedPos).isAir())
+                {
                     bedPos = findNearestBed(client, scanRadius);
-                    if (bedPos == null) {
+                    if(bedPos == null)
+                    {
                         fail("bed_missing");
                         return;
                     }
                     emit("sleep_bed_found", bedPosJson());
                 }
-                // If too far to interact, ask controller to move us closer OR you can auto-publish a #goto here.
-                if (!withinInteractDistance(client, bedPos)) {
-                    emit("sleep_too_far", bedPosJson()); // controller can #goto bedPos
-                    // stay in APPROACHING; controller will move us; we'll try again next tick
+                // If too far to interact, ask controller to move us closer OR
+                // you can auto-publish a #goto here.
+                if(!withinInteractDistance(client, bedPos))
+                {
+                    emit("sleep_too_far", bedPosJson()); // controller can #goto
+                                                         // bedPos
+                    // stay in APPROACHING; controller will move us; we'll try
+                    // again next tick
                     return;
                 }
                 phase = Phase.INTERACTING;
             }
-            case INTERACTING -> {
-                if (!isNightish(w)) {
-                    // still daylight or not storming: throttle messages; stay in INTERACTING until night or thunder
+            case INTERACTING ->
+            {
+                if(!isNightish(w))
+                {
+                    // still daylight or not storming: throttle messages; stay
+                    // in INTERACTING until night or thunder
                     return;
                 }
                 long now = w.getGameTime();
-                if (lastTryGameTime != -1 && (now - lastTryGameTime) < TRY_COOLDOWN_TICKS) {
+                if(lastTryGameTime != -1
+                    && (now - lastTryGameTime) < TRY_COOLDOWN_TICKS)
+                {
                     return; // cooldown
                 }
                 // Try to sleep: right-click the bed
                 rightClickBlockLegit(bedPos);
-                var hit = new BlockHitResult(Vec3.atCenterOf(bedPos), Direction.UP, bedPos, false);
-                var res = client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, hit);
+                var hit = new BlockHitResult(Vec3.atCenterOf(bedPos),
+                    Direction.UP, bedPos, false);
+                var res = client.gameMode.useItemOn(client.player,
+                    InteractionHand.MAIN_HAND, hit);
                 lastTryGameTime = now;
                 emit("sleep_try", bedPosJson());
-                // If the interaction succeeded, client will transition to sleeping shortly.
+                // If the interaction succeeded, client will transition to
+                // sleeping shortly.
                 phase = Phase.SLEEPING;
             }
-            case SLEEPING -> {
-                // Wait until the client reports sleeping or we detect daybreak (server advanced time)
-                if (client.player.isSleeping()) {
+            case SLEEPING ->
+            {
+                // Wait until the client reports sleeping or we detect daybreak
+                // (server advanced time)
+                if(client.player.isSleeping())
+                {
                     emit("sleep_started", null);
-                    // We can stay here and watch for wake-up; but most servers skip to day quickly.
+                    // We can stay here and watch for wake-up; but most servers
+                    // skip to day quickly.
                 }
-                if (!isNightish(w)) {
+                if(!isNightish(w))
+                {
                     emit("sleep_done", null);
                     done();
                 }
             }
-            case DONE, FAILED, IDLE -> {
+            case DONE, FAILED, IDLE ->
+            {
                 // nothing
             }
         }
     }
-
-    private static boolean rightClickBlockLegit(BlockPos pos) {
+    
+    private static boolean rightClickBlockLegit(BlockPos pos)
+    {
         // if breaking or riding, stop and don't try other blocks
-        if (MC.player != null && MC.gameMode != null && (MC.gameMode.isDestroying() || MC.player.isHandsBusy()))
+        if(MC.player != null && MC.gameMode != null
+            && (MC.gameMode.isDestroying() || MC.player.isHandsBusy()))
             return true;
-
+        
         double range = 3;
         // if this block is unreachable, try the next one
-        BlockBreaker.BlockBreakingParams params = BlockBreaker.getBlockBreakingParams(pos);
-        if (params == null || params.distanceSq() > Mth.square(range)
-                || !params.lineOfSight())
+        BlockBreaker.BlockBreakingParams params =
+            BlockBreaker.getBlockBreakingParams(pos);
+        if(params == null || params.distanceSq() > Mth.square(range)
+            || !params.lineOfSight())
             return false;
-
+        
         // face and right click the block
         MC.rightClickDelay = 4;
         WURST.getRotationFaker().faceVectorPacket(params.hitVec());
         InteractionSimulator.rightClickBlock(params.toHitResult());
         return true;
     }
-
-    private static void done() {
+    
+    private static void done()
+    {
         sendStandardResponse("success", "Sleep completed successfully", null);
         enabled = false;
         phase = Phase.DONE;
         requestId = null;
         bedPos = null;
     }
-
-    private static void fail(String reason) {
+    
+    private static void fail(String reason)
+    {
         sendStandardResponse("failure", "Sleep failed", reason);
         enabled = false;
         phase = Phase.FAILED;
         requestId = null;
         bedPos = null;
     }
-
+    
     // -------- helpers --------
-
-    private static boolean isNightish(@UnknownNullability Level w) {
-        if (w.dimension() != Level.OVERWORLD) return true; // be permissive in other dims
-        if (!w.dimensionType().hasSkyLight() || w.dimensionType().hasFixedTime()) return true;
+    
+    private static boolean isNightish(@UnknownNullability Level w)
+    {
+        if(w.dimension() != Level.OVERWORLD)
+            return true; // be permissive in other dims
+        if(!w.dimensionType().hasSkyLight() || w.dimensionType().hasFixedTime())
+            return true;
         long tod = w.getDayTime() % DAY_TICKS;
         boolean nightByTime = (tod >= NIGHT_START && tod < NIGHT_END);
         return nightByTime || w.isThundering();
     }
-
-    private static boolean withinInteractDistance(Minecraft client, BlockPos pos) {
+    
+    private static boolean withinInteractDistance(Minecraft client,
+        BlockPos pos)
+    {
         var p = client.player;
         double distSq = p.distanceToSqr(Vec3.atCenterOf(pos));
         return distSq <= MAX_INTERACT_DISTANCE_SQ;
     }
-
+    
     @Nullable
-    private static BlockPos findNearestBed(Minecraft client, int radius) {
-        if (client.level == null || client.player == null) return null;
+    private static BlockPos findNearestBed(Minecraft client, int radius)
+    {
+        if(client.level == null || client.player == null)
+            return null;
         BlockPos player = client.player.blockPosition();
         BlockPos best = null;
         double bestSq = Double.POSITIVE_INFINITY;
-
+        
         int r = Math.max(1, radius);
-        for (int dx = -r; dx <= r; dx++) {
-            for (int dy = -1; dy <= 2; dy++) { // search a small vertical window
-                for (int dz = -r; dz <= r; dz++) {
+        for(int dx = -r; dx <= r; dx++)
+        {
+            for(int dy = -1; dy <= 2; dy++)
+            { // search a small vertical window
+                for(int dz = -r; dz <= r; dz++)
+                {
                     BlockPos bp = player.offset(dx, dy, dz);
                     BlockState st = client.level.getBlockState(bp);
-                    if (!st.is(BlockTags.BEDS)) continue;
+                    if(!st.is(BlockTags.BEDS))
+                        continue;
                     double d2 = bp.distSqr(player);
-                    if (d2 < bestSq) {
+                    if(d2 < bestSq)
+                    {
                         best = bp;
                         bestSq = d2;
                     }
@@ -244,66 +310,77 @@ public final class SleepUtil {
         }
         return best;
     }
-
-    private static String bedPosJson() {
-        if (bedPos == null) return null;
-        return "{\"x\":" + bedPos.getX() + ",\"y\":" + bedPos.getY() + ",\"z\":" + bedPos.getZ() + "}";
+    
+    private static String bedPosJson()
+    {
+        if(bedPos == null)
+            return null;
+        return "{\"x\":" + bedPos.getX() + ",\"y\":" + bedPos.getY() + ",\"z\":"
+            + bedPos.getZ() + "}";
     }
-
+    
     // Replace this with your actual MQTT publish; include requestId if present
-
+    
     /**
      * Send standard success/failure response
      */
-    private static void sendStandardResponse(String status, String message, String reason) {
-        try {
+    private static void sendStandardResponse(String status, String message,
+        String reason)
+    {
+        try
+        {
             var mc = Minecraft.getInstance();
-            String playerName = (mc.player != null) ? mc.getUser().getName() : "unknown";
-
+            String playerName =
+                (mc.player != null) ? mc.getUser().getName() : "unknown";
+            
             JsonObject response = new JsonObject();
             response.addProperty("status", status);
             response.addProperty("message", message);
-            if (reason != null) {
+            if(reason != null)
+            {
                 response.addProperty("reason", reason);
             }
             response.addProperty("player", playerName);
-
-            if (bedPos != null) {
+            
+            if(bedPos != null)
+            {
                 response.addProperty("bedX", bedPos.getX());
                 response.addProperty("bedY", bedPos.getY());
                 response.addProperty("bedZ", bedPos.getZ());
             }
-
-            EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName, new MessageData(
-                    "sleep",
-                    "start",
-                    requestId,  // Use the original request ID from the command
-                    null,
-                    null,
-                    response,
-                    "mqttbot",
-                    null)
-            ));
-
-        } catch (Exception e) {
-            System.err.println("Error sending sleep response: " + e.getMessage());
+            
+            EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
+                new MessageData("sleep", "start", requestId, // Use the original
+                                                             // request ID
+                                                             // from the
+                                                             // command
+                    null, null, response, "mqttbot", null)));
+            
+        }catch(Exception e)
+        {
+            System.err
+                .println("Error sending sleep response: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
+    
     /**
      * Legacy emit method - kept for other notifications
      */
-    private static void emit(String type, @Nullable String extraJson) {
+    private static void emit(String type, @Nullable String extraJson)
+    {
         StringBuilder sb = new StringBuilder(128);
         sb.append("{\"type\":\"").append(type).append("\"");
-        if (requestId != null) sb.append(",\"requestId\":\"").append(requestId).append("\"");
-        if (bedPos != null) {
-            sb.append(",\"bedX\":").append(bedPos.getX())
-                    .append(",\"bedY\":").append(bedPos.getY())
-                    .append(",\"bedZ\":").append(bedPos.getZ());
+        if(requestId != null)
+            sb.append(",\"requestId\":\"").append(requestId).append("\"");
+        if(bedPos != null)
+        {
+            sb.append(",\"bedX\":").append(bedPos.getX()).append(",\"bedY\":")
+                .append(bedPos.getY()).append(",\"bedZ\":")
+                .append(bedPos.getZ());
         }
-        if (extraJson != null) sb.append(",\"extra\":").append(extraJson);
+        if(extraJson != null)
+            sb.append(",\"extra\":").append(extraJson);
         sb.append('}');
         // Example: Mqtt.publish("baritone/"+clientId+"/event", sb.toString());
         System.out.println("[Sleep] " + sb);

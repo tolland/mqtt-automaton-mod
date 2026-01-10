@@ -19,16 +19,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(DeathScreen.class)
-public abstract class DeathScreenMixin extends Screen
-{
-	private DeathScreenMixin(MqttCore client, Component text_1)
-	{
-		super(text_1);
-	}
-
-	@Inject(at = {@At(value = "TAIL")}, method = {"tick()V"})
-	private void onTick(CallbackInfo ci)
-	{
-		EventManager.fire(DeathListener.DeathEvent.INSTANCE);
-	}
+public abstract class DeathScreenMixin extends Screen {
+    private DeathScreenMixin(MqttCore client, Component text_1)
+    {
+        super(text_1);
+    }
+    
+    @Inject(at = {@At(value = "TAIL")}, method = {"tick()V"})
+    private void onTick(CallbackInfo ci)
+    {
+        EventManager.fire(DeathListener.DeathEvent.INSTANCE);
+    }
 }

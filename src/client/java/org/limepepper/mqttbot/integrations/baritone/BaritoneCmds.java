@@ -11,90 +11,107 @@ import net.minecraft.client.Minecraft;
  * issuing pathing commands, and other ancillary commands.
  *
  * @TODO ideally we would migrate to calling baritone API
- * directly, i.e. not via chat, in order to have
- * some more visibility into errors and edge cases.
+ *       directly, i.e. not via chat, in order to have
+ *       some more visibility into errors and edge cases.
  */
 public final class BaritoneCmds extends Action implements MqttMessageListener {
     public static final BaritoneCmds INSTANCE = new BaritoneCmds();
-
+    
     public static final Minecraft MC = Minecraft.getInstance();
-
-    private BaritoneCmds() {
-    }
-
+    
+    private BaritoneCmds()
+    {}
+    
     /**
      *
      *
      */
-    public static void init() {
-        EventManager.INSTANCE.add(MqttMessageListener.class, BaritoneCmds.INSTANCE);
-
+    public static void init()
+    {
+        EventManager.INSTANCE.add(MqttMessageListener.class,
+            BaritoneCmds.INSTANCE);
+        
     }
-
+    
     @Override
-    public void onMessageArrived(MqttMessageEvent mqttMessageEvent) {
-        if (MC.player == null) return;
+    public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
+    {
+        if(MC.player == null)
+            return;
         MessageData data = mqttMessageEvent.messageData;
         System.out.println("recieved message in baritone pathing");
-        if (!mqttMessageEvent.messageData.getService().equals("baritone")) return;
+        if(!mqttMessageEvent.messageData.getService().equals("baritone"))
+            return;
         System.out.println("message for baritone");
-        switch (mqttMessageEvent.messageData.getMethod()) {
+        switch(mqttMessageEvent.messageData.getMethod())
+        {
             case "goto":
-                handleGotoCommand(data);
-                break;
+            handleGotoCommand(data);
+            break;
             case "pause":
-                MC.getConnection().sendChat("#pause");
-                break;
+            MC.getConnection().sendChat("#pause");
+            break;
             case "resume":
-                MC.getConnection().sendChat("#resume");
-                break;
+            MC.getConnection().sendChat("#resume");
+            break;
             case "cancel":
-                MC.getConnection().sendChat("#cancel");
-                break;
+            MC.getConnection().sendChat("#cancel");
+            break;
             case "chat":
-                // Legacy support - will be removed soon
-                String cmd = data.getParams().get("message").getAsString();
-                System.out.println("Legacy chat cmd: " + cmd);
-                if (MC.player != null) {
-                    MC.getConnection().sendChat(cmd);
-                }
-                break;
+            // Legacy support - will be removed soon
+            String cmd = data.getParams().get("message").getAsString();
+            System.out.println("Legacy chat cmd: " + cmd);
+            if(MC.player != null)
+            {
+                MC.getConnection().sendChat(cmd);
+            }
+            break;
             default:
-                System.out.println("Unknown method in baritone: " + mqttMessageEvent.messageData.getMethod());
+            System.out.println("Unknown method in baritone: "
+                + mqttMessageEvent.messageData.getMethod());
         }
-
+        
     }
-
+    
     /**
      * Handle structured goto commands with x, y, z parameters
-     * This is a temporary shim - will be replaced with direct Baritone API calls
+     * This is a temporary shim - will be replaced with direct Baritone API
+     * calls
      */
-    private void handleGotoCommand(MessageData data) {
-        try {
-            if (data.getParams() == null) {
+    private void handleGotoCommand(MessageData data)
+    {
+        try
+        {
+            if(data.getParams() == null)
+            {
                 System.out.println("Error: goto command missing params");
                 return;
             }
             
             // Extract coordinates from params
             int x = data.getParams().get("x").getAsInt();
-            int y = data.getParams().get("y").getAsInt(); 
+            int y = data.getParams().get("y").getAsInt();
             int z = data.getParams().get("z").getAsInt();
             
             // Build the goto command string (temporary shim)
             String gotoCmd = String.format("#goto %d %d %d", x, y, z);
             System.out.println("Executing goto command: " + gotoCmd);
-
-            if (MC.player != null) {
+            
+            if(MC.player != null)
+            {
                 MC.getConnection().sendChat(gotoCmd);
-            } else {
-                System.out.println("Error: Player is null, cannot execute goto command");
+            }else
+            {
+                System.out.println(
+                    "Error: Player is null, cannot execute goto command");
             }
             
-        } catch (Exception e) {
-            System.out.println("Error handling goto command: " + e.getMessage());
+        }catch(Exception e)
+        {
+            System.out
+                .println("Error handling goto command: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
+    
 }

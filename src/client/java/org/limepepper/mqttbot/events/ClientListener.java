@@ -7,19 +7,22 @@ import java.util.ArrayList;
 
 public interface ClientListener extends Listener {
     public void onClientJoin();
-
+    
     public static class ClientJoinEvent extends Event<ClientListener> {
-
-        public static final ClientListener.ClientJoinEvent INSTANCE = new ClientListener.ClientJoinEvent();
-
+        
+        public static final ClientListener.ClientJoinEvent INSTANCE =
+            new ClientListener.ClientJoinEvent();
+        
         @Override
-        public void fire(ArrayList<ClientListener> listeners) {
-            for (ClientListener listener : listeners)
+        public void fire(ArrayList<ClientListener> listeners)
+        {
+            for(ClientListener listener : listeners)
                 listener.onClientJoin();
         }
-
+        
         @Override
-        public Class<ClientListener> getListenerType() {
+        public Class<ClientListener> getListenerType()
+        {
             return ClientListener.class;
         }
     }

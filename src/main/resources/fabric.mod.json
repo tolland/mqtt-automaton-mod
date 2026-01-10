@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "mqttbot",
   "version": "${version}",
-
   "name": "Mqtt automaton Mod",
   "description": "This mod bridges client chat to mqtt topic!",
   "authors": [
@@ -12,14 +11,12 @@
     "homepage": "https://fabricmc.net/",
     "sources": "https://github.com/tolland/mqtt-bot-mod"
   },
-
   "license": "CC0-1.0",
   "icon": "assets/modid/icon.png",
-
   "environment": "*",
   "entrypoints": {
     "main": [
-        "org.limepepper.mqttbot.ExampleMod"
+      "org.limepepper.mqttbot.ExampleMod"
     ],
     "client": [
       "org.limepepper.mqttbot.MqttBotClientModInitializer"

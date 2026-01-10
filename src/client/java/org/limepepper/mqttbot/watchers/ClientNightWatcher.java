@@ -9,40 +9,50 @@ import net.minecraft.world.level.Level;
 public final class ClientNightWatcher {
     private static final long DAY_TICKS = 24_000L;
     private static final long NIGHT_START = 13_000L;
-    private static final long NIGHT_END   = 23_000L;
+    private static final long NIGHT_END = 23_000L;
     private static boolean wasNight = false;
-
-    public static void init() {
+    
+    public static void init()
+    {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.level == null) return;
+            if(client.level == null)
+                return;
             Level w = client.level;
-
-            if (w.dimension() != Level.OVERWORLD) return;
-            if (!w.dimensionType().hasSkyLight() || w.dimensionType().hasFixedTime()) return;
-
+            
+            if(w.dimension() != Level.OVERWORLD)
+                return;
+            if(!w.dimensionType().hasSkyLight()
+                || w.dimensionType().hasFixedTime())
+                return;
+            
             long tod = w.getDayTime() % DAY_TICKS;
             boolean nightByTime = (tod >= NIGHT_START && tod < NIGHT_END);
-            boolean isNightish  = nightByTime || w.isThundering();
-
-            if (!wasNight && isNightish) {
+            boolean isNightish = nightByTime || w.isThundering();
+            
+            if(!wasNight && isNightish)
+            {
                 onNightStart(client);
-            } else if (wasNight && !isNightish) {
+            }else if(wasNight && !isNightish)
+            {
                 onDayStart(client);
             }
             wasNight = isNightish;
         });
     }
-
-    private static void onNightStart(Minecraft client) {
+    
+    private static void onNightStart(Minecraft client)
+    {
         // e.g., send MQTT, notify UI, start a route, etc.
         System.out.println("[ClientNightWatcher] Night started");
         EventManager.fire(DayNightListener.NightStartEvent.INSTANCE);
     }
-
-    private static void onDayStart(Minecraft client) {
+    
+    private static void onDayStart(Minecraft client)
+    {
         System.out.println("[ClientNightWatcher] Day started");
         EventManager.fire(DayNightListener.DayStartEvent.INSTANCE);
     }
-
-    private ClientNightWatcher() {}
+    
+    private ClientNightWatcher()
+    {}
 }

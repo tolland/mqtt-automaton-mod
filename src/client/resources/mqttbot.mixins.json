@@ -4,10 +4,10 @@
   "package": "org.limepepper.mqttbot.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-      "ExampleMixin",
-      "ClientPlayerEntityMixin",
-      "DeathScreenMixin",
-      "ChatHudMixin"
+    "ExampleMixin",
+    "ClientPlayerEntityMixin",
+    "DeathScreenMixin",
+    "ChatHudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

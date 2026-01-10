@@ -11,29 +11,32 @@ import java.util.ArrayList;
  * baritone or wurst implement this listener
  */
 public interface MqttMessageListener extends Listener {
-
+    
     void onMessageArrived(MqttMessageEvent mqttMessageEvent);
-
+    
     public static class MqttMessageEvent extends Event<MqttMessageListener> {
-
+        
         public String receiver;
         public MessageData messageData;
-
-        public MqttMessageEvent(String receiver, MessageData messageData) {
+        
+        public MqttMessageEvent(String receiver, MessageData messageData)
+        {
             this.receiver = receiver;
             this.messageData = messageData;
         }
-
+        
         @Override
-        public void fire(ArrayList<MqttMessageListener> listeners) {
-            for (MqttMessageListener listener : listeners)
+        public void fire(ArrayList<MqttMessageListener> listeners)
+        {
+            for(MqttMessageListener listener : listeners)
                 listener.onMessageArrived(this);
         }
-
+        
         @Override
-        public Class<MqttMessageListener> getListenerType() {
+        public Class<MqttMessageListener> getListenerType()
+        {
             return MqttMessageListener.class;
         }
     }
-
+    
 }

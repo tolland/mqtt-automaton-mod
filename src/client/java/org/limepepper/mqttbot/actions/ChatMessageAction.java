@@ -1,4 +1,4 @@
-package org.limepepper.mqttbot.integrations.chat;
+package org.limepepper.mqttbot.actions;
 
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
@@ -18,14 +18,10 @@ import java.util.regex.Pattern;
  * Handles chat messages from mods (Wurst, Baritone) and server messages.
  * Filters for completion messages and sends them as MQTT events.
  */
-public final class ChatMessageHandler extends Action
-    implements ChatMessageListener {
+public class ChatMessageAction extends Action implements ChatMessageListener {
 
     private static final MqttBotLogger LOGGER =
-        new MqttBotLogger(ChatMessageHandler.class);
-
-    public static final ChatMessageHandler INSTANCE = new ChatMessageHandler();
-    private static final Minecraft MC = Minecraft.getInstance();
+        new MqttBotLogger(ChatMessageAction.class);
 
     // Message patterns to watch for
     private static final List<MessagePattern> MESSAGE_PATTERNS =
@@ -62,20 +58,6 @@ public final class ChatMessageHandler extends Action
         MESSAGE_PATTERNS.add(new MessagePattern(
             Pattern.compile("Server is restarting"),
             "server", "restart_imminent"));
-    }
-
-    private ChatMessageHandler()
-    {}
-
-    /**
-     * Initialize the chat message handler
-     */
-    public static void init()
-    {
-        EventManager.INSTANCE.add(ChatMessageListener.class,
-            ChatMessageHandler.INSTANCE);
-        LOGGER.info("ChatMessageHandler initialized with {} message patterns",
-            MESSAGE_PATTERNS.size());
     }
 
     @Override
@@ -120,8 +102,9 @@ public final class ChatMessageHandler extends Action
     {
         try
         {
+            var mc = Minecraft.getInstance();
             String playerName =
-                (MC.player != null) ? MC.getUser().getName() : "unknown";
+                (mc.player != null) ? mc.getUser().getName() : "unknown";
 
             // Create structured response data
             JsonObject responseData = new JsonObject();

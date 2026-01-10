@@ -12,7 +12,6 @@ import org.limepepper.mqttbot.events.ClientListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.integrations.baritone.BaritoneCmds;
 import org.limepepper.mqttbot.integrations.baritone.BaritonePathing;
-import org.limepepper.mqttbot.integrations.chat.ChatMessageHandler;
 import org.limepepper.mqttbot.integrations.command.SendCommandHandler;
 import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
 import org.limepepper.mqttbot.integrations.sleep.SleepMessageHandler;
@@ -52,7 +51,6 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         WarpMessageHandler.init();
         SendCommandHandler.init();
         InventoryQueryHandler.init();
-        ChatMessageHandler.init();
         initialized = true;
         
         if(net.fabricmc.loader.api.FabricLoader.getInstance()

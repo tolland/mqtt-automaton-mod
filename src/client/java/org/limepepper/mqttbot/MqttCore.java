@@ -1,6 +1,7 @@
 package org.limepepper.mqttbot;
 
 import org.limepepper.mqttbot.actions.*;
+import org.limepepper.mqttbot.actions.ChatMessageAction;
 import org.limepepper.mqttbot.actions.ClientAction;
 import org.limepepper.mqttbot.actions.DamageAction;
 import org.limepepper.mqttbot.actions.DayNightAction;
@@ -8,6 +9,7 @@ import org.limepepper.mqttbot.actions.DeathAction;
 import org.limepepper.mqttbot.actions.InventoryAction;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.*;
+import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.ClientListener;
 import org.limepepper.mqttbot.events.DamageListener;
 import org.limepepper.mqttbot.events.DayNightListener;
@@ -34,6 +36,7 @@ public enum MqttCore
         eventManager.add(DamageListener.class, new DamageAction());
         eventManager.add(DayNightListener.class, new DayNightAction());
         eventManager.add(InventoryListener.class, new InventoryAction());
+        eventManager.add(ChatMessageListener.class, new ChatMessageAction());
         
         // PlayerJoinCallback.EVENT.register(new PlayerJoinHandler());
         

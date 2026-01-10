@@ -108,3 +108,16 @@ jar {
         zipTree(it)
     }
 }
+
+spotless {
+    java {
+        removeUnusedImports()
+        leadingSpacesToTabs()
+        trimTrailingWhitespace()
+        eclipse().configFile(file("codestyle/formatter.xml"))
+    }
+    json {
+        target("src/**/*.json", "src/**/*.mcmeta")
+        gson().indentWithSpaces(2).version("2.11.0")
+    }
+}

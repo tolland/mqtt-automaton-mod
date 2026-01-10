@@ -3,17 +3,20 @@ import sys
 import threading
 import time
 import uuid
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import yaml
 from paho.mqtt import client as mqtt
 
 from mqttbot import MessageData
-from mqttbot.scripts.behaviors.emergency_behavior import EmergencyBehavior
-from mqttbot.scripts.behaviors.farming_behavior import FarmingBehavior
-from mqttbot.scripts.behaviors.inventory_behavior import InventoryManagementBehavior
-from mqttbot.scripts.core.behavior_engine import BehaviorEngine
-from mqttbot.scripts.patterns.pattern_engine import PatternEngine
+from mqttbot.behaviors.emergency_behavior import EmergencyBehavior
+from mqttbot.behaviors.farming_behavior import FarmingBehavior
+from mqttbot.behaviors.inventory_behavior import InventoryManagementBehavior
+from mqttbot.core.behavior_engine import BehaviorEngine
+from mqttbot.patterns.pattern_engine import PatternEngine
+from mqttbot.state.blackboard import TypedBlackboard
+from mqttbot.state.inventory_module import InventoryModule
+from mqttbot.state.position_module import PositionModule
 
 """
 Modular bot client using the new behavior-based architecture
@@ -56,7 +59,12 @@ class ModularBotClient:
         self._setup_pattern_engine()
         self._setup_behaviors()
 
-    def _load_config(self, config_path: str) -> Dict[str, Any]:
+        # Now with type safety, you can do:
+        blackboard = TypedBlackboard()
+        blackboard.register_module("inventory", InventoryModule())
+        blackboard.register_module("position", PositionModule())
+
+    def _load_config(self, config_path: str) -> dict[str, Any]:
         """Load configuration from YAML file"""
         with open(config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
@@ -256,7 +264,7 @@ class ModularBotClient:
         print(f"[mqtt] → {self.topic_cmd}: {message}")
         self.mqtt_client.publish(self.topic_cmd, message, qos=0, retain=False)
 
-    def _get_current_position(self) -> Tuple[float, float, float]:
+    def _get_current_position(self) -> tuple[float, float, float]:
         """Get current bot position"""
         return self._last_position or (0.0, 0.0, 0.0)
 
@@ -321,7 +329,7 @@ class ModularBotClient:
 
         print(f"[bot] Bot stopped")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current bot status"""
         return {
             "running": self.running,

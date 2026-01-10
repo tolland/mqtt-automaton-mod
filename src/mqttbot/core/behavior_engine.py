@@ -6,7 +6,7 @@ import threading
 import time
 from typing import Dict, Any, List, Optional
 
-from mqttbot.scripts.behaviors.base_behavior import BaseBehavior, BehaviorState
+from mqttbot.behaviors.base_behavior import BaseBehavior, BehaviorState
 
 
 class BehaviorEngine:

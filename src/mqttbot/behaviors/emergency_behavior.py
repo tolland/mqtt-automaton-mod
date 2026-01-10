@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-from mqttbot.scripts.behaviors.base_behavior import BaseBehavior
+from mqttbot.behaviors.base_behavior import BaseBehavior
 
 """
 Emergency behavior for handling urgent situations like pillager attacks

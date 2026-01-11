@@ -15,14 +15,15 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 
 
 def build_settings(
-    config_path: str | Path,
-    broker: Optional[str] = None,
-    port: Optional[int] = None,
-    client_id: Optional[str] = None,
-    timeout: Optional[int] = None,
-    retries: Optional[int] = None,
-    retry_delay: Optional[int] = None,
-) -> tuple[Settings, list[dict[str, Any]], dict[str, list[str]]]:
+        config_path: str | Path,
+        broker: Optional[str] = None,
+        port: Optional[int] = None,
+        client_id: Optional[str] = None,
+        timeout: Optional[int] = None,
+        retries: Optional[int] = None,
+        retry_delay: Optional[int] = None,
+        log_level: Optional[str] = None,
+) -> Settings:
     """
     Build Settings object from configuration file and CLI arguments.
 
@@ -52,14 +53,9 @@ def build_settings(
         retry_delay_seconds=retry_delay or cfg.get("retry_delay_seconds", 3),
         cmd_tpl_name=cfg.get("command_template_name", "#wp goto {name}"),
         cmd_tpl_xyz=cfg.get("command_template_xyz", "#goto {x} {y} {z}"),
+        log_level=log_level or cfg.get("log_level", "INFO"),
         services=cfg.get("services", {}),
         events=cfg.get("events", {}),
     )
 
-    waypoints = cfg.get("waypoints") or []
-    patterns = cfg.get("patterns") or {}
-
-    if not waypoints:
-        raise ValueError("Configuration YAML must contain 'waypoints'")
-
-    return settings, waypoints, patterns
+    return settings

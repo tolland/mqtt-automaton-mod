@@ -1,9 +1,11 @@
 ---
 alwaysApply: true
 ---
+
+The project is using a uv managed virtual environment for python development.
+
 A goal of this project is to create a simple minecraft mqtt bot plugin using fabric. The bot is controlled by mqtt messages, and sends status updates back.
 
 The client that controls the bot is in python. The virtual env is in uv, so e can use `uv run python ./some_script.py` to avoid having to source the activate script.
 
 We favour small incremental, well thought out changes, as testing and debugging minecraft client is slow.
-

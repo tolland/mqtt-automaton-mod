@@ -63,3 +63,62 @@ mosquitto_pub \
 ```
 
 ![mqtt common example](docs/images/command_time_set_midnight.png "Set the time to midnight using a command")
+
+```mermaid
+
+sequenceDiagram
+    participant Main as Main Loop
+    participant Sched as Scheduler
+    participant CurThread as Current Thread
+    participant ReadyQ as Ready Queue
+    participant SuspQ as Suspended Stack
+    participant Task as Current Task
+
+    Main->>Sched: step()
+    
+    alt Should Preempt?
+        Sched->>ReadyQ: peek highest priority
+        alt Higher priority exists
+            Sched->>CurThread: suspend()
+            CurThread->>Task: suspend()
+            Task-->>CurThread: TaskContext
+            CurThread-->>Sched: TaskContext
+            Sched->>SuspQ: push(CurThread)
+            Sched->>ReadyQ: pop()
+            Sched->>CurThread: (new) start() or resume()
+        end
+    end
+    
+    alt Current thread exists
+        Sched->>CurThread: step()
+        CurThread->>Task: step()
+        Task-->>CurThread: bool (completed?)
+        
+        alt Task completed
+            CurThread->>Task: exit()
+            CurThread->>CurThread: _advance_to_next_task()
+            
+            alt More tasks in queue
+                CurThread->>Task: (new) start()
+            else Queue empty
+                CurThread-->>Sched: return True
+                Sched->>SuspQ: peek()
+                alt Suspended threads exist
+                    Sched->>SuspQ: pop()
+                    Sched->>CurThread: (resumed) resume(ctx)
+                    CurThread->>Task: resume(ctx)
+                else No suspended threads
+                    Sched->>CurThread: null (idle)
+                end
+            end
+        else Task continues
+            CurThread-->>Sched: return False
+        end
+    else No current thread
+        Sched->>ReadyQ: pop()
+        Sched->>CurThread: (new) start()
+    end
+    
+    Sched-->>Main: done
+
+```

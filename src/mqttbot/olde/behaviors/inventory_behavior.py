@@ -7,7 +7,7 @@ import uuid
 from typing import Any, Dict
 
 from mqttbot import MessageData
-from mqttbot.behaviors.base_behavior import BaseBehavior, BehaviorState
+from mqttbot.behaviors.base_behavior import BaseBehavior
 
 
 class InventoryManagementBehavior(BaseBehavior):

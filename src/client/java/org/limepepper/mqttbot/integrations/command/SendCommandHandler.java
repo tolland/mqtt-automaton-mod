@@ -1,10 +1,10 @@
 package org.limepepper.mqttbot.integrations.command;
 
+import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.Minecraft;
 
 /**
  * handlers a request over mqtt for the client to send a command to the server

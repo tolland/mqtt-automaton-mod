@@ -1,10 +1,10 @@
 package org.limepepper.mqttbot.watchers;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import org.limepepper.mqttbot.event.EventManager;
-import org.limepepper.mqttbot.events.DayNightListener;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
+import org.limepepper.mqttbot.event.EventManager;
+import org.limepepper.mqttbot.events.DayNightListener;
 
 public final class ClientNightWatcher {
     private static final long DAY_TICKS = 24_000L;

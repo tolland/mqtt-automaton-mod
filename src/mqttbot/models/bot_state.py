@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 
 # Blackboard: state container with event notifications
 @dataclass

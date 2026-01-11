@@ -105,41 +105,6 @@ class PatternEngine:
             # Assume seconds if no unit specified
             return float(period_str)
 
-    def resolve_coordinates(
-            self, step: str, base_xyz: Tuple[float, float, float]
-    ) -> Tuple[int, int, int]:
-        """
-        Parse a pattern step "a b c" → absolute target from current (x,y,z)
-
-        Args:
-            step: Coordinate string like "~ ~ ~2" or "100 64 -200"
-            base_xyz: Base coordinates to resolve relative to
-
-        Returns:
-            Tuple of absolute coordinates (x, y, z)
-        """
-        tok = step.split()
-        if len(tok) != 3:
-            raise ValueError(f"pattern step must have 3 tokens: {step}")
-        bx, by, bz = base_xyz
-
-        def resolve_axis(t: str, base: float) -> float:
-            t = t.strip()
-            if t == "~" or t == "~0" or t == "0":
-                return base
-            if t.startswith("~"):
-                # relative delta (may be like "~-5" or "~10")
-                delta = float(t[1:]) if t[1:] else 0.0
-                return base + delta
-            # else absolute world coord
-            return float(t)
-
-        ax = resolve_axis(tok[0], bx)
-        ay = resolve_axis(tok[1], by)
-        az = resolve_axis(tok[2], bz)
-        # use block coords (Baritone #goto typically takes ints)
-        return int(round(ax)), int(round(ay)), int(round(az))
-
     def execute_dwell(self, dwell_config: Dict[str, Any]) -> bool:
         """Execute a dwell/pause step"""
         period_str = dwell_config.get("period", "1s")
@@ -153,35 +118,7 @@ class PatternEngine:
             print(f"[pattern] Error parsing dwell period '{period_str}': {e}")
             return False
 
-    def execute_movement(self, coordinates: Tuple[int, int, int]) -> bool:
-        """Execute a movement to the given coordinates"""
-        x, y, z = coordinates
 
-        # Clear arrival event before sending command
-        self.arrival_event.clear()
-
-        # Create structured JSON command for movement
-        message_data = {
-            "service": "baritone",
-            "method": "goto",
-            "correlationId": self.correlation_id,
-            "params": {"x": x, "y": y, "z": z},
-        }
-
-        cmd = str(message_data).replace("'", '"')  # Simple JSON conversion
-        print(f"[pattern] Movement: goto {x} {y} {z}")
-        self.message_sender(cmd)
-
-        # Wait for arrival
-        print(f"[pattern] Waiting for arrival at {x} {y} {z}...")
-        if not self.wait_for_arrival():
-            print(f"[pattern] Timeout waiting for arrival at {x} {y} {z}")
-            return False
-
-        print(f"[pattern] Arrived at {x} {y} {z}")
-        # Update current position
-        self.current_position = (float(x), float(y), float(z))
-        return True
 
     def execute_action(self, action_config: Dict[str, Any]) -> bool:
         """Execute an action step"""

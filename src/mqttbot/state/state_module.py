@@ -1,7 +1,5 @@
-from dataclasses import dataclass, field
-from typing import TypeVar, Generic, Callable, Any, Protocol
 from abc import ABC, abstractmethod
-import json
+from typing import TypeVar, Generic, Any
 
 # Core primitives
 T = TypeVar('T')
@@ -16,4 +14,8 @@ class StateModule(ABC, Generic[T]):
 
     @abstractmethod
     def get_state(self) -> T:
+        pass
+
+    @abstractmethod
+    def reset_state(self) -> None:
         pass

@@ -3,9 +3,9 @@ package org.limepepper.mqttbot.watchers;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
 

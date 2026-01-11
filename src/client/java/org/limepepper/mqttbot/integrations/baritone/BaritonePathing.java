@@ -8,25 +8,34 @@ import baritone.api.event.listener.AbstractGameEventListener;
 import baritone.api.event.listener.IEventBus;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.utils.BetterBlockPos;
+import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import org.limepepper.mqttbot.event.EventManager;
-import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import org.limepepper.mqttbot.action.Action;
+import org.limepepper.mqttbot.event.EventManager;
+import org.limepepper.mqttbot.events.MqttMessageListener;
+import org.limepepper.mqttbot.events.MqttReplyListener;
+import org.limepepper.mqttbot.mqtt.MessageData;
 
 import java.util.Objects;
 import java.util.UUID;
-import com.google.gson.JsonObject;
 
 /**
  *
- * This class is designed to handle integration with Baritone's pathing
- * events in order to notify the client of state changes and completion
- * states such as goal reached and failure.
+ * This class handles both Baritone command execution and pathing event
+ * tracking.
+ * It maintains correlation between goto commands and their corresponding
+ * pathing events
+ * by storing requestId/correlationId when commands are received and including
+ * them
+ * in all pathing event responses.
  *
  */
-public final class BaritonePathing {
+public final class BaritonePathing extends Action
+    implements MqttMessageListener {
+    public static final BaritonePathing INSTANCE = new BaritonePathing();
+    public static final Minecraft MC = Minecraft.getInstance();
     
     private static boolean pathActive = false;
     private static boolean announced = false;
@@ -39,13 +48,24 @@ public final class BaritonePathing {
     private static IBaritone baritone = null;
     private static IPathingBehavior pathing = null;
     
+    // Track correlation between goto commands and pathing events
+    private static String activeRequestId = null;
+    private static String activeCorrelationId = null;
+    private static String activeIdentity = null;
+    
+    private BaritonePathing()
+    {}
+    
     /**
-     *
-     *
+     * Initialize both command handling and pathing event tracking
      */
     public static void init()
     {
+        // Register for MQTT command messages
+        EventManager.INSTANCE.add(MqttMessageListener.class,
+            BaritonePathing.INSTANCE);
         
+        // Initialize pathing event tracking
         baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
         pathing = baritone.getPathingBehavior();
         
@@ -64,22 +84,17 @@ public final class BaritonePathing {
                         pathActive = true;
                         announced = false;
                         currentGoal = pathing.getGoal();
-                        // mqtt.publish("baritone/event",
-                        // payload("CALC_FINISHED_NOW_EXECUTING",
-                        // pathing.getGoal(), null));
                         mqttSend("CALC_FINISHED_NOW_EXECUTING");
                     }
                     // this never seems to fire
                     case AT_GOAL ->
                     {
-                        // publish goal reached
-                        // mqtt.publish("baritone/event", payload("AT_GOAL",
-                        // pathing.getGoal(), null));
-                        
                         mqttSend("AT_GOAL");
                         pathActive = false;
                         currentGoal = null;
                         announced = true; // prevent re-announcing
+                        // Clear correlation tracking when goal is reached
+                        clearActiveCorrelation();
                     }
                     case CALC_FAILED ->
                     {
@@ -119,6 +134,8 @@ public final class BaritonePathing {
                         if(pathActive)
                         {
                             pathActive = false;
+                            // Clear correlation tracking when canceled
+                            clearActiveCorrelation();
                         }
                     }
                     default ->
@@ -153,6 +170,8 @@ public final class BaritonePathing {
                 // optionally "reset" so a new goto can trigger again
                 pathActive = false;
                 currentGoal = null;
+                // Clear correlation tracking when goal is reached
+                clearActiveCorrelation();
             }
             
             if(++posTick >= POS_PERIOD_TICKS)
@@ -181,6 +200,109 @@ public final class BaritonePathing {
         
     }
     
+    // --- Command handling (from BaritoneCmds) ---
+    
+    @Override
+    public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
+    {
+        if(MC.player == null)
+            return;
+        MessageData data = mqttMessageEvent.messageData;
+        System.out.println("received message in baritone pathing");
+        if(!mqttMessageEvent.messageData.getService().equals("baritone"))
+            return;
+        System.out.println("message for baritone");
+        switch(mqttMessageEvent.messageData.getMethod())
+        {
+            case "goto":
+            handleGotoCommand(data);
+            break;
+            case "pause":
+            MC.getConnection().sendChat("#pause");
+            break;
+            case "resume":
+            MC.getConnection().sendChat("#resume");
+            break;
+            case "cancel":
+            MC.getConnection().sendChat("#cancel");
+            // Clear correlation when explicitly canceled
+            clearActiveCorrelation();
+            break;
+            case "chat":
+            // Legacy support - will be removed soon
+            String cmd = data.getParams().get("message").getAsString();
+            System.out.println("Legacy chat cmd: " + cmd);
+            if(MC.player != null)
+            {
+                MC.getConnection().sendChat(cmd);
+            }
+            break;
+            default:
+            System.out.println("Unknown method in baritone: "
+                + mqttMessageEvent.messageData.getMethod());
+        }
+    }
+    
+    /**
+     * Handle structured goto commands with x, y, z parameters
+     * This is a temporary shim - will be replaced with direct Baritone API
+     * calls
+     */
+    private void handleGotoCommand(MessageData data)
+    {
+        try
+        {
+            if(data.getParams() == null)
+            {
+                System.out.println("Error: goto command missing params");
+                return;
+            }
+            
+            // Store correlation information for this goto command
+            activeRequestId = data.getRequestId();
+            activeCorrelationId = data.getCorrelationId();
+            activeIdentity = data.getIdentity();
+            
+            // Extract coordinates from params
+            int x = data.getParams().get("x").getAsInt();
+            int y = data.getParams().get("y").getAsInt();
+            int z = data.getParams().get("z").getAsInt();
+            
+            // Build the goto command string (temporary shim)
+            String gotoCmd = String.format("#goto %d %d %d", x, y, z);
+            System.out.println("Executing goto command: " + gotoCmd);
+            System.out.println("Tracking correlation: requestId="
+                + activeRequestId + ", correlationId=" + activeCorrelationId);
+            
+            if(MC.player != null)
+            {
+                MC.getConnection().sendChat(gotoCmd);
+            }else
+            {
+                System.out.println(
+                    "Error: Player is null, cannot execute goto command");
+                clearActiveCorrelation();
+            }
+            
+        }catch(Exception e)
+        {
+            System.out
+                .println("Error handling goto command: " + e.getMessage());
+            e.printStackTrace();
+            clearActiveCorrelation();
+        }
+    }
+    
+    /**
+     * Clear the active correlation tracking
+     */
+    private static void clearActiveCorrelation()
+    {
+        activeRequestId = null;
+        activeCorrelationId = null;
+        activeIdentity = null;
+    }
+    
     // --- helpers ---
     
     private static boolean mqttSend(String payload)
@@ -205,11 +327,16 @@ public final class BaritonePathing {
             response.addProperty("z", z);
             response.addProperty("player", mc.getUser().getName());
             
-            EventManager.fire(
-                new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(),
-                    new MessageData("baritone", "goto",
-                        UUID.randomUUID().toString(), null, null, response,
-                        "mqttbot", null)));
+            // Use stored correlation info if available, otherwise generate new
+            String requestId = (activeRequestId != null) ? activeRequestId
+                : UUID.randomUUID().toString();
+            String correlationId = activeCorrelationId;
+            String identity =
+                (activeIdentity != null) ? activeIdentity : "mqttbot";
+            
+            EventManager.fire(new MqttReplyListener.MqttReplyEvent(
+                mc.getUser().getName(), new MessageData("baritone", "goto",
+                    requestId, correlationId, null, response, identity, null)));
             
         }catch(Exception e)
         {
@@ -232,11 +359,16 @@ public final class BaritonePathing {
             response.addProperty("reason", reason);
             response.addProperty("player", mc.getUser().getName());
             
-            EventManager.fire(
-                new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(),
-                    new MessageData("baritone", "goto",
-                        UUID.randomUUID().toString(), null, null, response,
-                        "mqttbot", null)));
+            // Use stored correlation info if available, otherwise generate new
+            String requestId = (activeRequestId != null) ? activeRequestId
+                : UUID.randomUUID().toString();
+            String correlationId = activeCorrelationId;
+            String identity =
+                (activeIdentity != null) ? activeIdentity : "mqttbot";
+            
+            EventManager.fire(new MqttReplyListener.MqttReplyEvent(
+                mc.getUser().getName(), new MessageData("baritone", "goto",
+                    requestId, correlationId, null, response, identity, null)));
             
         }catch(Exception e)
         {
@@ -254,14 +386,18 @@ public final class BaritonePathing {
             JsonObject responseData =
                 createStructuredResponse(payload, pathing.getGoal(), detail);
             
+            // Use stored correlation info if available, otherwise generate new
+            String requestId = (activeRequestId != null) ? activeRequestId
+                : UUID.randomUUID().toString();
+            String correlationId = activeCorrelationId;
+            String identity =
+                (activeIdentity != null) ? activeIdentity : "mqttbot";
+            
             EventManager.fire(
                 new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(),
-                    new MessageData("baritone", "pathing",
-                        UUID.randomUUID().toString(), null, null, responseData,
-                        "mqttbot", null) // No longer using message field for
-                                         // structured data
-                ));
-                
+                    new MessageData("baritone", "pathing", requestId,
+                        correlationId, null, responseData, identity, null)));
+            
         }catch(Exception e)
         {
             e.printStackTrace();
@@ -349,7 +485,4 @@ public final class BaritonePathing {
         { /* fall through */ }
         return new GoalData(null, null, null, kind);
     }
-    
-    private BaritonePathing()
-    {}
 }

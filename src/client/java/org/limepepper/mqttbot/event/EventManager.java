@@ -1,9 +1,9 @@
 package org.limepepper.mqttbot.event;
 
-import org.limepepper.mqttbot.util.MqttBotLogger;
-import net.minecraft.ReportedException;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.ArrayList;
 import java.util.Arrays;

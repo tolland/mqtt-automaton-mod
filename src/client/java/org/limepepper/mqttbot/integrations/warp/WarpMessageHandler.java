@@ -1,11 +1,11 @@
 package org.limepepper.mqttbot.integrations.warp;
 
+import com.google.gson.JsonObject;
+import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.Minecraft;
-import com.google.gson.JsonObject;
 
 /**
  * Message handler for warp/teleport commands

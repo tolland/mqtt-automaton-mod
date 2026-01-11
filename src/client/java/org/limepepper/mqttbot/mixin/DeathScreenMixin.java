@@ -7,12 +7,12 @@
  */
 package org.limepepper.mqttbot.mixin;
 
-import org.limepepper.mqttbot.MqttCore;
-import org.limepepper.mqttbot.event.EventManager;
-import org.limepepper.mqttbot.events.DeathListener;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.limepepper.mqttbot.MqttCore;
+import org.limepepper.mqttbot.event.EventManager;
+import org.limepepper.mqttbot.events.DeathListener;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

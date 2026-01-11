@@ -1,10 +1,10 @@
-
-from dataclasses import dataclass, field
-
-from mqttbot.state.entity_state import EntityState
+from dataclasses import dataclass
 
 
 @dataclass
 class PositionState:
-    player: EntityState
-    nearby_entities: dict[str, EntityState] = field(default_factory=dict)
+    x: float
+    y: float
+    z: float
+    yaw: float = 0.0
+    pitch: float = 0.0

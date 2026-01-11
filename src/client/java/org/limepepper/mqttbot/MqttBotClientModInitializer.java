@@ -10,7 +10,6 @@ import net.minecraft.network.chat.Component;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ClientListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.integrations.baritone.BaritoneCmds;
 import org.limepepper.mqttbot.integrations.baritone.BaritonePathing;
 import org.limepepper.mqttbot.integrations.command.SendCommandHandler;
 import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
@@ -59,7 +58,6 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
             LOGGER.info(
                 "Baritone mod detected, initializing Baritone integration");
             BaritonePathing.init();
-            BaritoneCmds.init();
         }else
         {
             LOGGER

@@ -1,10 +1,10 @@
 package org.limepepper.mqttbot.integrations.sleep;
 
+import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import net.minecraft.client.Minecraft;
 
 public final class SleepMessageHandler extends Action
     implements MqttMessageListener {
@@ -34,17 +34,16 @@ public final class SleepMessageHandler extends Action
         if(!mqttMessageEvent.messageData.getService().equals("sleep"))
             return;
         System.out.println("message for sleep service");
-        switch(mqttMessageEvent.messageData.getMethod())
+        if(mqttMessageEvent.messageData.getMethod().equals("start"))
         {
-            case "start":
             if(MC.player != null)
             {
                 // Pass the request ID from the incoming message
                 String requestId = data.getRequestId();
                 SleepUtil.start(requestId, 3);
             }
-            break;
-            default:
+        }else
+        {
             System.out.println("unknownn method in baritone");
         }
     }

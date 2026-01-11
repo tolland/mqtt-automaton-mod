@@ -18,5 +18,6 @@ class Settings:
     retry_delay_seconds: int
     cmd_tpl_name: str
     cmd_tpl_xyz: str
+    log_level: str = "INFO"
     services: dict[str, Any] = field(default_factory=dict)
     events: dict[str, Any] = field(default_factory=dict)

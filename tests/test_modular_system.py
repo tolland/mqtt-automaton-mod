@@ -2,14 +2,12 @@
 """
 Test script for the modular bot system without MQTT dependency
 """
-import os
 import sys
 
-
-from behaviors.farming_behavior import FarmingBehavior
 from behaviors.emergency_behavior import EmergencyBehavior
-from patterns.pattern_engine import PatternEngine
+from behaviors.farming_behavior import FarmingBehavior
 from core.behavior_engine import BehaviorEngine
+from patterns.pattern_engine import PatternEngine
 
 
 class MockMessageSender:

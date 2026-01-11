@@ -8,7 +8,7 @@ from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
 
-from mqttbot.config import build_settings
+from mqttbot.config.config import build_settings
 from mqttbot.modular_bot_client import ModularBotClient
 
 app = typer.Typer(

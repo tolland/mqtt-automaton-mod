@@ -40,7 +40,7 @@ public class DayNightAction extends Action implements DayNightListener {
             responseData.addProperty("timestamp", System.currentTimeMillis());
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("events", "time_change",
+                new MessageData("day_night", eventType,
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
             

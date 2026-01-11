@@ -11,23 +11,40 @@ public class MessageData {
     private static final Gson gson = new Gson();
     
     private String service; // Target service/module (e.g., "baritone",
-                            // "inventory", "chat")
+    // "inventory", "chat")
     private String method; // Method to call on the service (e.g., "goto",
-                           // "mine", "say")
+    // "mine", "say")
     private String requestId; // Unique request identifier
     private String correlationId; // Correlation ID for request/response
-                                  // tracking
+    // tracking
     private JsonObject params; // Arbitrary parameters for the method (requests)
     private JsonObject response; // Structured response data (replies)
     private String identity; // Source of the message (e.g., "python_client",
-                             // "web_dashboard")
+    // "web_dashboard")
     private String message; // Free text field for debug/informational content
     
     // Default constructor
     public MessageData()
     {}
     
-    // Full constructor
+    /**
+     * MessageData is JsonObject representing an MQTT-bot mqtt message
+     *
+     * @param service
+     *            A string identifying the target service
+     * @param method
+     *            A string identifying the method to call
+     * @param requestId
+     *            A uuid string identifying this request
+     * @param correlationId
+     *            A uuid identifier conserved over groups of requests
+     * @param params
+     *            A JsonObject containing method parameters outgoing
+     * @param identity
+     *            A string identifying the source of the message
+     * @param message
+     *            A human readable message for logging/debugging
+     */
     public MessageData(String service, String method, String requestId,
         String correlationId, JsonObject params, JsonObject response,
         String identity, String message)
@@ -42,7 +59,24 @@ public class MessageData {
         this.message = message;
     }
     
-    // Convenience constructor for requests (no response)
+    /**
+     * Convenience constructor for requests (no response)
+     *
+     * @param service
+     *            A string identifying the target service
+     * @param method
+     *            A string identifying the method to call
+     * @param requestId
+     *            A uuid string identifying this request
+     * @param correlationId
+     *            A uuid identifier conserved over groups of requests
+     * @param params
+     *            A JsonObject containing method parameters outgoing
+     * @param identity
+     *            A string identifying the source of the message
+     * @param message
+     *            A human readable message for logging/debugging
+     */
     public MessageData(String service, String method, String requestId,
         String correlationId, JsonObject params, String identity,
         String message)

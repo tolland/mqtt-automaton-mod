@@ -54,7 +54,7 @@ class TypedBlackboard:
     def emit_event(self, module_name: str, event: dict[str, Any]) -> None:
         """Route event to module, notify subscribers"""
         if module_name not in self._modules:
-            raise ValueError(f"Unknown module: {module_name}")
+            return
 
         module = self._modules[module_name]
         old_facts = copy.deepcopy(module.get_state())

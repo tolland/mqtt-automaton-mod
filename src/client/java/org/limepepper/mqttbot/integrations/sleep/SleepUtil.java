@@ -40,6 +40,8 @@ public final class SleepUtil {
     // --- state ---
     private static boolean enabled = false;
     private static String requestId = null;
+    private static String correlationId = null;
+    private static String identity = null;
     private static int scanRadius = DEFAULT_RADIUS;
     
     private static long lastTryGameTime = -1;
@@ -80,9 +82,20 @@ public final class SleepUtil {
     // "requestId":"...", "radius":N}
     public static void start(String reqId, @Nullable Integer radiusOverride)
     {
+        start(reqId, null, null, radiusOverride);
+    }
+    
+    /**
+     * Start sleep with full correlation tracking
+     */
+    public static void start(String reqId, @Nullable String corrId,
+        @Nullable String ident, @Nullable Integer radiusOverride)
+    {
         Minecraft client = Minecraft.getInstance();
         enabled = true;
         requestId = reqId;
+        correlationId = corrId;
+        identity = (ident != null) ? ident : "mqttbot";
         scanRadius = (radiusOverride != null && radiusOverride > 0)
             ? radiusOverride : DEFAULT_RADIUS;
         bedPos = null;
@@ -99,9 +112,19 @@ public final class SleepUtil {
     {
         enabled = false;
         emit("sleep_stopped", reason);
-        requestId = null;
+        clearCorrelation();
         bedPos = null;
         phase = Phase.IDLE;
+    }
+    
+    /**
+     * Clear correlation tracking
+     */
+    private static void clearCorrelation()
+    {
+        requestId = null;
+        correlationId = null;
+        identity = null;
     }
     
     private static void tick(Minecraft client)
@@ -245,7 +268,7 @@ public final class SleepUtil {
         sendStandardResponse("success", "Sleep completed successfully", null);
         enabled = false;
         phase = Phase.DONE;
-        requestId = null;
+        clearCorrelation();
         bedPos = null;
     }
     
@@ -254,7 +277,7 @@ public final class SleepUtil {
         sendStandardResponse("failure", "Sleep failed", reason);
         enabled = false;
         phase = Phase.FAILED;
-        requestId = null;
+        clearCorrelation();
         bedPos = null;
     }
     
@@ -349,12 +372,15 @@ public final class SleepUtil {
                 response.addProperty("bedZ", bedPos.getZ());
             }
             
+            // Use stored correlation info if available
+            String reqId = (requestId != null) ? requestId
+                : java.util.UUID.randomUUID().toString();
+            String corrId = correlationId;
+            String ident = (identity != null) ? identity : "mqttbot";
+            
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("sleep", "start", requestId, // Use the original
-                                                             // request ID
-                                                             // from the
-                                                             // command
-                    null, null, response, "mqttbot", null)));
+                new MessageData("sleep", "start", reqId, corrId, null, response,
+                    ident, null)));
             
         }catch(Exception e)
         {

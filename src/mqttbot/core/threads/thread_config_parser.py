@@ -1,0 +1,88 @@
+from typing import Any
+
+from rich import inspect
+
+from mqttbot.core.service_config import ServiceConfig
+from mqttbot.core.task.task import TaskPriority
+from mqttbot.core.threads.thread_config import ThreadConfig
+from mqttbot.core.waypoint import Waypoint
+
+
+class ThreadConfigParser:
+    """Parse YAML config and build thread configs"""
+
+    @staticmethod
+    def from_yaml(yaml_data: dict[str, Any]) -> list[ThreadConfig]:
+        """
+        Parse YAML config and return list of ThreadConfig objects.
+        ```
+        """
+
+        print(f"{yaml_data=}")
+
+        threads = []
+        threads_data = yaml_data.get("threads", {})
+        patterns = yaml_data.get("patterns", {})
+
+        for thread_id, thread_data in threads_data.items():
+            # Parse priority
+            priority_str = thread_data.get("priority", "NORMAL").upper()
+            priority = TaskPriority[priority_str]
+
+            # Parse waypoints
+            waypoints = []
+            for wp_data in thread_data.get("waypoints", []):
+                if isinstance(wp_data, dict):
+                    if "type" in wp_data and wp_data["type"] == "dwell":
+                        # Skip dwell entries (handle separately)
+                        continue
+
+                    waypoint = Waypoint(
+                        x=wp_data["x"],
+                        y=wp_data["y"],
+                        z=wp_data["z"],
+                        patterns=wp_data.get("patterns", []),
+                        dwell_seconds=ThreadConfigParser._parse_dwell(wp_data.get("dwell", 0))
+                    )
+                    waypoints.append(waypoint)
+
+            # Parse services
+            services = {}
+            for service_name, service_data in thread_data.get("services", {}).items():
+                service_config = ServiceConfig(
+                    name=service_name,
+                    timeout=service_data.get("timeout", 60),
+                    metadata=service_data.get("metadata", {})
+                )
+                services[service_name] = service_config
+
+            # Build thread config
+            thread_config = ThreadConfig(
+                thread_id=thread_id,
+                priority=priority,
+                waypoints=waypoints,
+                services=services,
+                on_suspend_tasks=thread_data.get("on_suspend", []),
+                on_resume_tasks=thread_data.get("on_resume", []),
+                metadata=thread_data.get("metadata", {})
+            )
+            threads.append(thread_config)
+
+        return threads
+
+    @staticmethod
+    def _parse_dwell(dwell_spec: Any) -> float:
+        """Parse dwell period (e.g., '5s', '500ms', or float)"""
+        if isinstance(dwell_spec, (int, float)):
+            return float(dwell_spec)
+
+        if isinstance(dwell_spec, str):
+            dwell_spec = dwell_spec.strip().lower()
+            if dwell_spec.endswith("ms"):
+                return float(dwell_spec[:-2]) / 1000.0
+            elif dwell_spec.endswith("s"):
+                return float(dwell_spec[:-1])
+            else:
+                return float(dwell_spec)
+
+        return 0.0

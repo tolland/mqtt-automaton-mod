@@ -22,232 +22,98 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- *
- * This class handles both Baritone command execution and pathing event
- * tracking.
- * It maintains correlation between goto commands and their corresponding
- * pathing events
- * by storing requestId/correlationId when commands are received and including
- * them
- * in all pathing event responses.
- *
+ * Handles Baritone command execution and pathing event tracking.
+ * Maintains correlation between goto commands and their corresponding pathing
+ * events.
  */
 public final class BaritonePathing extends Action
     implements MqttMessageListener {
+    
     public static final BaritonePathing INSTANCE = new BaritonePathing();
     public static final Minecraft MC = Minecraft.getInstance();
     
-    private static boolean pathActive = false;
-    private static boolean announced = false;
+    // Constants
+    private static final int POSITION_UPDATE_PERIOD_TICKS = 100;
+    private static final double CLOSE_ENOUGH_HEURISTIC = 4.0;
+    private static final String SERVICE_NAME = "baritone";
+    private static final String DEFAULT_IDENTITY = "mqttbot";
     
-    private static Goal oldGoal = null;
-    private static Goal currentGoal = null;
-    private static final int POS_PERIOD_TICKS = 100;
-    private static int posTick = 0;
-    private static BlockPos lastSentPos = null;
-    private static IBaritone baritone = null;
-    private static IPathingBehavior pathing = null;
+    // Baritone API references
+    private static IBaritone baritone;
+    private static IPathingBehavior pathing;
     
-    // Track correlation between goto commands and pathing events
-    private static String activeRequestId = null;
-    private static String activeCorrelationId = null;
-    private static String activeIdentity = null;
+    // State management
+    private static final PathingState pathingState = new PathingState();
+    private static final CorrelationTracker correlationTracker =
+        new CorrelationTracker();
+    private static final ResponseBuilder responseBuilder =
+        new ResponseBuilder();
     
     private BaritonePathing()
     {}
     
     /**
-     * Initialize both command handling and pathing event tracking
+     * Initialize command handling and pathing event tracking
      */
     public static void init()
     {
         // Register for MQTT command messages
-        EventManager.INSTANCE.add(MqttMessageListener.class,
-            BaritonePathing.INSTANCE);
+        EventManager.INSTANCE.add(MqttMessageListener.class, INSTANCE);
         
-        // Initialize pathing event tracking
+        // Initialize Baritone API
         baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
         pathing = baritone.getPathingBehavior();
         
-        IEventBus bus = BaritoneAPI.getProvider().getPrimaryBaritone()
-            .getGameEventHandler();
-        
+        // Register pathing event listener
+        IEventBus bus = baritone.getGameEventHandler();
         bus.registerEventListener(new AbstractGameEventListener()
         {
             @Override
-            public void onPathEvent(PathEvent e)
+            public void onPathEvent(PathEvent event)
             {
-                switch(e)
-                {
-                    case CALC_FINISHED_NOW_EXECUTING ->
-                    {
-                        pathActive = true;
-                        announced = false;
-                        currentGoal = pathing.getGoal();
-                        mqttSend("CALC_FINISHED_NOW_EXECUTING");
-                    }
-                    // this never seems to fire
-                    case AT_GOAL ->
-                    {
-                        mqttSend("AT_GOAL");
-                        pathActive = false;
-                        currentGoal = null;
-                        announced = true; // prevent re-announcing
-                        // Clear correlation tracking when goal is reached
-                        clearActiveCorrelation();
-                    }
-                    case CALC_FAILED ->
-                    {
-                        Goal failedGoal = pathing.getGoal();
-                        double heuristic = (failedGoal != null)
-                            ? failedGoal.heuristic(
-                                baritone.getPlayerContext().playerFeet())
-                            : Double.NaN;
-                        System.out.println("Goal pos heuristic: " + heuristic);
-                        // we’ll still allow NEXT_* to try; don’t clear state
-                        // yet.
-                        mqttSend("CALC_FAILED", "initial");
-                        if(heuristic < 4.0 && !announced)
-                        {
-                            // if we're close to the goal, announce it
-                            BetterBlockPos feet =
-                                baritone.getPlayerContext().playerFeet();
-                            mqttSendSuccess("Goal reached (close enough)",
-                                feet.x, feet.y, feet.z);
-                            announced = true;
-                        }else
-                        {
-                            // Send failure for calc failed
-                            mqttSendFailure("Path calculation failed",
-                                "Could not find path to goal");
-                        }
-                    }
-                    case NEXT_CALC_FAILED ->
-                    {
-                        mqttSend("NEXT_CALC_FAILED", "next_segment");
-                    }
-                    case CANCELED ->
-                    {
-                        // Debounce: only consider "not pathing" if we *were*
-                        // pathing recently
-                        // (This avoids spurious cancel spam from your build.)
-                        if(pathActive)
-                        {
-                            pathActive = false;
-                            // Clear correlation tracking when canceled
-                            clearActiveCorrelation();
-                        }
-                    }
-                    default ->
-                        {
-                    }
-                }
+                handlePathEvent(event);
             }
         });
         
-        // 2) Poll once per client tick for "in goal" (works even if AT_GOAL
-        // never fires)
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if(client.player == null)
-                return;
-            if(pathing.getGoal() == null)
-                return;
-            
-            currentGoal = pathing.getGoal();
-            BetterBlockPos feet = baritone.getPlayerContext().playerFeet();
-            
-            boolean inGoal = currentGoal.isInGoal(feet);
-            // System.out.println("BaritoneIntegration: feet=" + feet + ",
-            // inGoal=" + inGoal + ", pathActive=" + pathActive + ",
-            // currentGoal=" + currentGoal);
-            
-            if(inGoal && (oldGoal != currentGoal))
-            {
-                oldGoal = currentGoal;
-                announced = true;
-                // publish once
-                mqttSendSuccess("Goal reached", feet.x, feet.y, feet.z);
-                // optionally "reset" so a new goto can trigger again
-                pathActive = false;
-                currentGoal = null;
-                // Clear correlation tracking when goal is reached
-                clearActiveCorrelation();
-            }
-            
-            if(++posTick >= POS_PERIOD_TICKS)
-            {
-                posTick = 0;
-                
-                // Use doubles for precise pos; you can also include yaw/pitch
-                // if you like
-                double x = client.player.getX();
-                double y = client.player.getY();
-                double z = client.player.getZ();
-                
-                // only send if moved at least one block (tweak threshold if
-                // needed)
-                BlockPos bp = client.player.blockPosition();
-                if(!bp.equals(lastSentPos))
-                {
-                    mqttSend("{\"type\": \"pos\", \"x\":" + x + ",\"y\":" + y
-                        + ",\"z\":" + z + "}");
-                    lastSentPos = bp;
-                }
-                // String.format("baritone/%s/event", mc.getUser().getName()
-            }
-            
-        });
-        
+        // Register tick handler for goal checking and position updates
+        ClientTickEvents.END_CLIENT_TICK.register(new TickHandler());
     }
     
-    // --- Command handling (from BaritoneCmds) ---
-    
     @Override
-    public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
+    public void onMessageArrived(MqttMessageListener.MqttMessageEvent event)
     {
         if(MC.player == null)
-            return;
-        MessageData data = mqttMessageEvent.messageData;
-        System.out.println("received message in baritone pathing");
-        if(!mqttMessageEvent.messageData.getService().equals("baritone"))
-            return;
-        System.out.println("message for baritone");
-        switch(mqttMessageEvent.messageData.getMethod())
         {
-            case "goto":
-            handleGotoCommand(data);
-            break;
-            case "pause":
-            MC.getConnection().sendChat("#pause");
-            break;
-            case "resume":
-            MC.getConnection().sendChat("#resume");
-            break;
-            case "cancel":
-            MC.getConnection().sendChat("#cancel");
-            // Clear correlation when explicitly canceled
-            clearActiveCorrelation();
-            break;
-            case "chat":
-            // Legacy support - will be removed soon
-            String cmd = data.getParams().get("message").getAsString();
-            System.out.println("Legacy chat cmd: " + cmd);
-            if(MC.player != null)
+            return;
+        }
+        
+        MessageData data = event.messageData;
+        if(!SERVICE_NAME.equals(data.getService()))
+        {
+            return;
+        }
+        
+        handleCommand(data.getMethod(), data);
+    }
+    
+    private void handleCommand(String method, MessageData data)
+    {
+        switch(method)
+        {
+            case "goto" -> handleGotoCommand(data);
+            case "pause" -> MC.getConnection().sendChat("#pause");
+            case "resume" -> MC.getConnection().sendChat("#resume");
+            case "cancel" ->
             {
-                MC.getConnection().sendChat(cmd);
+                MC.getConnection().sendChat("#cancel");
+                correlationTracker.clear();
             }
-            break;
-            default:
-            System.out.println("Unknown method in baritone: "
-                + mqttMessageEvent.messageData.getMethod());
+            case "chat" -> handleLegacyChatCommand(data);
+            default -> System.out
+                .println("Unknown method in baritone: " + method);
         }
     }
     
-    /**
-     * Handle structured goto commands with x, y, z parameters
-     * This is a temporary shim - will be replaced with direct Baritone API
-     * calls
-     */
     private void handleGotoCommand(MessageData data)
     {
         try
@@ -258,21 +124,20 @@ public final class BaritonePathing extends Action
                 return;
             }
             
-            // Store correlation information for this goto command
-            activeRequestId = data.getRequestId();
-            activeCorrelationId = data.getCorrelationId();
-            activeIdentity = data.getIdentity();
+            // Store correlation information
+            correlationTracker.setFrom(data);
             
-            // Extract coordinates from params
+            // Extract coordinates
             int x = data.getParams().get("x").getAsInt();
             int y = data.getParams().get("y").getAsInt();
             int z = data.getParams().get("z").getAsInt();
             
-            // Build the goto command string (temporary shim)
+            // Execute goto command
             String gotoCmd = String.format("#goto %d %d %d", x, y, z);
             System.out.println("Executing goto command: " + gotoCmd);
             System.out.println("Tracking correlation: requestId="
-                + activeRequestId + ", correlationId=" + activeCorrelationId);
+                + correlationTracker.getRequestId() + ", correlationId="
+                + correlationTracker.getCorrelationId());
             
             if(MC.player != null)
             {
@@ -281,208 +146,410 @@ public final class BaritonePathing extends Action
             {
                 System.out.println(
                     "Error: Player is null, cannot execute goto command");
-                clearActiveCorrelation();
+                correlationTracker.clear();
             }
-            
         }catch(Exception e)
         {
             System.out
                 .println("Error handling goto command: " + e.getMessage());
             e.printStackTrace();
-            clearActiveCorrelation();
+            correlationTracker.clear();
+        }
+    }
+    
+    private void handleLegacyChatCommand(MessageData data)
+    {
+        // Legacy support - will be removed soon
+        String cmd = data.getParams().get("message").getAsString();
+        System.out.println("Legacy chat cmd: " + cmd);
+        if(MC.player != null)
+        {
+            MC.getConnection().sendChat(cmd);
         }
     }
     
     /**
-     * Clear the active correlation tracking
+     * Manages pathing state (active status, goals, announcements)
      */
-    private static void clearActiveCorrelation()
-    {
-        activeRequestId = null;
-        activeCorrelationId = null;
-        activeIdentity = null;
-    }
-    
-    // --- helpers ---
-    
-    private static boolean mqttSend(String payload)
-    {
-        return mqttSend(payload, null);
+    private static class PathingState {
+        private boolean pathActive = false;
+        private boolean announced = false;
+        private Goal oldGoal = null;
+        private Goal currentGoal = null;
+        private int posTick = 0;
+        private BlockPos lastSentPos = null;
+        
+        void setPathActive(boolean active)
+        {
+            this.pathActive = active;
+        }
+        
+        boolean isPathActive()
+        {
+            return pathActive;
+        }
+        
+        void setAnnounced(boolean announced)
+        {
+            this.announced = announced;
+        }
+        
+        boolean isAnnounced()
+        {
+            return announced;
+        }
+        
+        void updateGoal(Goal goal)
+        {
+            this.oldGoal = this.currentGoal;
+            this.currentGoal = goal;
+        }
+        
+        Goal getCurrentGoal()
+        {
+            return currentGoal;
+        }
+        
+        boolean hasGoalChanged()
+        {
+            return oldGoal != currentGoal;
+        }
+        
+        void reset()
+        {
+            pathActive = false;
+            announced = false;
+            currentGoal = null;
+            oldGoal = null;
+        }
+        
+        boolean shouldSendPosition()
+        {
+            if(++posTick >= POSITION_UPDATE_PERIOD_TICKS)
+            {
+                posTick = 0;
+                return true;
+            }
+            return false;
+        }
+        
+        boolean hasPositionChanged(BlockPos newPos)
+        {
+            if(!newPos.equals(lastSentPos))
+            {
+                lastSentPos = newPos;
+                return true;
+            }
+            return false;
+        }
     }
     
     /**
-     * Send standard success response
+     * Tracks correlation information (requestId, correlationId, identity)
      */
-    private static void mqttSendSuccess(String message, int x, int y, int z)
-    {
-        try
+    private static class CorrelationTracker {
+        private String requestId;
+        private String correlationId;
+        private String identity;
+        
+        void setFrom(MessageData data)
         {
-            var mc = Minecraft.getInstance();
-            
+            this.requestId = data.getRequestId();
+            this.correlationId = data.getCorrelationId();
+            this.identity = data.getIdentity();
+        }
+        
+        void clear()
+        {
+            this.requestId = null;
+            this.correlationId = null;
+            this.identity = null;
+        }
+        
+        String getRequestId()
+        {
+            return requestId != null ? requestId : UUID.randomUUID().toString();
+        }
+        
+        String getCorrelationId()
+        {
+            return correlationId;
+        }
+        
+        String getIdentity()
+        {
+            return identity != null ? identity : DEFAULT_IDENTITY;
+        }
+    }
+    
+    /**
+     * Builds and sends MQTT responses
+     */
+    private static class ResponseBuilder {
+        
+        void sendSuccess(String message, int x, int y, int z)
+        {
             JsonObject response = new JsonObject();
             response.addProperty("status", "success");
             response.addProperty("message", message);
             response.addProperty("x", x);
             response.addProperty("y", y);
             response.addProperty("z", z);
-            response.addProperty("player", mc.getUser().getName());
+            response.addProperty("player", getPlayerName());
             
-            // Use stored correlation info if available, otherwise generate new
-            String requestId = (activeRequestId != null) ? activeRequestId
-                : UUID.randomUUID().toString();
-            String correlationId = activeCorrelationId;
-            String identity =
-                (activeIdentity != null) ? activeIdentity : "mqttbot";
-            
-            EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-                mc.getUser().getName(), new MessageData("baritone", "goto",
-                    requestId, correlationId, null, response, identity, null)));
-            
-        }catch(Exception e)
-        {
-            e.printStackTrace();
+            sendResponse("goto", response);
         }
-    }
-    
-    /**
-     * Send standard failure response
-     */
-    private static void mqttSendFailure(String message, String reason)
-    {
-        try
+        
+        void sendFailure(String message, String reason)
         {
-            var mc = Minecraft.getInstance();
-            
             JsonObject response = new JsonObject();
             response.addProperty("status", "failure");
             response.addProperty("message", message);
             response.addProperty("reason", reason);
-            response.addProperty("player", mc.getUser().getName());
+            response.addProperty("player", getPlayerName());
             
-            // Use stored correlation info if available, otherwise generate new
-            String requestId = (activeRequestId != null) ? activeRequestId
-                : UUID.randomUUID().toString();
-            String correlationId = activeCorrelationId;
-            String identity =
-                (activeIdentity != null) ? activeIdentity : "mqttbot";
-            
-            EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-                mc.getUser().getName(), new MessageData("baritone", "goto",
-                    requestId, correlationId, null, response, identity, null)));
-            
-        }catch(Exception e)
-        {
-            e.printStackTrace();
+            sendResponse("goto", response);
         }
-    }
-    
-    private static boolean mqttSend(String payload, String detail)
-    {
-        try
+        
+        void sendPathingEvent(String type, String detail)
+        {
+            JsonObject response =
+                createPathingResponse(type, pathing.getGoal(), detail);
+            sendResponse("pathing", response);
+        }
+        
+        void sendPathingEventWithPayload(String type, JsonObject payload)
+        {
+            sendResponse(type, payload);
+        }
+        
+        private void sendResponse(String method, JsonObject response)
+        {
+            try
+            {
+                String playerName = getPlayerName();
+                MessageData messageData = new MessageData(SERVICE_NAME, method,
+                    correlationTracker.getRequestId(),
+                    correlationTracker.getCorrelationId(), null, response,
+                    correlationTracker.getIdentity(), null);
+                
+                EventManager.fire(new MqttReplyListener.MqttReplyEvent(
+                    playerName, messageData));
+            }catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+        
+        private JsonObject createPathingResponse(String type, Goal goal,
+            String detail)
+        {
+            JsonObject response = new JsonObject();
+            response.addProperty("type", type);
+            response.addProperty("player", getPlayerName());
+            
+            if(detail != null)
+            {
+                response.addProperty("detail", detail);
+            }
+            
+            GoalDataExtractor.GoalData goalData =
+                GoalDataExtractor.extract(goal);
+            if(goalData != null)
+            {
+                if(goalData.x != null)
+                    response.addProperty("goalX", goalData.x);
+                if(goalData.y != null)
+                    response.addProperty("goalY", goalData.y);
+                if(goalData.z != null)
+                    response.addProperty("goalZ", goalData.z);
+                response.addProperty("goalType", goalData.kind);
+            }
+            
+            return response;
+        }
+        
+        private String getPlayerName()
         {
             var mc = Minecraft.getInstance();
-            
-            // Create structured response data
-            JsonObject responseData =
-                createStructuredResponse(payload, pathing.getGoal(), detail);
-            
-            // Use stored correlation info if available, otherwise generate new
-            String requestId = (activeRequestId != null) ? activeRequestId
-                : UUID.randomUUID().toString();
-            String correlationId = activeCorrelationId;
-            String identity =
-                (activeIdentity != null) ? activeIdentity : "mqttbot";
-            
-            EventManager.fire(
-                new MqttReplyListener.MqttReplyEvent(mc.getUser().getName(),
-                    new MessageData("baritone", "pathing", requestId,
-                        correlationId, null, responseData, identity, null)));
-            
-        }catch(Exception e)
-        {
-            e.printStackTrace();
-            return false;
+            return (mc.player != null) ? mc.getUser().getName() : "unknown";
         }
-        return true;
     }
     
     /**
-     * Create structured response data as JsonObject
+     * Handles pathing events from Baritone
      */
-    private static JsonObject createStructuredResponse(String type, Goal goal,
-        String detail)
+    private static void handlePathEvent(PathEvent event)
     {
-        var mc = Minecraft.getInstance();
-        String player =
-            (mc.player != null) ? mc.getUser().getName() : "unknown";
-        
-        JsonObject response = new JsonObject();
-        response.addProperty("type", type);
-        response.addProperty("player", player);
-        
-        if(detail != null)
+        switch(event)
         {
-            response.addProperty("detail", detail);
+            case CALC_FINISHED_NOW_EXECUTING ->
+            {
+                pathingState.setPathActive(true);
+                pathingState.setAnnounced(false);
+                pathingState.updateGoal(pathing.getGoal());
+                responseBuilder.sendPathingEvent("CALC_FINISHED_NOW_EXECUTING",
+                    null);
+            }
+            case AT_GOAL ->
+            {
+                responseBuilder.sendPathingEvent("AT_GOAL", null);
+                pathingState.setPathActive(false);
+                pathingState.setAnnounced(true);
+                pathingState.updateGoal(null);
+                correlationTracker.clear();
+            }
+            case CALC_FAILED -> handleCalcFailed();
+            case NEXT_CALC_FAILED ->
+            {
+                responseBuilder.sendPathingEvent("NEXT_CALC_FAILED",
+                    "next_segment");
+            }
+            case CANCELED ->
+            {
+                if(pathingState.isPathActive())
+                {
+                    pathingState.setPathActive(false);
+                    correlationTracker.clear();
+                }
+            }
+            default ->
+            {
+                // No action needed
+            }
         }
-        
-        GoalData gd = goalData(goal);
-        if(gd != null)
-        {
-            if(gd.x != null)
-                response.addProperty("goalX", gd.x);
-            if(gd.y != null)
-                response.addProperty("goalY", gd.y);
-            if(gd.z != null)
-                response.addProperty("goalZ", gd.z);
-            response.addProperty("goalType", gd.kind);
-        }
-        
-        return response;
     }
     
-    // Try to surface coordinates for common Goal types without tying to
-    // internals.
-    private record GoalData(Integer x, Integer y, Integer z, String kind)
-    {}
-    
-    private static GoalData goalData(Goal g)
+    private static void handleCalcFailed()
     {
-        if(g == null)
-            return null;
-        String kind = g.getClass().getSimpleName();
+        Goal failedGoal = pathing.getGoal();
+        double heuristic = (failedGoal != null)
+            ? failedGoal.heuristic(baritone.getPlayerContext().playerFeet())
+            : Double.NaN;
         
-        // Avoid compile breaks if a type isn’t present: use string names not
-        // direct imports in ‘instanceof’ if you prefer.
-        try
+        System.out.println("Goal pos heuristic: " + heuristic);
+        responseBuilder.sendPathingEvent("CALC_FAILED", "initial");
+        
+        if(heuristic < CLOSE_ENOUGH_HEURISTIC && !pathingState.isAnnounced())
         {
-            if(Objects.equals(kind, "GoalBlock"))
+            // Close enough to goal, announce success
+            BetterBlockPos feet = baritone.getPlayerContext().playerFeet();
+            responseBuilder.sendSuccess("Goal reached (close enough)", feet.x,
+                feet.y, feet.z);
+            pathingState.setAnnounced(true);
+        }else
+        {
+            // Too far, send failure
+            responseBuilder.sendFailure("Path calculation failed",
+                "Could not find path to goal");
+        }
+    }
+    
+    /**
+     * Handles client tick events for goal checking and position updates
+     */
+    private static class TickHandler implements ClientTickEvents.EndTick {
+        @Override
+        public void onEndTick(net.minecraft.client.Minecraft client)
+        {
+            if(client.player == null || pathing.getGoal() == null)
             {
-                // GoalBlock usually has a BlockPos accessor; reflect to avoid
-                // hard coupling:
-                var m = g.getClass().getMethod("getPos"); // or "pos()"
-                                                          // depending on
-                                                          // build
-                Object pos = m.invoke(g);
-                int x = (int)pos.getClass().getMethod("getX").invoke(pos);
-                int y = (int)pos.getClass().getMethod("getY").invoke(pos);
-                int z = (int)pos.getClass().getMethod("getZ").invoke(pos);
-                return new GoalData(x, y, z, kind);
+                return;
             }
-            if(Objects.equals(kind, "GoalXZ"))
+            
+            // Check if goal reached
+            pathingState.updateGoal(pathing.getGoal());
+            BetterBlockPos feet = baritone.getPlayerContext().playerFeet();
+            boolean inGoal = pathingState.getCurrentGoal().isInGoal(feet);
+            
+            if(inGoal && pathingState.hasGoalChanged())
             {
-                int x = (int)g.getClass().getMethod("getX").invoke(g);
-                int z = (int)g.getClass().getMethod("getZ").invoke(g);
-                return new GoalData(x, null, z, kind);
+                pathingState.setAnnounced(true);
+                responseBuilder.sendSuccess("Goal reached", feet.x, feet.y,
+                    feet.z);
+                pathingState.reset();
+                correlationTracker.clear();
             }
-            if(Objects.equals(kind, "GoalNear"))
+            
+            // Send position updates periodically
+            if(pathingState.shouldSendPosition())
             {
-                int x = (int)g.getClass().getMethod("getX").invoke(g);
-                int y = (int)g.getClass().getMethod("getY").invoke(g);
-                int z = (int)g.getClass().getMethod("getZ").invoke(g);
-                return new GoalData(x, y, z, kind);
+                double x = client.player.getX();
+                double y = client.player.getY();
+                double z = client.player.getZ();
+                BlockPos bp = client.player.blockPosition();
+                
+                if(pathingState.hasPositionChanged(bp))
+                {
+                    JsonObject pos = new JsonObject();
+                    pos.addProperty("x", x);
+                    pos.addProperty("y", y);
+                    pos.addProperty("z", z);
+                    responseBuilder.sendPathingEventWithPayload("pos", pos);
+                }
             }
-        }catch(Throwable ignore)
-        { /* fall through */ }
-        return new GoalData(null, null, null, kind);
+        }
+    }
+    
+    /**
+     * Extracts coordinate data from Baritone Goal objects using reflection
+     */
+    private static class GoalDataExtractor {
+        private record GoalData(Integer x, Integer y, Integer z, String kind)
+        {}
+        
+        static GoalData extract(Goal goal)
+        {
+            if(goal == null)
+            {
+                return null;
+            }
+            
+            String kind = goal.getClass().getSimpleName();
+            
+            try
+            {
+                if(Objects.equals(kind, "GoalBlock"))
+                {
+                    return extractGoalBlock(goal);
+                }else if(Objects.equals(kind, "GoalXZ"))
+                {
+                    return extractGoalXZ(goal);
+                }else if(Objects.equals(kind, "GoalNear"))
+                {
+                    return extractGoalNear(goal);
+                }
+            }catch(Throwable ignore)
+            {
+                // Reflection failed, return basic info
+            }
+            
+            return new GoalData(null, null, null, kind);
+        }
+        
+        private static GoalData extractGoalBlock(Goal goal) throws Exception
+        {
+            var method = goal.getClass().getMethod("getPos");
+            Object pos = method.invoke(goal);
+            int x = (int)pos.getClass().getMethod("getX").invoke(pos);
+            int y = (int)pos.getClass().getMethod("getY").invoke(pos);
+            int z = (int)pos.getClass().getMethod("getZ").invoke(pos);
+            return new GoalData(x, y, z, "GoalBlock");
+        }
+        
+        private static GoalData extractGoalXZ(Goal goal) throws Exception
+        {
+            int x = (int)goal.getClass().getMethod("getX").invoke(goal);
+            int z = (int)goal.getClass().getMethod("getZ").invoke(goal);
+            return new GoalData(x, null, z, "GoalXZ");
+        }
+        
+        private static GoalData extractGoalNear(Goal goal) throws Exception
+        {
+            int x = (int)goal.getClass().getMethod("getX").invoke(goal);
+            int y = (int)goal.getClass().getMethod("getY").invoke(goal);
+            int z = (int)goal.getClass().getMethod("getZ").invoke(goal);
+            return new GoalData(x, y, z, "GoalNear");
+        }
     }
 }

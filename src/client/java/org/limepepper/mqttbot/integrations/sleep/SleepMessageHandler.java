@@ -38,13 +38,16 @@ public final class SleepMessageHandler extends Action
         {
             if(MC.player != null)
             {
-                // Pass the request ID from the incoming message
+                // Pass the full correlation information from the incoming
+                // message
                 String requestId = data.getRequestId();
-                SleepUtil.start(requestId, 3);
+                String correlationId = data.getCorrelationId();
+                String identity = data.getIdentity();
+                SleepUtil.start(requestId, correlationId, identity, 3);
             }
         }else
         {
-            System.out.println("unknownn method in baritone");
+            System.out.println("unknown method in baritone");
         }
     }
     

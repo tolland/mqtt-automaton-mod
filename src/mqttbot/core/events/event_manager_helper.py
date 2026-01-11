@@ -1,0 +1,27 @@
+from typing import Optional
+
+from mqttbot import MessageData
+from mqttbot.core.events.event_manager import EventHandlerConfig
+from mqttbot.core.task.task import TaskPriority
+from mqttbot.core.threads.task_thread import TaskThread
+from mqttbot.core.threads.thread_helper import ThreadHelper
+
+
+class EventManagerHelper:
+
+    @staticmethod
+    async def _build_thread_from_config(
+            thread_id: str,
+            handler_config: EventHandlerConfig,
+            trigger_msg: MessageData
+    ) -> Optional[TaskThread]:
+        """Build a TaskThread from event handler config"""
+
+        thread = TaskThread(thread_id, TaskPriority.HIGH)
+
+        for step in handler_config.steps:
+            task = ThreadHelper._create_task_from_step(step, trigger_msg)
+            if task:
+                thread.enqueue_task(task)
+
+        return thread

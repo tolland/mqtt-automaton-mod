@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from mqttbot.models.inventory_item import InventoryItem
+from mqttbot.core.models.inventory_item import InventoryItem
 
 
 @dataclass

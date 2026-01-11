@@ -1,7 +1,7 @@
 from typing import Any
 
 from mqttbot import MessageData
-from mqttbot.models.inventory_item import InventoryItem
+from mqttbot.core.models.inventory_item import InventoryItem
 from mqttbot.state.inventory_state import InventoryState
 from mqttbot.state.state_module import StateModule
 

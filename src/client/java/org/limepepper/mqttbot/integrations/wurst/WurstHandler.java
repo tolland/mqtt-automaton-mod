@@ -26,19 +26,9 @@ public class WurstHandler extends Action implements MqttMessageListener {
         new ConcurrentLinkedQueue<>();
     
     // Data class to hold command execution tasks
-    private static class CommandTask {
-        final MessageData originalData;
-        final String commandName;
-        final List<String> args;
-        
-        CommandTask(MessageData originalData, String commandName,
-            List<String> args)
-        {
-            this.originalData = originalData;
-            this.commandName = commandName;
-            this.args = args;
-        }
-    }
+    private record CommandTask(MessageData originalData, String commandName,
+        List<String> args)
+    {}
     
     public static void init()
     {

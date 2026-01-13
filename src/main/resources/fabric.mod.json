@@ -15,9 +15,7 @@
   "icon": "assets/modid/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "org.limepepper.mqttbot.ExampleMod"
-    ],
+    "main": [],
     "client": [
       "org.limepepper.mqttbot.MqttBotClientModInitializer"
     ]

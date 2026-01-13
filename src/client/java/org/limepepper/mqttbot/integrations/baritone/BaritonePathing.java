@@ -33,7 +33,7 @@ public final class BaritonePathing extends Action
     public static final Minecraft MC = Minecraft.getInstance();
     
     // Constants
-    private static final int POSITION_UPDATE_PERIOD_TICKS = 100;
+    static final int POSITION_UPDATE_PERIOD_TICKS = 100;
     private static final double CLOSE_ENOUGH_HEURISTIC = 4.0;
     private static final String SERVICE_NAME = "baritone";
     private static final String DEFAULT_IDENTITY = "mqttbot";
@@ -76,7 +76,7 @@ public final class BaritonePathing extends Action
         });
         
         // Register tick handler for goal checking and position updates
-        ClientTickEvents.END_CLIENT_TICK.register(new TickHandler());
+        ClientTickEvents.END_CLIENT_TICK.register(BaritonePathing::handleTick);
     }
     
     @Override
@@ -165,82 +165,6 @@ public final class BaritonePathing extends Action
         if(MC.player != null)
         {
             MC.getConnection().sendChat(cmd);
-        }
-    }
-    
-    /**
-     * Manages pathing state (active status, goals, announcements)
-     */
-    private static class PathingState {
-        private boolean pathActive = false;
-        private boolean announced = false;
-        private Goal oldGoal = null;
-        private Goal currentGoal = null;
-        private int posTick = 0;
-        private BlockPos lastSentPos = null;
-        
-        void setPathActive(boolean active)
-        {
-            this.pathActive = active;
-        }
-        
-        boolean isPathActive()
-        {
-            return pathActive;
-        }
-        
-        void setAnnounced(boolean announced)
-        {
-            this.announced = announced;
-        }
-        
-        boolean isAnnounced()
-        {
-            return announced;
-        }
-        
-        void updateGoal(Goal goal)
-        {
-            this.oldGoal = this.currentGoal;
-            this.currentGoal = goal;
-        }
-        
-        Goal getCurrentGoal()
-        {
-            return currentGoal;
-        }
-        
-        boolean hasGoalChanged()
-        {
-            return oldGoal != currentGoal;
-        }
-        
-        void reset()
-        {
-            pathActive = false;
-            announced = false;
-            currentGoal = null;
-            oldGoal = null;
-        }
-        
-        boolean shouldSendPosition()
-        {
-            if(++posTick >= POSITION_UPDATE_PERIOD_TICKS)
-            {
-                posTick = 0;
-                return true;
-            }
-            return false;
-        }
-        
-        boolean hasPositionChanged(BlockPos newPos)
-        {
-            if(!newPos.equals(lastSentPos))
-            {
-                lastSentPos = newPos;
-                return true;
-            }
-            return false;
         }
     }
     
@@ -387,7 +311,7 @@ public final class BaritonePathing extends Action
             {
                 pathingState.setPathActive(true);
                 pathingState.setAnnounced(false);
-                pathingState.updateGoal(pathing.getGoal());
+                pathingState.setGoal(pathing.getGoal());
                 responseBuilder.sendPathingEvent("CALC_FINISHED_NOW_EXECUTING",
                     null);
             }
@@ -448,45 +372,50 @@ public final class BaritonePathing extends Action
     /**
      * Handles client tick events for goal checking and position updates
      */
-    private static class TickHandler implements ClientTickEvents.EndTick {
-        @Override
-        public void onEndTick(net.minecraft.client.Minecraft client)
+    private static void handleTick(net.minecraft.client.Minecraft client)
+    {
+        if(client.player == null || pathing.getGoal() == null)
         {
-            if(client.player == null || pathing.getGoal() == null)
-            {
-                return;
-            }
+            return;
+        }
+        
+        // Check if goal reached
+        Goal tmpGoal = pathing.getGoal();
+        Goal oldGoal = pathingState.getOldGoal();
+        pathingState.setGoal(tmpGoal);
+        BetterBlockPos feet = baritone.getPlayerContext().playerFeet();
+        boolean inGoal = pathingState.isInGoal(feet);
+        boolean hasGoalChanged = pathingState.changed();
+        
+        // System.out.println("tmpGoal = " + tmpGoal);
+        // System.out.println("oldGoal = " + oldGoal);
+        // System.out.printf("Goal status: inGoal=%b, hasGoalChanged=%b%n",
+        // inGoal,
+        // hasGoalChanged);
+        
+        if(inGoal && hasGoalChanged)
+        {
+            pathingState.setAnnounced(true);
+            responseBuilder.sendSuccess("Goal reached", feet.x, feet.y, feet.z);
+            pathingState.done();
+            correlationTracker.clear();
+        }
+        
+        // Send position updates periodically
+        if(pathingState.shouldSendPosition())
+        {
+            double x = client.player.getX();
+            double y = client.player.getY();
+            double z = client.player.getZ();
+            BlockPos bp = client.player.blockPosition();
             
-            // Check if goal reached
-            pathingState.updateGoal(pathing.getGoal());
-            BetterBlockPos feet = baritone.getPlayerContext().playerFeet();
-            boolean inGoal = pathingState.getCurrentGoal().isInGoal(feet);
-            
-            if(inGoal && pathingState.hasGoalChanged())
+            if(pathingState.hasPositionChanged(bp))
             {
-                pathingState.setAnnounced(true);
-                responseBuilder.sendSuccess("Goal reached", feet.x, feet.y,
-                    feet.z);
-                pathingState.reset();
-                correlationTracker.clear();
-            }
-            
-            // Send position updates periodically
-            if(pathingState.shouldSendPosition())
-            {
-                double x = client.player.getX();
-                double y = client.player.getY();
-                double z = client.player.getZ();
-                BlockPos bp = client.player.blockPosition();
-                
-                if(pathingState.hasPositionChanged(bp))
-                {
-                    JsonObject pos = new JsonObject();
-                    pos.addProperty("x", x);
-                    pos.addProperty("y", y);
-                    pos.addProperty("z", z);
-                    responseBuilder.sendPathingEventWithPayload("pos", pos);
-                }
+                JsonObject pos = new JsonObject();
+                pos.addProperty("x", x);
+                pos.addProperty("y", y);
+                pos.addProperty("z", z);
+                responseBuilder.sendPathingEventWithPayload("pos", pos);
             }
         }
     }

@@ -46,7 +46,7 @@ Repository = "https://github.com/tolland/mqtt-automaton-mod"
 Issues = "https://github.com/tolland/mqtt-automaton-mod/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mqttbot"]
+packages = ["src-py/mqttbot"]
 
 [tool.black]
 line-length = 100

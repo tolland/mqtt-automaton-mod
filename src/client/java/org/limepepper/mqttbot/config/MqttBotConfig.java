@@ -138,20 +138,14 @@ public class MqttBotConfig {
     
     private int getLogLevelValue(String level)
     {
-        switch(level.toUpperCase())
+        return switch(level.toUpperCase())
         {
-            case "TRACE":
-            return 0;
-            case "DEBUG":
-            return 1;
-            case "INFO":
-            return 2;
-            case "WARN":
-            return 3;
-            case "ERROR":
-            return 4;
-            default:
-            return 2; // Default to INFO
-        }
+            case "TRACE" -> 0;
+            case "DEBUG" -> 1;
+            case "INFO" -> 2;
+            case "WARN" -> 3;
+            case "ERROR" -> 4;
+            default -> 2; // Default to INFO
+        };
     }
 }

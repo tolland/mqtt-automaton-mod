@@ -1,6 +1,6 @@
-
 import pytest
 from pathlib import Path
+
 
 def test_pytest_setup():
     """Test that pytest is working correctly."""

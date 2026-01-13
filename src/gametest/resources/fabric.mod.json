@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "mqttbot_testmod",
+  "version": "1.0.0",
+  "name": "MqttBot Test Mod",
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "org.limepepper.gametest.BotTest"
+    ]
+  },
+  "mixins": [
+    "mqttbot_testmod.mixins.json"
+  ]
+}

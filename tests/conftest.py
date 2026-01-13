@@ -15,6 +15,7 @@ import pytest
 Pytest configuration and shared fixtures.
 """
 
+
 # Fixture to set XDG_STATE_HOME to a temp directory
 @pytest.fixture
 def xdg_state_home(tmp_path: Path, monkeypatch):
@@ -31,9 +32,7 @@ def xdg_state_home(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("XDG_STATE_HOME", temp_dir)
 
     # 3. Optional: Print for debugging (you can remove this)
-    print(
-        f"\n[Test Setup] Setting XDG_STATE_HOME to: {os.environ.get('XDG_STATE_HOME')}"
-    )
+    print(f"\n[Test Setup] Setting XDG_STATE_HOME to: {os.environ.get('XDG_STATE_HOME')}")
 
     # 4. Return the path, in case the test needs to access the directory directly
     return Path(temp_dir)
@@ -45,10 +44,12 @@ def temp_dir() -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield Path(tmp_dir)
 
+
 @pytest.fixture
 def sample_data_dir() -> Path:
     """Path to the sample data directory for tests."""
     return Path(__file__).parent / "fixtures" / "sample_data"
+
 
 @pytest.fixture
 def event_loop():

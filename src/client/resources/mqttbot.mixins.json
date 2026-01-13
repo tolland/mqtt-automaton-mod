@@ -6,8 +6,7 @@
   "client": [
     "ChatHudMixin",
     "ClientPlayerEntityMixin",
-    "DeathScreenMixin",
-    "ExampleMixin"
+    "DeathScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

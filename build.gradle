@@ -1,3 +1,5 @@
+import net.fabricmc.loom.task.prod.ClientProductionRunTask
+
 plugins {
     id "fabric-loom" version "${loom_version}"
     id "com.diffplug.spotless" version "8.1.0"
@@ -6,6 +8,8 @@ plugins {
 
 version = project.mod_version
 group = project.maven_group
+
+def ENV = System.getenv()
 
 base {
     archivesName = project.archives_base_name
@@ -31,18 +35,74 @@ repositories {
             artifact() // no ivy.xml or pom
         }
     }
+    maven {
+        name = 'babbaj-repo'
+        url = 'https://babbaj.github.io/maven/'
+    }
+}
+
+
+dependencies {
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-1.21.8:2025.09.14@zip")
+    }
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    implementation 'org.yaml:snakeyaml:2.0'
+    modImplementation "cabaletta:baritone-api-fabric:1.15.0"
+    modImplementation ":Wurst-Client:v7.51.2-MC1.21.8"
+    modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
+    implementation "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
+    implementation "io.moquette:moquette-broker:0.17"
 }
 
 fabricApi {
     configureTests {
-//        createSourceSet = true
+        createSourceSet = false
+        // if I set this to true, it breaks the gametest setup. But otherwise nothing knows about gametest sourceset?
         modId = "mqttbot-test"
-        enableGameTests = true
+        enableGameTests = false
         enableClientGameTests = true
         eula = true
     }
 }
 
+sourceSets {
+    gametest {
+    }
+}
+
+afterEvaluate {
+    sourceSets {
+        gametest {
+            compileClasspath += sourceSets.main.compileClasspath
+            compileClasspath += sourceSets.client.compileClasspath
+
+            runtimeClasspath += sourceSets.main.runtimeClasspath
+            runtimeClasspath += sourceSets.client.runtimeClasspath
+        }
+        "srcpy" {
+            java {
+                srcDir "src-py"
+            }
+        }
+    }
+
+}
+
+
+def mcUsername =
+        System.getenv("MQTTBOT_USERNAME")
+                ?: project.findProperty("bot_username")
+                ?: "Player999"
 loom {
 
     accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
@@ -58,51 +118,17 @@ loom {
     runs {
         client {
             programArgs(
-//					"--username", "SandyFire",
+                    "--username", mcUsername as String,
                     "--quickPlaySingleplayer", "TestFabricModWorld1"
             )
         }
-    }
-
-//    clientGameTestWithMods {
-//        inherit client
-//        source = sourceSets.gametest
-////        runDir = "build/run/clientGameTestWithMods"
-//        vmArgs.add("-Dfabric.client.gametest")
-//        vmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
-//        // Proxy config from environment
-//        def proxyHost = System.getenv("TEST_PROXY_HOST")
-//        def proxyPort = System.getenv("TEST_PROXY_PORT")
-//        if (proxyHost && proxyPort) {
-//            vmArgs.add("-Dhttp.proxyHost=${proxyHost}")
-//            vmArgs.add("-Dhttp.proxyPort=${proxyPort}")
-//            vmArgs.add("-Dhttps.proxyHost=${proxyHost}")
-//            vmArgs.add("-Dhttps.proxyPort=${proxyPort}")
-//        }
-//        programArgs.add("--username=Mqtt-Bot")
-//    }
-
-}
-
-dependencies {
-    // To change the versions see the gradle.properties file
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.layered() {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-1.21.8:2025.09.14@zip")
-    }
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
-    implementation 'org.yaml:snakeyaml:2.0'
-    modCompileOnly "cabaletta:baritone-api-fabric:1.15.0"
-    modCompileOnly ":Wurst-Client:v7.51.2-MC1.21.8"
-    modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {
-        exclude(group: "net.fabricmc.fabric-api")
+        clientGameTest {
+            source sourceSets.gametest
+        }
     }
 }
+
+
 
 processResources {
     inputs.property "version", project.version
@@ -148,4 +174,17 @@ spotless {
         target("src/**/*.json", "src/**/*.mcmeta")
         gson().indentWithSpaces(2).version("2.11.0")
     }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+
+tasks.register("runProductionClientGameTest", ClientProductionRunTask) {
+    jvmArgs.add("-Dfabric.client.gametest")
+    // Whether to use XVFB to run the game, using a virtual framebuffer. This is useful for headless CI environments.
+    // Defaults to true only on Linux and when the "CI" environment variable is set.
+    // XVFB must be installed, on Debian-based systems you can install it with: `apt install xvfb`
+    useXVFB = true
 }

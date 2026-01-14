@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import org.limepepper.gametest.tests.AutoFarmTest;
+import org.limepepper.gametest.tests.BaritoneBotBasicTest;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,6 +118,7 @@ public class BotTest implements FabricClientGameTest {
                 block);
             
         }
+        BaritoneBotBasicTest.testBaritoneIsWorking(context, spContext);
     }
     
     // because the grass texture is randomized and smooth stone isn't

@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.CropBlock;
 import net.wurstclient.WurstClient;
 import org.lwjgl.glfw.GLFW;
@@ -114,6 +115,47 @@ public enum BotTestHelper
         input.pressKey(GLFW.GLFW_KEY_T);
         input.typeChars("." + command);
         input.pressKey(GLFW.GLFW_KEY_ENTER);
+    }
+    
+    /**
+     * Sends a chat message (e.g., for baritone commands).
+     *
+     * @param context
+     *            the test context
+     * @param message
+     *            the chat message to send
+     */
+    public static void sendChat(ClientGameTestContext context, String message)
+    {
+        TestInput input = context.getInput();
+        input.pressKey(GLFW.GLFW_KEY_T);
+        input.typeChars(message);
+        input.pressKey(GLFW.GLFW_KEY_ENTER);
+    }
+    
+    /**
+     * Waits for the player to arrive at a location.
+     *
+     * @param context
+     *            the test context
+     * @param absX
+     *            player x coordinate
+     * @param absY
+     *            player y coordinate
+     * @param absZ
+     *            player z coordinate
+     */
+    public static void waitForLocation(ClientGameTestContext context, int absX,
+        int absY, int absZ)
+    {
+        
+        BlockPos targetPos = new BlockPos(absX, absY, absZ);
+        
+        context.waitFor(mc -> {
+            assert mc.player != null;
+            // Check if player is at the target block position
+            return mc.player.blockPosition().equals(targetPos);
+        });
     }
     
     /**

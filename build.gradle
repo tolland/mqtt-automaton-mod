@@ -11,6 +11,11 @@ group = project.maven_group
 
 def ENV = System.getenv()
 
+def mcUsername =
+        System.getenv("MQTTBOT_USERNAME")
+                ?: project.findProperty("bot_username")
+                ?: "Player999"
+
 base {
     archivesName = project.archives_base_name
 }
@@ -87,8 +92,22 @@ fabricApi {
 }
 
 sourceSets {
+////    client {
+////        compileClasspath += main.compileClasspath
+////        runtimeClasspath += main.runtimeClasspath
+////    }
     gametest {
+//        compileClasspath += sourceSets.main.compileClasspath
+//        compileClasspath += sourceSets.client.compileClasspath
+//
+//        runtimeClasspath += sourceSets.main.runtimeClasspath
+//        runtimeClasspath += sourceSets.client.runtimeClasspath
     }
+//    "src-py" {
+//        java {
+//            srcDir "src-py"
+//        }
+//    }
 }
 
 afterEvaluate {
@@ -108,12 +127,6 @@ afterEvaluate {
     }
 
 }
-
-
-def mcUsername =
-        System.getenv("MQTTBOT_USERNAME")
-                ?: project.findProperty("bot_username")
-                ?: "Player999"
 loom {
 
     accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
@@ -134,11 +147,11 @@ loom {
             )
         }
         clientGameTest {
+            inherit client
             source sourceSets.gametest
         }
     }
 }
-
 
 
 processResources {

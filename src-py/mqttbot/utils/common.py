@@ -1,3 +1,33 @@
+from typing import Any
+
+
+# @staticmethod
+# def _parse_dwell(period_str: str) -> float:
+#     """Parse dwell period like '4s', '500ms'"""
+#     period_str = period_str.strip().lower()
+#     if period_str.endswith("ms"):
+#         return float(period_str[:-2]) / 1000.0
+#     elif period_str.endswith("s"):
+#         return float(period_str[:-1])
+#     return float(period_str)
+
+
+def parse_dwell(dwell_spec: Any) -> float:
+    """Parse dwell period (e.g., '5s', '500ms', or float)"""
+    if isinstance(dwell_spec, (int, float)):
+        return float(dwell_spec)
+
+    if isinstance(dwell_spec, str):
+        dwell_spec = dwell_spec.strip().lower()
+        if dwell_spec.endswith("ms"):
+            return float(dwell_spec[:-2]) / 1000.0
+        elif dwell_spec.endswith("s"):
+            return float(dwell_spec[:-1])
+        else:
+            return float(dwell_spec)
+
+    return 0.0
+
 def resolve_coordinates(step: str, base_xyz: tuple[float, float, float]) -> tuple[int, int, int]:
     """
     Parse a pattern step "a b c" → absolute target from current (x,y,z)

@@ -3,7 +3,7 @@ import pytest
 from typing import AsyncGenerator
 from unittest.mock import Mock, AsyncMock
 
-from mqttbot.core.scheduler import Scheduler
+
 import os
 import tempfile
 from pathlib import Path

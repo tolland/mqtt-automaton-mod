@@ -2,12 +2,12 @@ from collections import deque
 from functools import total_ordering
 from typing import Callable, Awaitable, Optional
 
-from mqttbot.core.tasks.task import Task
-from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
 from rich.repr import rich_repr
 
 from mqttbot.config.threads.thread_status import ThreadStatus
 from mqttbot.core.context import Context
+from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
+from mqttbot.model.tasks.task import Task
 
 
 @total_ordering

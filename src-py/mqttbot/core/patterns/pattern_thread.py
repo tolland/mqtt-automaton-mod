@@ -1,15 +1,14 @@
-from typing import Optional, Callable, Awaitable, Any
+from typing import Optional, Callable, Awaitable, Any, Generator
 
-from mqttbot.core.patterns.pattern_expander import PatternExpander
-from mqttbot.core.tasks.dwell_task import DwellTask
-from mqttbot.core.tasks.goto_task import GotoTask
-from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
-from rich import inspect
 from rich.tree import Tree
 
 from mqttbot.core.context import Context
+from mqttbot.core.tasks.dwell_task import DwellTask
+from mqttbot.core.tasks.goto_task import GotoTask
+from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.model.patterns.patterns_config import PatternsConfig
+from mqttbot.model.tasks.task import TaskFactory, Task, TaskCompiler
 
 """PatternThread - expands waypoints and patterns into deterministic task sequences"""
 
@@ -32,8 +31,7 @@ class PatternThread(TaskThread):
         thread_id: str,
         priority: TaskPriority,
         waypoints: list[dict[str, Any]],
-        patterns: dict[str, list],
-        patterns_config: PatternsConfig,
+        patterns: PatternsConfig,
         on_suspend: Optional[Callable[["TaskThread"], Awaitable[None]]] = None,
         on_resume: Optional[Callable[["TaskThread", Context], Awaitable[None]]] = None,
     ) -> None:
@@ -41,54 +39,48 @@ class PatternThread(TaskThread):
         """
         super().__init__(thread_id, priority, on_suspend, on_resume)
 
-        self.waypoints = waypoints  # Keep for rebuilding on resume
-        self.patterns = patterns
-        self.patterns_config = patterns_config
-        self.current_task_index = 0  # Track where we are in the sequence
+        self.waypoints = waypoints
+        self.patterns_config = patterns
+        self.current_task_index = 0
+
+    def expand_pattern(self, name: str, start_pos: tuple) -> Generator[Task, None, None]:
+        if name not in self.patterns_config:
+            raise ValueError(f"Unknown pattern: {name}")
+
+        pattern_def = self.patterns_config.get(name)
+        # Context persists across the whole pattern sequence
+        context = {"pos": start_pos}
+
+        # 1. Pre-tasks (e.g., toggle wurst ON)
+        for step in pattern_def.get("on_pattern_start", []):
+            yield from TaskFactory.from_config(step, context)
+
+        # 2. Main Movement Steps
+        for step in pattern_def.get("steps", []):
+            yield from TaskFactory.from_config(step, context)
+
+        # 3. Post-tasks (e.g., toggle wurst OFF)
+        for step in pattern_def.get("on_pattern_end", []):
+            yield from TaskFactory.from_config(step, context)
 
     def build_task_sequence(self) -> None:
         """Build the full task sequence from waypoints and patterns
-
-        This is deterministic - same input always produces same output.
-        It's safe to call multiple times.
         """
         self.task_queue.clear()
-        self.current_task_index = 0
+        compiler = TaskCompiler(self.patterns_config)
 
-        for waypoint in self.waypoints:
-            x, y, z = waypoint["x"], waypoint["y"], waypoint["z"]
-            base_pos = (x, y, z)
+        for wp in self.waypoints:
+            wp_pos = (wp["x"], wp["y"], wp["z"])
 
-            # Add goto task to reach this waypoint
-            goto_task = GotoTask.create(x, y, z)
-            self.task_queue.append(goto_task)
+            self.task_queue.append(GotoTask.create(*wp_pos))
 
             # Expand and add pattern tasks
-            pattern_names = waypoint.get("patterns", [])
-            for pattern_name in pattern_names:
-                if pattern_name not in self.patterns:
-                    print(f"[PatternThread] Unknown pattern: {pattern_name}")
-                    raise ValueError(f"Unknown pattern: {pattern_name}")
+            pattern_names = wp.get("patterns", [])
+            for p_name in pattern_names:
+                self.task_queue.extend(compiler.compile_pattern(p_name, wp_pos))
+                wp_pos = compiler.current_pos
 
-                pattern_def = self.patterns[pattern_name].get("steps", [])
-                inspect(pattern_def)
-                expanded = PatternExpander.expand_pattern(pattern_def, base_pos)
 
-                print(f"[PatternThread] Expanded pattern '{pattern_name}' from {base_pos}:")
-
-                # Add expanded tasks to queue
-                for task_type, params in expanded:
-                    if task_type == "goto":
-                        x, y, z = params
-                        print(f"  → goto {params}")
-                        task = GotoTask.create(x, y, z)
-                        self.task_queue.append(task)
-                        base_pos = params  # Update position for next pattern step
-
-                    elif task_type == "dwell":
-                        print(f"  → dwell {params}s")
-                        task = DwellTask(params)
-                        self.task_queue.append(task)
 
     async def suspend(self) -> None:
         """Suspend - save waypoint and task index for resumption"""
@@ -138,7 +130,7 @@ class PatternThread(TaskThread):
 
         return self.current_task is None
 
-    def __rich_repr__(self):
+    def __rich__(self):
         """Rich representation showing expanded task sequence as a tree"""
         # Build tree of tasks organized by waypoint
         root = Tree(
@@ -179,4 +171,4 @@ class PatternThread(TaskThread):
                 # Dwell task
                 waypoint_node.add(f"[blue]dwell[/blue] {task.duration}s")
 
-        yield root
+        return root

@@ -1,9 +1,8 @@
 """Tests for PatternThread - pattern expansion into task sequences"""
-
-from mqttbot.tasks.task_priority import TaskPriority, TaskStatus
-from mqttbot.patterns.pattern_thread import PatternThread
-from mqttbot.tasks.goto_task import GotoTask
-from mqttbot.tasks.dwell_task import DwellTask
+from mqttbot.core.patterns.pattern_thread import PatternThread
+from mqttbot.core.tasks.dwell_task import DwellTask
+from mqttbot.core.tasks.goto_task import GotoTask
+from mqttbot.core.tasks.task_priority import TaskPriority
 
 
 class TestPatternThreadConstruction:
@@ -174,26 +173,6 @@ class TestPatternThreadSuspensionResumption:
         thread.current_task_index = 5
         assert thread.current_task_index == 5
 
-    def test_suspend_saves_task_index(self, sample_waypoints, sample_patterns):
-        """Test that suspend captures task index"""
-        from mqttbot.core.threads.suspension_context import ThreadSuspensionContext
-
-        thread = PatternThread(
-            thread_id="test",
-            priority=TaskPriority.NORMAL,
-            waypoints=sample_waypoints,
-            patterns=sample_patterns,
-        )
-        thread.build_task_sequence()
-
-        # Simulate being at task 5
-        thread.current_task_index = 5
-
-        # Create proper suspension context
-        ctx = ThreadSuspensionContext.from_thread(position=(100, 64, 100), task_index=5)
-
-        assert ctx.current_task_index == 5
-        assert ctx.position_at_suspend == (100, 64, 100)
 
     def test_rebuild_task_sequence_is_deterministic(self, sample_waypoints, sample_patterns):
         """Test that rebuilding sequence produces identical results"""

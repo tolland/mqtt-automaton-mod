@@ -32,8 +32,8 @@ public class MiniTestLocation {
     
     public String tp(float dx, float dy, float dz, float yaw, float pitch)
     {
-        return String.format("tp Wurst-bot %.2f %.2f %.2f %.1f %.1f",
-            baseX + dx, baseY + dy, baseZ + dz, yaw, pitch);
+        return String.format("tp Mqtt-bot %.2f %.2f %.2f %.1f %.1f", baseX + dx,
+            baseY + dy, baseZ + dz, yaw, pitch);
     }
     
     private static String fmt(int offset)

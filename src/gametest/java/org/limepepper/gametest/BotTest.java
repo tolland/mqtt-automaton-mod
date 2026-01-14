@@ -16,6 +16,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
+import org.limepepper.gametest.tests.AutoFarmTest;
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,14 +92,31 @@ public class BotTest implements FabricClientGameTest {
         TestClientWorldContext world = spContext.getClientWorld();
         TestServerContext server = spContext.getServer();
         
+        runWurstCommand(context,
+            "setmode WurstLogo visibility only_when_outdated");
+        runWurstCommand(context, "setcheckbox HackList animations off");
+        
         runCommand(server, "time set noon");
-        runCommand(server, "tp 0 -57 0");
-        runCommand(server, "fill ~ ~-3 ~ ~ ~-1 ~ smooth_stone");
-        runCommand(server, "fill ~-12 ~-3 ~10 ~12 ~9 ~10 smooth_stone");
+        runCommand(server, "tp 0 -60 0");
+        // runCommand(server, "fill ~ ~-3 ~ ~ ~-1 ~ smooth_stone");
+        // runCommand(server, "fill ~-12 ~-3 ~10 ~12 ~9 ~10 smooth_stone");
         
         LOGGER.info("Loading chunks");
         context.waitTicks(2);
         world.waitForChunksRender();
+        
+        input.pressKey(GLFW.GLFW_KEY_F3);
+        input.pressKey(GLFW.GLFW_KEY_F5);
+        
+        context.waitTicks(10);
+        
+        for(String block : List.of("minecraft:comparator"))
+        {
+            
+            AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, spContext,
+                block);
+            
+        }
     }
     
     // because the grass texture is randomized and smooth stone isn't

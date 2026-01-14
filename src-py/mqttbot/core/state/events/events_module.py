@@ -1,7 +1,6 @@
+from mqttbot import MessageData
 from mqttbot.core.state.events.events_state import EventsState
 from mqttbot.core.state.state_module import StateModule
-
-from mqttbot import MessageData
 
 
 class EventsModule(StateModule[EventsState]):

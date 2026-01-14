@@ -1,10 +1,10 @@
 from typing import Any
 
-from mqttbot.core.tasks.task_priority import TaskPriority
-
+from mqttbot.config.service_config import ServiceConfig
 from mqttbot.config.threads.thread_config import ThreadConfig
-from mqttbot.core.service_config import ServiceConfig
-from mqttbot.core.waypoint import Waypoint
+from mqttbot.core.tasks.task_priority import TaskPriority
+from mqttbot.model.waypoint import Waypoint
+from mqttbot.utils.common import parse_dwell
 
 
 class ThreadConfigParser:
@@ -16,8 +16,6 @@ class ThreadConfigParser:
         Parse YAML config and return list of ThreadConfig objects.
         ```
         """
-
-        print(f"{yaml_data=}")
 
         threads = []
         threads_data = yaml_data.get("threads", {})
@@ -41,7 +39,7 @@ class ThreadConfigParser:
                         y=wp_data["y"],
                         z=wp_data["z"],
                         patterns=wp_data.get("patterns", []),
-                        dwell_seconds=ThreadConfigParser._parse_dwell(wp_data.get("dwell", 0)),
+                        dwell_seconds=parse_dwell(wp_data.get("dwell", 0)),
                     )
                     waypoints.append(waypoint)
 
@@ -70,20 +68,3 @@ class ThreadConfigParser:
             threads.append(thread_config)
 
         return threads
-
-    @staticmethod
-    def _parse_dwell(dwell_spec: Any) -> float:
-        """Parse dwell period (e.g., '5s', '500ms', or float)"""
-        if isinstance(dwell_spec, (int, float)):
-            return float(dwell_spec)
-
-        if isinstance(dwell_spec, str):
-            dwell_spec = dwell_spec.strip().lower()
-            if dwell_spec.endswith("ms"):
-                return float(dwell_spec[:-2]) / 1000.0
-            elif dwell_spec.endswith("s"):
-                return float(dwell_spec[:-1])
-            else:
-                return float(dwell_spec)
-
-        return 0.0

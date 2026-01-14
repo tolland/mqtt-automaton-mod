@@ -5,21 +5,22 @@ from asyncio import Queue
 from typing import Any, Optional
 
 import yaml
-from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
-from mqttbot.core.services.bot_service import BotService
-from mqttbot.core.state.blackboard import TypedBlackboard
-from mqttbot.core.state.events.events_module import EventsModule
-from mqttbot.core.state.wurst_module import WurstModule
-from mqttbot.core.tasks.task import Task
-from rich import inspect
+from rich import inspect, print as rprint
 from rich.pretty import pprint
+from rich import print
+from rich.repr import rich_repr
 
 from mqttbot import MessageData
 from mqttbot.config.threads.thread_config_parser import ThreadConfigParser
 from mqttbot.core.context import Context
 from mqttbot.core.events.event_manager import EventManager
 from mqttbot.core.events.event_manager_helper import EventManagerHelper
+from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
 from mqttbot.core.scheduler import Scheduler
+from mqttbot.core.services.bot_service import BotService
+from mqttbot.core.state.blackboard import TypedBlackboard
+from mqttbot.core.state.events.events_module import EventsModule
+from mqttbot.core.state.wurst_module import WurstModule
 from mqttbot.core.threads.thread_helper import ThreadHelper
 from mqttbot.model.settings.settings import Settings
 from mqttbot.mqtt.mqtt_client import MqttClient
@@ -35,17 +36,8 @@ def _load_config(config_path: str) -> dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
+@rich_repr
 class ModularBotClient:
-    """
-    Modular bot client that uses behavior-based architecture.
-
-    This client:
-    - Manages MQTT communication
-    - Orchestrates behaviors through the behavior engine
-    - Handles events and context updates
-    - Provides a clean interface for bot operations
-    """
-
     def __init__(self, settings: Settings, config_path: str):
         """Initialize the modular bot client
 
@@ -53,13 +45,15 @@ class ModularBotClient:
             settings: Settings object containing MQTT and connection configuration
             config_path: Path to YAML config file containing waypoints, patterns, and behaviors
         """
+        self.threads = None
+        self.thread_configs = None
+        self.patterns_configs = None
         self.settings = settings
         self.config_path = config_path
         self.config = _load_config(config_path)
         self._event_queue: Optional[Queue] = None
         self.running = False
         self.event_manager = EventManager(self.config.get("event_handlers", {}))
-        Task.set_log_level(settings.log_level)
 
         # State
         self._last_position = None
@@ -95,7 +89,7 @@ class ModularBotClient:
         pprint(self)
 
     def _handle_mqtt_message(self, payload: str) -> None:
-        """Handle incoming MQTT message payload"""
+        """Handle incoming MQTT message payload turn into MessageData"""
         try:
             # Parse as structured MessageData
             message_data = MessageData.from_json(payload)
@@ -106,6 +100,13 @@ class ModularBotClient:
             raise
 
     def _process_message(self, message_data):
+        """
+        Distribute incoming message to bot service and event manager
+        :param message_data:
+        :type message_data:
+        :return:
+        :rtype:
+        """
 
         self.bot_service.handle_response(message_data)
 
@@ -159,27 +160,35 @@ class ModularBotClient:
             "current_position": self._last_position,
         }
 
-    def start(self) -> None:
+    def configure(self) -> None:
         """Start the bot by initializing threads from config"""
         print(f"[bot] Starting modular bot client")
 
-        # Parse thread configurations
-        thread_configs = ThreadConfigParser.from_yaml(self.config)
-        print(f"[bot] Loaded {len(thread_configs)} thread configuration(s)")
+        self.patterns_configs = PatternsConfigParser.from_yaml(self.config)
+        print(f"[bot] Loaded {len(self.patterns_configs)} patterns configuration(s)")
+        pprint(self.patterns_configs)
 
-        patterns_configs = PatternsConfigParser.from_yaml(self.config)
-        print(f"[bot] Loaded {len(patterns_configs)} patterns configuration(s)")
+        # Parse thread configurations
+        self.thread_configs = ThreadConfigParser.from_yaml(self.config)
+        print(f"[bot] Loaded {len(self.thread_configs)} thread configuration(s)")
 
         # Print thread configurations
-        for thread_config in thread_configs:
+        for thread_config in self.thread_configs:
             pprint(thread_config)
 
-        # Create and register threads
-        for thread_config in thread_configs:
+        self.threads = []
+        for thread_config in self.thread_configs:
             thread = ThreadHelper._create_thread_from_thread_config(
                 thread_config,
-                self.config.get("patterns", {}),
-                patterns_configs)
+                self.patterns_configs)
+            self.threads.append(thread)
+            inspect(thread)
+            print(thread)
+
+
+    def start(self) -> None:
+        """Start the bot by registering threads with the scheduler"""
+        for thread_config, thread in zip(self.thread_configs, self.threads):
             self._scheduler.register_thread(thread)
             print(f"[bot] Registered thread: {thread_config.thread_id}")
 
@@ -192,6 +201,7 @@ class ModularBotClient:
 
         try:
             self.connect()
+            self.configure()
             self.start()
 
             while self.running:
@@ -231,6 +241,27 @@ class ModularBotClient:
                 await self._handle_event_async(message_data)
             except asyncio.QueueEmpty:
                 break
+
+    def __rich_repr__(self):
+        """Rich representation of the ModularBotClient"""
+        yield "config_path", self.config_path
+        yield "running", self.running
+        yield "mqtt_connected", self.mqtt.is_connected
+        if hasattr(self.mqtt, "topic_cmd") and self.mqtt.topic_cmd:
+            yield "topic_cmd", self.mqtt.topic_cmd
+        if hasattr(self.mqtt, "topic_reply") and self.mqtt.topic_reply:
+            yield "topic_reply", self.mqtt.topic_reply
+        if hasattr(self.mqtt, "topic_pos") and self.mqtt.topic_pos:
+            yield "topic_pos", self.mqtt.topic_pos
+        if hasattr(self.blackboard, "_modules") and self.blackboard._modules:
+            yield "blackboard_modules", list(self.blackboard._modules.keys())
+        if hasattr(self._scheduler, "_threads"):
+            yield "scheduler_threads", len(self._scheduler._threads)
+        if self.thread_configs is not None:
+            yield "thread_configs", len(self.thread_configs)
+        if self.patterns_configs is not None:
+            yield "patterns_configs", len(self.patterns_configs)
+        yield "event_handlers", len(self.event_manager.handlers)
 
     def __repr__(self) -> str:
         """Return a rich representation of the ModularBotClient"""

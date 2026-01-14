@@ -8,15 +8,16 @@ Can be used in patterns, events, or any other thread that needs timing control.
 """
 
 import time
-from typing import Optional
+from typing import Optional, Any
 
-from mqttbot.core.tasks.task import Task
+from mqttbot.config.tasks.task_decorator import task
+from mqttbot.core.context import Context
+from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
 
-from mqttbot.core.context import Context
 
-
-class DwellTask(Task):
+@task("dwell")
+class DwellTask(TaskBase):
     """Client-side pause/wait for a specified duration
 
     This is a pure client-side task - it doesn't send any messages or
@@ -27,7 +28,12 @@ class DwellTask(Task):
     - Bot stabilization (brief pause after reaching a waypoint)
     """
 
-    def __init__(self, seconds: float, reason: Optional[str] = None):
+    def __init__(
+            self,
+            service: str = None,
+            method: str = None,
+            params: dict[str, Any] = None,
+    ):
         """Initialize dwell task
 
         Args:
@@ -35,8 +41,8 @@ class DwellTask(Task):
             reason: Optional description (for logging)
         """
         super().__init__()
-        self.duration = seconds
-        self.reason = reason or ""
+        self.duration = params["period"]
+        self.reason = params.get("reason", "")
         self.start_time: float = 0.0
 
     def _enter(self, ctx: Context) -> None:
@@ -61,7 +67,6 @@ class DwellTask(Task):
         elapsed = time.time() - self.start_time
         remaining = self.duration - elapsed
         print(f"[DwellTask] Suspended with {remaining:.1f}s remaining")
-
 
     def _resume(self, ctx: Context) -> None:
         """Resume - adjust start time to account for remaining duration"""

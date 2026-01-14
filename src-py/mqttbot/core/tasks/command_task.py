@@ -1,14 +1,15 @@
 from typing import Optional, Any
 
+from mqttbot import MessageData
+from mqttbot.config.tasks.task_decorator import task
+from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult, RequestStatus
-from mqttbot.core.tasks.task import Task
+from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
 
-from mqttbot import MessageData
-from mqttbot.core.context import Context
 
-
-class CommandTask(Task):
+@task("command")
+class CommandTask(TaskBase):
     """Run arbitrary command"""
 
     def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):

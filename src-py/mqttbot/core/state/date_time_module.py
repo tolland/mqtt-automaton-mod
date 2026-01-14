@@ -1,7 +1,6 @@
+from mqttbot import MessageData
 from mqttbot.core.state.date_time_state import DateTimeState
 from mqttbot.core.state.state_module import StateModule
-
-from mqttbot import MessageData
 
 
 class DateTimeModule(StateModule[DateTimeState]):

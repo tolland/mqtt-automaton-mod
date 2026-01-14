@@ -72,7 +72,7 @@ public class MqttBotLogger {
     {
         if(config.isDebugEvents() && config.isLogLevelEnabled("DEBUG"))
         {
-            logger.debug("[EVENTS] " + message, args);
+            logger.debug("[EVENTS] {} '{}'", message, args);
         }
     }
     

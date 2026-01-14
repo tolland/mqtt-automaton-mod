@@ -16,15 +16,12 @@ base {
 }
 
 repositories {
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
     maven { url = "https://maven.shedaniel.me/" }
     maven { url = "https://maven.terraformersmc.com/releases/" }
     maven {
         name = 'ParchmentMC'
         url = 'https://maven.parchmentmc.org'
     }
-    flatDir { dirs 'libs' }
 
     ivy {
         url = "https://github.com/cabaletta/baritone/releases/download"
@@ -39,11 +36,23 @@ repositories {
         name = 'babbaj-repo'
         url = 'https://babbaj.github.io/maven/'
     }
+    maven {
+        name = 'tolland-wurst'
+        url = uri("https://maven.pkg.github.com/tolland/Wurst7")
+    }
+//    ivy {
+//        url 'https://github.com/tolland/Wurst7/releases/download'
+//        patternLayout {
+//            artifact '[revision]/[module]-[revision](-[classifier]).[ext]'
+//        }
+//        metadataSources {
+//            artifact()
+//        }
+//    }
 }
 
 
 dependencies {
-    // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered() {
         officialMojangMappings()
@@ -55,23 +64,25 @@ dependencies {
 
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
     implementation 'org.yaml:snakeyaml:2.0'
-    modImplementation "cabaletta:baritone-api-fabric:1.15.0"
-    modImplementation ":Wurst-Client:v7.51.2-MC1.21.8"
+    modImplementation "cabaletta:baritone-api-fabric:${baritone_version}"
+    modImplementation "net.wurstclient:wurst-client:1.21.8-develop"
     modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {
         exclude(group: "net.fabricmc.fabric-api")
     }
     implementation "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
     implementation "io.moquette:moquette-broker:0.17"
+
+    testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 }
 
 fabricApi {
     configureTests {
         createSourceSet = false
-        // if I set this to true, it breaks the gametest setup. But otherwise nothing knows about gametest sourceset?
         modId = "mqttbot-test"
         enableGameTests = false
         enableClientGameTests = true
         eula = true
+        username = "Mqtt-Bot"
     }
 }
 
@@ -89,7 +100,7 @@ afterEvaluate {
             runtimeClasspath += sourceSets.main.runtimeClasspath
             runtimeClasspath += sourceSets.client.runtimeClasspath
         }
-        "srcpy" {
+        "src-py" {
             java {
                 srcDir "src-py"
             }

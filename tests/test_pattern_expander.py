@@ -2,7 +2,7 @@
 
 import pytest
 
-from mqttbot.patterns.pattern_expander import PatternExpander
+from mqttbot.core.patterns.pattern_expander import PatternExpander
 
 
 class TestPatternExpanderParsing:

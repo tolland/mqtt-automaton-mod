@@ -5,8 +5,11 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.world.level.block.CropBlock;
+import net.wurstclient.WurstClient;
 import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -79,5 +82,65 @@ public enum BotTestHelper
     public static void clearChat(ClientGameTestContext context)
     {
         context.runOnClient(mc -> mc.gui.getChat().clearMessages(true));
+    }
+    
+    public static void debugBlock(int relX, int relY, int relZ)
+    {
+        final Minecraft MC = WurstClient.MC;
+        assert MC.player != null;
+        var pos = MC.player.blockPosition().offset(relX, relY, relZ);
+        assert MC.level != null;
+        var state = MC.level.getBlockState(pos);
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("Block @ ").append(pos).append("\n");
+        sb.append("Block: ").append(state.getBlock()).append("\n");
+        sb.append("BlockState: ").append(state).append("\n");
+        sb.append("Properties:\n");
+        
+        for(var entry : state.getValues().entrySet())
+        {
+            sb.append("  ").append(entry.getKey().getName()).append(" = ")
+                .append(entry.getValue()).append("\n");
+        }
+        
+        System.out.println(sb);
+    }
+    
+    public static void runWurstCommand(ClientGameTestContext context,
+        String command)
+    {
+        TestInput input = context.getInput();
+        input.pressKey(GLFW.GLFW_KEY_T);
+        input.typeChars("." + command);
+        input.pressKey(GLFW.GLFW_KEY_ENTER);
+    }
+    
+    /**
+     * Waits for a crop at the given relative position to reach the given age.
+     *
+     * @param context
+     *            the test context
+     * @param relX
+     *            relative X position from player
+     * @param relY
+     *            relative Y position from player
+     * @param relZ
+     *            relative Z position from player
+     * @param age
+     *            the expected age of the crop
+     */
+    public static void waitForCropAge(ClientGameTestContext context, int relX,
+        int relY, int relZ, int age)
+    {
+        context.waitFor(mc -> {
+            assert mc.player != null;
+            assert mc.level != null;
+            var state = mc.level.getBlockState(
+                mc.player.blockPosition().offset(relX, relY, relZ));
+            return (state.getBlock() instanceof CropBlock)
+                && (((net.minecraft.world.level.block.CropBlock)state
+                    .getBlock()).getAge(state) == age);
+        });
     }
 }

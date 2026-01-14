@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
+from rich import inspect
+
 from mqttbot import MessageData
 from mqttbot.core.threads.task_thread import TaskThread
-from mqttbot.model.tasks.task_step_config import TaskStepConfig
+from mqttbot.model.patterns.step import TaskStep
 
 
 @dataclass
@@ -11,7 +13,7 @@ class EventHandlerConfig:
     """Configuration for an event handler"""
 
     enabled: bool
-    steps: list[TaskStepConfig]
+    steps: list[TaskStep]
 
 
 class EventManager:
@@ -47,12 +49,16 @@ class EventManager:
 
                 steps = []
                 for step_def in handler_config.get("steps", []):
-                    step = TaskStepConfig(
-                        type=step_def.get("type", "command"),
-                        service=step_def["service"],
-                        method=step_def["method"],
-                        params=step_def.get("params", {}),
-                    )
+                    try:
+                        step = TaskStep(
+                            type=step_def.get("type", "command"),
+                            service=step_def["service"],
+                            method=step_def["method"],
+                            params=step_def.get("params", {}),
+                        )
+                    except:
+                        inspect(step_def)
+                        raise
                     steps.append(step)
 
                 key = (service_name, method_name)

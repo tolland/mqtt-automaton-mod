@@ -199,7 +199,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
             String botId = MC.getUser().getName();
             
             JsonObject errorParams = new JsonObject();
-            errorParams.addProperty("success", false);
+            errorParams.addProperty("status", "failed");
             errorParams.addProperty("error", errorMessage);
             errorParams.addProperty("errorCode", errorCode);
             if(originalData.getMethod() != null)
@@ -208,9 +208,10 @@ public class WurstHandler extends Action implements MqttMessageListener {
                     originalData.getMethod());
             }
             
-            MessageData replyData = new MessageData("wurst", "response",
-                originalData.getRequestId(), originalData.getCorrelationId(),
-                errorParams, "minecraft_client", errorMessage);
+            MessageData replyData = new MessageData("wurst",
+                originalData.getMethod(), originalData.getRequestId(),
+                originalData.getCorrelationId(), null, errorParams,
+                "minecraft_client", errorMessage);
             
             EventManager
                 .fire(new MqttReplyListener.MqttReplyEvent(botId, replyData));
@@ -232,7 +233,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
             String botId = MC.getUser().getName();
             
             JsonObject successParams = new JsonObject();
-            successParams.addProperty("success", true);
+            successParams.addProperty("status", "success");
             successParams.addProperty("message", successMessage);
             if(originalData.getMethod() != null)
             {
@@ -240,9 +241,10 @@ public class WurstHandler extends Action implements MqttMessageListener {
                     originalData.getMethod());
             }
             
-            MessageData replyData = new MessageData("wurst", "response",
-                originalData.getRequestId(), originalData.getCorrelationId(),
-                successParams, "minecraft_client", successMessage);
+            MessageData replyData = new MessageData("wurst",
+                originalData.getMethod(), originalData.getRequestId(),
+                originalData.getCorrelationId(), null, successParams,
+                "minecraft_client", successMessage);
             
             EventManager
                 .fire(new MqttReplyListener.MqttReplyEvent(botId, replyData));

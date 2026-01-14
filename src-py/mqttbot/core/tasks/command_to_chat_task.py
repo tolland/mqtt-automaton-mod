@@ -1,17 +1,17 @@
 from typing import Optional, Any
 
-
-
 from mqttbot import MessageData
+from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult
 from mqttbot.core.state.events.events_state import EventsState
 from mqttbot.core.tasks.goto_task import GotoTaskState
-from mqttbot.core.tasks.task import Task
+from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
 
 
-class CommandToChatTask(Task):
+@task("commandtochat")
+class CommandToChatTask(TaskBase):
     """
     A Task that sends a command to a chat service and waits for the response.
     in the chat and filter based on params

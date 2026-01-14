@@ -1,7 +1,6 @@
+from mqttbot import MessageData
 from mqttbot.core.state.inventory_state import InventoryState
 from mqttbot.core.state.state_module import StateModule
-
-from mqttbot import MessageData
 from mqttbot.model.bot.inventory.inventory_item import InventoryItem
 
 

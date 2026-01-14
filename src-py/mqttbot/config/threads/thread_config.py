@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from mqttbot.core.tasks.task_priority import TaskPriority
 from rich.repr import rich_repr
 
-from mqttbot.core.service_config import ServiceConfig
-from mqttbot.core.waypoint import Waypoint
+from mqttbot.config.service_config import ServiceConfig
+from mqttbot.core.tasks.task_priority import TaskPriority
+from mqttbot.model.waypoint import Waypoint
 
 
 @rich_repr
@@ -28,9 +28,9 @@ class ThreadConfig:
         yield "priority", (
             self.priority.name if hasattr(self.priority, "name") else str(self.priority)
         )
-        yield "waypoints", len(self.waypoints)
+        yield "waypoints", self.waypoints
         yield "services", list(self.services.keys())
-        yield "on_suspend_tasks", len(self.on_suspend_tasks)
-        yield "on_resume_tasks", len(self.on_resume_tasks)
+        yield "on_suspend_tasks", self.on_suspend_tasks
+        yield "on_resume_tasks", self.on_resume_tasks
         if self.metadata:
             yield "metadata", self.metadata

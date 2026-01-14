@@ -15,7 +15,9 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
- * Handles chat messages from mods (Wurst, Baritone) and server messages.
+ * Handles generic chat and command messages. It is also used to handle
+ * messages that are directly inserted into the chat box by other mods, such as
+ * Baritone and Wurst.
  * Filters for completion messages and sends them as MQTT events.
  */
 public class ChatMessageAction extends Action implements ChatMessageListener {
@@ -107,18 +109,18 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
                 (mc.player != null) ? mc.getUser().getName() : "unknown";
             
             // Create structured response data
-            JsonObject responseData = new JsonObject();
-            responseData.addProperty("source", source);
-            responseData.addProperty("event_type", eventType);
-            responseData.addProperty("raw_message", rawMessage);
-            responseData.addProperty("clean_message", cleanMessage);
-            responseData.addProperty("player", playerName);
-            responseData.addProperty("timestamp", System.currentTimeMillis());
+            JsonObject resp = new JsonObject();
+            resp.addProperty("source", source);
+            resp.addProperty("event_type", eventType);
+            resp.addProperty("raw_message", rawMessage);
+            resp.addProperty("clean_message", cleanMessage);
+            resp.addProperty("player", playerName);
+            resp.addProperty("timestamp", System.currentTimeMillis());
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
                 new MessageData("events", "chat_message",
-                    UUID.randomUUID().toString(), null, null, responseData,
-                    "mqttbot", null)));
+                    UUID.randomUUID().toString(), null, null, resp, "mqttbot",
+                    null)));
             
             LOGGER.debug("Sent chat event: {} / {}", source, eventType);
             

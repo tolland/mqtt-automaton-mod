@@ -1,9 +1,11 @@
 package org.limepepper.mqttbot.integrations.command;
 
+import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
+import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 
 /**
@@ -58,6 +60,21 @@ public final class SendCommandHandler extends Action
             {
                 
                 MC.getConnection().sendCommand(sendCommand);
+                
+                String botId = MC.getUser().getName();
+                
+                JsonObject successParams = new JsonObject();
+                successParams.addProperty("status", "success");
+                successParams.addProperty("message", "message sent");
+                
+                MessageData replyData = new MessageData("wurst",
+                    mqttMessageEvent.messageData.getMethod(),
+                    mqttMessageEvent.messageData.getRequestId(),
+                    mqttMessageEvent.messageData.getCorrelationId(), null,
+                    successParams, "minecraft_client",
+                    "mqttbot_client_" + botId);
+                EventManager.fire(
+                    new MqttReplyListener.MqttReplyEvent(botId, replyData));
             }
             
             break;

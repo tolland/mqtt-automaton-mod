@@ -2,12 +2,12 @@ import time
 from enum import Enum
 from typing import Optional, Any
 
-from mqttbot.core.services.message_service import RequestStatus
-from mqttbot.core.tasks.task import Task
-from mqttbot.core.tasks.task_priority import TaskStatus
-
+from mqttbot.config.service_config import ServiceConfig
+from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
-from mqttbot.core.service_config import ServiceConfig
+from mqttbot.core.services.message_service import RequestStatus
+from mqttbot.core.tasks.task_base import TaskBase
+from mqttbot.core.tasks.task_priority import TaskStatus
 
 
 class GotoTaskState(Enum):
@@ -16,8 +16,8 @@ class GotoTaskState(Enum):
     WAITING = "waiting"
     DONE = "done"
 
-
-class GotoTask(Task):
+@task("goto")
+class GotoTask(TaskBase):
 
     def __init__(
         self,

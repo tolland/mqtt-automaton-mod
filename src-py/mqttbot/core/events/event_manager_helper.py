@@ -1,9 +1,8 @@
 from typing import Optional
 
-from mqttbot.core.tasks.task_priority import TaskPriority
-
 from mqttbot import MessageData
 from mqttbot.core.events.event_manager import EventHandlerConfig
+from mqttbot.core.tasks.task_priority import TaskPriority
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.core.threads.thread_helper import ThreadHelper
 

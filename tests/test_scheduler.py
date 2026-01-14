@@ -2,7 +2,7 @@
 
 import pytest
 from mqttbot.core.scheduler import Scheduler
-from mqttbot.tasks.task_priority import TaskPriority, TaskStatus
+from mqttbot.core.tasks.task_priority import TaskPriority
 from mqttbot.core.threads.task_thread import TaskThread
 
 

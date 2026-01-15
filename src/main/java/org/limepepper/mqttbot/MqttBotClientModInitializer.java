@@ -26,10 +26,6 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
     public void onInitializeClient()
     {
         
-        if(initialized)
-            throw new RuntimeException(
-                "MqttBotInitializer.onInitialize() ran twice!");
-        
         MqttCore.INSTANCE.initialize();
         
         ClientNightWatcher.init();

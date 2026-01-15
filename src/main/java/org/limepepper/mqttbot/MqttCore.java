@@ -1,6 +1,7 @@
 package org.limepepper.mqttbot;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import org.limepepper.mqttbot.actions.*;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.*;
@@ -39,5 +40,41 @@ public enum MqttCore
     public boolean isEnabled()
     {
         return true;
+    }
+    
+    /**
+     * Sends a chat message to the server.
+     * This method can be mocked for testing.
+     */
+    public void sendChat(String message)
+    {
+        if(MC.getConnection() != null)
+        {
+            MC.getConnection().sendChat(message);
+        }
+    }
+    
+    /**
+     * Gets the local player instance.
+     * Returns null if not connected or player not available.
+     * This method can be mocked for testing.
+     */
+    public LocalPlayer getPlayer()
+    {
+        return MC.player;
+    }
+    
+    /**
+     * Gets the player's name.
+     * Returns "unknown" if player is not available.
+     * This method can be mocked for testing.
+     */
+    public String getPlayerName()
+    {
+        if(MC.player != null)
+        {
+            return MC.getUser().getName();
+        }
+        return "unknown";
     }
 }

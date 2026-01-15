@@ -23,7 +23,7 @@ public final class InventoryWatcher {
     private static boolean wasPreviouslyFullForPrimary = false;
     private static String previousPrimaryItem = null;
     private static int tickCounter = 0;
-    private static final int CHECK_INTERVAL = 10; // Check every 10 ticks (0.5
+    private static final int CHECK_INTERVAL = 20; // Check every 10 ticks (0.5
                                                   // seconds)
     
     public static void init()

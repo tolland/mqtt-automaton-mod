@@ -119,6 +119,7 @@ public class BotTest implements FabricClientGameTest {
             
         }
         BaritoneBotBasicTest.testBaritoneIsWorking(context, spContext);
+        BaritoneBotBasicTest.testBaritoneIsWorking2(context, spContext);
     }
     
     // because the grass texture is randomized and smooth stone isn't

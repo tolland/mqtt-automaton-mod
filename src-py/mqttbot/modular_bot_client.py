@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import time
+import uuid
 from asyncio import Queue
 from typing import Any, Optional
 
@@ -142,6 +143,21 @@ class ModularBotClient:
     def connect(self) -> None:
         """Connect to MQTT broker"""
         self.mqtt.connect()
+
+    def exit(self):
+        """Exit the bot gracefully"""
+        self.send_mqtt_message(
+            MessageData(
+                **{
+                    "service": "mqttcore",
+                    "method": "exit",
+                    "request_id": str(uuid.uuid4()),
+                    "params": {},
+                }
+            )
+        )
+        # self._scheduler.stop()
+        self.stop()
 
     def stop(self) -> None:
         """Stop the bot"""

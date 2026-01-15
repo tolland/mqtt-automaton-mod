@@ -10,7 +10,7 @@ class PatternExpander:
     """Expands relative pattern coordinates into absolute ones"""
 
     @staticmethod
-    def parse_pattern_step2(step_def: str | dict) -> Optional[StepBase]:
+    def parse_pattern_step(step_def: str | dict) -> Optional[StepBase]:
         """Parse a pattern step definition into either  relative coords or a concrete task step
         """
         if isinstance(step_def, dict):

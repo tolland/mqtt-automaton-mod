@@ -3,7 +3,8 @@
 import asyncio
 import sys
 from pathlib import Path
-
+import atexit
+import signal
 import typer
 from rich import print as rprint
 from rich.console import Console
@@ -107,6 +108,15 @@ def run(
 
         # Create and run modular bot client
         client = ModularBotClient(settings, str(config))
+
+        def cleanup(message: str = ""):
+            # print(f"cleaning up requests_debugger: {message}")
+            client.exit()
+
+        atexit.register(cleanup, "atexit")
+        signal.signal(signal.SIGINT, lambda signum, frame: cleanup("sigint"))
+        signal.signal(signal.SIGTERM, lambda signum, frame: cleanup("sigterm"))
+
         rc = asyncio.run(client.run())
         sys.exit(rc)
 

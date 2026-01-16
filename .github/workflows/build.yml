@@ -32,6 +32,9 @@ jobs:
         run: chmod +x ./gradlew
       - name: build
         run: ./gradlew build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ secrets.GITHUB_ACTOR }}
       # - name: capture build artifacts
       #   if: ${{ runner.os == 'Linux' && matrix.java == '21' }} # Only upload artifacts built from latest java on one OS
       #   uses: actions/upload-artifact@v3

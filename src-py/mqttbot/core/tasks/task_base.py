@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from rich.repr import rich_repr
 
@@ -17,6 +18,10 @@ class TaskBase(ABC):
     status: TaskStatus = TaskStatus.READY
 
     _log_level: str = "DEBUG"
+
+    def __init__(self):
+        """Initialize task with correlation_id set to None (injected by thread on enqueue)"""
+        self.correlation_id: Optional[str] = None
 
     @trace
     def enter(self, ctx):
@@ -65,6 +70,8 @@ class TaskBase(ABC):
 
         # DEBUG level: show all relevant attributes
         if self._log_level == "DEBUG":
+            if hasattr(self, "correlation_id") and self.correlation_id:
+                yield "correlation_id", self.correlation_id
             if hasattr(self, "interruptible") and not self.interruptible:
                 yield "interruptible", self.interruptible
 

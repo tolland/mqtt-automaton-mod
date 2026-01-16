@@ -12,7 +12,7 @@ class BotService(MessageService):
     def __init__(self, ctx: Context):
         super().__init__(ctx, "bot")
 
-    def send_goto(self, x: int, y: int, z: int) -> str:
+    def send_goto(self, x: int, y: int, z: int, correlation_id: Optional[str] = None) -> str:
         """
         Send baritone goto request, return request_id immediately (non-blocking).
 
@@ -20,6 +20,7 @@ class BotService(MessageService):
             x: Target X coordinate
             y: Target Y coordinate
             z: Target Z coordinate
+            correlation_id: Optional correlation ID for tracking thread instance
 
         Returns:
             The request_id of the sent message
@@ -31,18 +32,19 @@ class BotService(MessageService):
                 "service": "baritone",
                 "method": "goto",
                 "request_id": request_id,
-                "correlation_id": self.ctx.correlation_id,
+                "correlation_id": correlation_id,
                 "params": {"x": x, "y": y, "z": z},
             }
         )
         return self.send_message(message_data)
 
-    def sleep(self, radius: Optional[int] = None) -> str:
+    def sleep(self, radius: Optional[int] = None, correlation_id: Optional[str] = None) -> str:
         """
         Send sleep request, return request_id immediately (non-blocking).
 
         Args:
             radius: Optional scan radius for finding beds (defaults to server default)
+            correlation_id: Optional correlation ID for tracking thread instance
 
         Returns:
             The request_id of the sent message
@@ -58,7 +60,7 @@ class BotService(MessageService):
                 "service": "sleep",
                 "method": "start",
                 "request_id": request_id,
-                "correlation_id": self.ctx.correlation_id,
+                "correlation_id": correlation_id,
                 "params": params,
             }
         )
@@ -72,6 +74,7 @@ class BotService(MessageService):
         target_z: float,
         radius: Optional[int] = None,
         command_template: Optional[str] = None,
+        correlation_id: Optional[str] = None,
     ) -> str:
         """
         Send warp/teleport request, return request_id immediately (non-blocking).
@@ -83,6 +86,7 @@ class BotService(MessageService):
             target_z: Expected destination Z coordinate (required)
             radius: Optional radius for position checking (defaults to server default, typically 5)
             command_template: Optional command template (defaults to "warp {name}")
+            correlation_id: Optional correlation ID for tracking thread instance
 
         Returns:
             The request_id of the sent message
@@ -109,7 +113,7 @@ class BotService(MessageService):
                 "service": "warp",
                 "method": "teleport",
                 "request_id": request_id,
-                "correlation_id": self.ctx.correlation_id,
+                "correlation_id": correlation_id,
                 "params": params,
             }
         )

@@ -91,12 +91,14 @@ class PatternThread(TaskThread):
         for wp in self.waypoints:
             wp_pos = (wp["x"], wp["y"], wp["z"])
 
-            self.task_queue.append(GotoTask.create(*wp_pos))
+            # Use enqueue_task to properly inject correlation_id
+            self.enqueue_task(GotoTask.create(*wp_pos))
 
             # Expand and add pattern tasks
             pattern_names = wp.get("patterns", [])
             for p_name in pattern_names:
-                self.task_queue.extend(compiler.compile_pattern(p_name, wp_pos))
+                for task in compiler.compile_pattern(p_name, wp_pos):
+                    self.enqueue_task(task)
                 wp_pos = compiler.current_pos
 
 

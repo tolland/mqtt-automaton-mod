@@ -62,7 +62,7 @@ class GotoTask(TaskBase):
         if self._state == GotoTaskState.INIT:
             # Send request
             print(f"[GotoTask] Sending goto {self.target}")
-            self.request_id = bot_service.send_goto(*self.target)
+            self.request_id = bot_service.send_goto(*self.target, correlation_id=self.correlation_id)
             self._sent_time = time.time()
             self._state = GotoTaskState.SENT
             return TaskStatus.RUNNING

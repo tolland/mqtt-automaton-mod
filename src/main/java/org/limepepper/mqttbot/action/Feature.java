@@ -8,4 +8,14 @@ public abstract class Feature {
     protected static final MqttCore MQTT_BOT_CLIENT = MqttCore.INSTANCE;
     protected static final EventManager EVENTS =
         MQTT_BOT_CLIENT.getEventManager();
+    
+    protected void onEnable()
+    {
+        
+    }
+    
+    protected void onDisable()
+    {
+        
+    }
 }

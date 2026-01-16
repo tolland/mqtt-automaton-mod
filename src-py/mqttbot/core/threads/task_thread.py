@@ -1,3 +1,4 @@
+import uuid
 from collections import deque
 from functools import total_ordering
 from typing import Callable, Awaitable, Optional
@@ -25,6 +26,10 @@ class TaskThread:
         self.thread_id = thread_id
         self.priority = priority
         self.state = ThreadStatus.READY
+
+        # Generate unique correlation_id for this thread execution instance
+        # Format: thread_id-uuid allows tracking all messages from this thread instance
+        self.correlation_id = f"{thread_id}-{uuid.uuid4()}"
 
         self.current_task: Optional[Task] = None
         self.task_queue: deque[Task] = deque()
@@ -102,6 +107,7 @@ class TaskThread:
 
     def __rich_repr__(self):
         yield "thread_id", self.thread_id
+        yield "correlation_id", self.correlation_id
         yield "priority", self.priority.name
         yield "state", self.state.value
         yield "current_task", type(self.current_task).__name__ if self.current_task else None

@@ -31,6 +31,7 @@ class BotService(MessageService):
                 "service": "baritone",
                 "method": "goto",
                 "request_id": request_id,
+                "correlation_id": self.ctx.correlation_id,
                 "params": {"x": x, "y": y, "z": z},
             }
         )
@@ -57,6 +58,7 @@ class BotService(MessageService):
                 "service": "sleep",
                 "method": "start",
                 "request_id": request_id,
+                "correlation_id": self.ctx.correlation_id,
                 "params": params,
             }
         )
@@ -107,6 +109,7 @@ class BotService(MessageService):
                 "service": "warp",
                 "method": "teleport",
                 "request_id": request_id,
+                "correlation_id": self.ctx.correlation_id,
                 "params": params,
             }
         )

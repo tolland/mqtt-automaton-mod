@@ -81,17 +81,17 @@ public class BotTest implements FabricClientGameTest {
         
         try(TestSingleplayerContext spContext = worldBuilder.create())
         {
-            testInWorld(context, spContext);
+            TestServerContext server = spContext.getServer();
+            TestClientWorldContext world = spContext.getClientWorld();
+            testInWorld(context, server);
             LOGGER.info("Exiting test world");
         }
     }
     
     private void testInWorld(ClientGameTestContext context,
-        TestSingleplayerContext spContext)
+        TestServerContext server)
     {
         TestInput input = context.getInput();
-        TestClientWorldContext world = spContext.getClientWorld();
-        TestServerContext server = spContext.getServer();
         
         runWurstCommand(context,
             "setmode WurstLogo visibility only_when_outdated");
@@ -104,7 +104,7 @@ public class BotTest implements FabricClientGameTest {
         
         LOGGER.info("Loading chunks");
         context.waitTicks(2);
-        world.waitForChunksRender();
+        // world.waitForChunksRender();
         
         input.pressKey(GLFW.GLFW_KEY_F3);
         input.pressKey(GLFW.GLFW_KEY_F5);
@@ -114,12 +114,11 @@ public class BotTest implements FabricClientGameTest {
         for(String block : List.of("minecraft:comparator"))
         {
             
-            AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, spContext,
-                block);
+            AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, server, block);
             
         }
-        BaritoneBotBasicTest.testBaritoneIsWorking(context, spContext);
-        BaritoneBotBasicTest.testBaritoneIsWorking2(context, spContext);
+        BaritoneBotBasicTest.testBaritoneIsWorking(context, server);
+        BaritoneBotBasicTest.testBaritoneIsWorking2(context, server);
     }
     
     // because the grass texture is randomized and smooth stone isn't

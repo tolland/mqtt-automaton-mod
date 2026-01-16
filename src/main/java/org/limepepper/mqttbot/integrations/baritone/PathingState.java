@@ -96,7 +96,7 @@ class PathingState {
     
     boolean shouldSendPosition()
     {
-        if(++posTick >= BaritonePathing.POSITION_UPDATE_PERIOD_TICKS)
+        if(++posTick >= Constants.POSITION_UPDATE_PERIOD_TICKS)
         {
             posTick = 0;
             return true;

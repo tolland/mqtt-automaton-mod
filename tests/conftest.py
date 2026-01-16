@@ -5,6 +5,11 @@ from pathlib import Path
 from typing import Generator, Any
 from unittest.mock import Mock, AsyncMock
 
+
+import subprocess
+import time
+import pytest
+from pathlib import Path
 import pytest
 
 from mqttbot.core.scheduler import Scheduler
@@ -117,3 +122,31 @@ def sample_waypoints():
             "patterns": ["simple"],
         },
     ]
+
+
+
+@pytest.fixture(scope="session")
+def minecraft_client():
+    """Start minecraft client before tests, stop after."""
+    project_root = Path(__file__).parent.parent
+
+    process = subprocess.Popen(
+        ["./gradlew", "runClient"],
+        cwd=project_root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    # Wait for client to start
+    time.sleep(10)
+
+    yield process
+
+    # Cleanup
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()

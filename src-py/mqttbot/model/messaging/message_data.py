@@ -17,6 +17,7 @@ class MessageData:
     response: dict[str, Any] = field(default_factory=dict)
     identity: str = "python_client"
     message: Optional[str] = None
+    timestamp: Optional[str] = None
 
     def to_json(self) -> str:
         """Convert to JSON string matching Java MessageData format."""

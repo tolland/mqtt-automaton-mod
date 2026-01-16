@@ -3,7 +3,6 @@ package org.limepepper.gametest.tests;
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import org.limepepper.gametest.MiniTestContext;
 import org.limepepper.gametest.BotTest;
 
@@ -36,11 +35,10 @@ public enum AutoFarmTest
     }
     
     public static void testAutoFarmPlaceAtFootLevel(
-        ClientGameTestContext context, TestSingleplayerContext spContext,
+        ClientGameTestContext context, TestServerContext server,
         String interactBlock)
     {
         TestInput input = context.getInput();
-        TestServerContext server = spContext.getServer();
         
         BotTest.LOGGER.info("Testing AutoFarm place at foot level with {}",
             interactBlock);

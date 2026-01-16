@@ -8,6 +8,8 @@ import java.util.ArrayList;
 public interface ClientListener extends Listener {
     public void onClientJoin();
     
+    public void onClientDisconnect();
+    
     public static class ClientJoinEvent extends Event<ClientListener> {
         
         public static final ClientListener.ClientJoinEvent INSTANCE =
@@ -18,6 +20,25 @@ public interface ClientListener extends Listener {
         {
             for(ClientListener listener : listeners)
                 listener.onClientJoin();
+        }
+        
+        @Override
+        public Class<ClientListener> getListenerType()
+        {
+            return ClientListener.class;
+        }
+    }
+    
+    public static class ClientDisconnectEvent extends Event<ClientListener> {
+        
+        public static final ClientListener.ClientDisconnectEvent INSTANCE =
+            new ClientListener.ClientDisconnectEvent();
+        
+        @Override
+        public void fire(ArrayList<ClientListener> listeners)
+        {
+            for(ClientListener listener : listeners)
+                listener.onClientDisconnect();
         }
         
         @Override

@@ -5,9 +5,8 @@ import org.limepepper.mqttbot.event.EventManager;
 
 public abstract class Feature {
     
-    protected static final MqttCore MQTT_BOT_CLIENT = MqttCore.INSTANCE;
-    protected static final EventManager EVENTS =
-        MQTT_BOT_CLIENT.getEventManager();
+    protected static final MqttCore CORE = MqttCore.INSTANCE;
+    protected static final EventManager EVENTS = CORE.getEventManager();
     
     protected void onEnable()
     {

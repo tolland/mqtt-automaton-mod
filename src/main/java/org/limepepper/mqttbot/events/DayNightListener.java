@@ -6,11 +6,11 @@ import org.limepepper.mqttbot.event.Listener;
 import java.util.ArrayList;
 
 public interface DayNightListener extends Listener {
-    public void onNightStart();
+    void onNightStart();
     
-    public void onDayStart();
+    void onDayStart();
     
-    public static class NightStartEvent extends Event<DayNightListener> {
+    class NightStartEvent extends Event<DayNightListener> {
         public static final NightStartEvent INSTANCE = new NightStartEvent();
         
         @Override
@@ -27,7 +27,7 @@ public interface DayNightListener extends Listener {
         }
     }
     
-    public static class DayStartEvent extends Event<DayNightListener> {
+    class DayStartEvent extends Event<DayNightListener> {
         public static final DayStartEvent INSTANCE = new DayStartEvent();
         
         @Override

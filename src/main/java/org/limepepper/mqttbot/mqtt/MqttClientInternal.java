@@ -41,16 +41,6 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
         MemoryPersistence persistence = new MemoryPersistence();
         
         Minecraft mc = Minecraft.getInstance();
-        if(mc == null)
-        {
-            LOGGER.error("Minecraft.getInstance() returned null!");
-            return;
-        }
-        if(mc.getUser() == null)
-        {
-            LOGGER.error("mc.getUser() returned null!");
-            return;
-        }
         String clientId = mc.getUser().getName();
         LOGGER.info("MQTT ClientId: {}", clientId);
         
@@ -104,6 +94,23 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
         {
             LOGGER.error("Failed to initialize MQTT client", e);
         }
+    }
+    
+    /**
+     * Messages from mod services router back here to be published to MQTT
+     * broker
+     *
+     * @param mqttReplyEvent
+     *            event containing reply data in {@link MessageData} format
+     */
+    @Override
+    public void onReplyArrived(MqttReplyEvent mqttReplyEvent)
+    {
+        LOGGER.debug("Handling MqttReplyEvent for bot: {}",
+            mqttReplyEvent.botId);
+        LOGGER.debugMqtt("Reply data: {}", mqttReplyEvent.messageData.toJson());
+        publish("mqttbot/" + mqttReplyEvent.botId + "/reply",
+            mqttReplyEvent.messageData.toJson());
     }
     
     /**
@@ -162,13 +169,4 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
         }
     }
     
-    @Override
-    public void onReplyArrived(MqttReplyEvent mqttReplyEvent)
-    {
-        LOGGER.debug("Handling MqttReplyEvent for bot: {}",
-            mqttReplyEvent.botId);
-        LOGGER.debugMqtt("Reply data: {}", mqttReplyEvent.messageData.toJson());
-        publish("mqttbot/" + mqttReplyEvent.botId + "/reply",
-            mqttReplyEvent.messageData.toJson());
-    }
 }

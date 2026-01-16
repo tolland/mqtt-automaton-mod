@@ -8,13 +8,13 @@ import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 
 /**
- * Builds and sends MQTT responses
+ * Builds and sends MQTT responses for Baritone-related actions.
  */
 class ResponseBuilder {
     
     private static final MqttCore mqttCore = MqttCore.INSTANCE;
     
-    void sendGotoSuccess(String message, int x, int y, int z)
+    static void sendGotoSuccess(String message, int x, int y, int z)
     {
         JsonObject response = new JsonObject();
         response.addProperty("status", "success");
@@ -22,45 +22,43 @@ class ResponseBuilder {
         response.addProperty("x", x);
         response.addProperty("y", y);
         response.addProperty("z", z);
-        response.addProperty("player", getPlayerName());
+        response.addProperty("player", mqttCore.getPlayerName());
         
-        sendResponse("goto", response);
+        ResponseBuilder.sendResponse("goto", response);
     }
     
-    void sendGotoFailure(String message, String reason)
+    static void sendGotoFailure(String message, String reason)
     {
         JsonObject response = new JsonObject();
         response.addProperty("status", "failure");
         response.addProperty("message", message);
         response.addProperty("reason", reason);
-        response.addProperty("player", getPlayerName());
+        response.addProperty("player", mqttCore.getPlayerName());
         
         sendResponse("goto", response);
     }
     
-    void sendPathingEvent(String type, String detail)
+    static void sendPathingEvent(String type, String detail)
     {
         JsonObject response = createPathingResponse(type,
             BaritonePathing.pathing.getGoal(), detail);
         sendResponse("pathing", response);
     }
     
-    void sendPathingEventWithPayload(String type, JsonObject payload)
+    static void sendPathingEventWithPayload(String type, JsonObject payload)
     {
         sendResponse(type, payload);
     }
     
-    private void sendResponse(String method, JsonObject response)
+    private static void sendResponse(String method, JsonObject response)
     {
         try
         {
-            String playerName = getPlayerName();
-            MessageData messageData =
-                new MessageData(BaritonePathing.SERVICE_NAME, method,
-                    BaritonePathing.correlationTracker.getRequestId(),
-                    BaritonePathing.correlationTracker.getCorrelationId(), null,
-                    response, BaritonePathing.correlationTracker.getIdentity(),
-                    null);
+            String playerName = mqttCore.getPlayerName();
+            MessageData messageData = new MessageData(Constants.SERVICE_NAME,
+                method, BaritonePathing.correlationTracker.getRequestId(),
+                BaritonePathing.correlationTracker.getCorrelationId(), null,
+                response, mqttCore.getPlayerName(), null);
             
             EventManager.fire(
                 new MqttReplyListener.MqttReplyEvent(playerName, messageData));
@@ -70,12 +68,12 @@ class ResponseBuilder {
         }
     }
     
-    private JsonObject createPathingResponse(String type, Goal goal,
+    private static JsonObject createPathingResponse(String type, Goal goal,
         String detail)
     {
         JsonObject response = new JsonObject();
         response.addProperty("type", type);
-        response.addProperty("player", getPlayerName());
+        response.addProperty("player", mqttCore.getPlayerName());
         
         if(detail != null)
         {

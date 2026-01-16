@@ -42,14 +42,11 @@ public final class ClientNightWatcher {
     
     private static void onNightStart(Minecraft client)
     {
-        // e.g., send MQTT, notify UI, start a route, etc.
-        System.out.println("[ClientNightWatcher] Night started");
         EventManager.fire(DayNightListener.NightStartEvent.INSTANCE);
     }
     
     private static void onDayStart(Minecraft client)
     {
-        System.out.println("[ClientNightWatcher] Day started");
         EventManager.fire(DayNightListener.DayStartEvent.INSTANCE);
     }
     

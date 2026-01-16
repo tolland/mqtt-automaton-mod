@@ -34,6 +34,8 @@ public final class WarpMessageHandler extends Action
     @Override
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
+        if(!CORE.isEnabled())
+            return;
         MessageData data = mqttMessageEvent.messageData;
         // System.out.println("Received message in warp handler");
         

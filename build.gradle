@@ -1,9 +1,11 @@
+import net.fabricmc.loom.task.DownloadTask
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 
 plugins {
-    id "fabric-loom" version "${loom_version}"
+    id "net.fabricmc.fabric-loom-remap" version "${loom_version}"
     id "com.diffplug.spotless" version "8.1.0"
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id("org.jetbrains.gradle.plugin.idea-ext") version "1.3"
 }
 
 version = project.mod_version
@@ -14,10 +16,22 @@ def ENV = System.getenv()
 def mcUsername =
         System.getenv("MQTTBOT_USERNAME")
                 ?: project.findProperty("bot_username")
-                ?: "Player999"
 
 base {
     archivesName = project.archives_base_name
+}
+
+
+idea {
+//    project.settings.compiler.javac {
+//        // Disable “Report use of deprecated features” https://github.com/JetBrains/gradle-idea-ext-plugin/wiki#javac-settings-of-idea-compiler
+//        generateDeprecationWarnings = false
+//    }
+
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
 }
 
 repositories {
@@ -74,13 +88,14 @@ dependencies {
 
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
     implementation 'org.yaml:snakeyaml:2.0'
-    modImplementation "cabaletta:baritone-api-fabric:${baritone_version}"
-    modImplementation "net.wurstclient:wurst-client:1.21.8-develop"
+    modImplementation "cabaletta:baritone-api-fabric:${project.baritone_version}"
+    modImplementation "net.wurstclient:wurst-client:${project.wurst_version}"
     modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {
         exclude(group: "net.fabricmc.fabric-api")
     }
     implementation "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
     implementation "io.moquette:moquette-broker:0.17"
+    compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
 
     testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 
@@ -88,6 +103,20 @@ dependencies {
 // optional for JUnit 5 integration if you plan to use MockitoExtension
 //    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
 
+    // fabric-loom needs to depend on namedElements as the normal outpus
+    // are mapped to intermediary names
+    // <https://docs.fabricmc.net/develop/loom/#subprojects>
+    // implementation project(path: ":name", configuration: "namedElements")
+    //}
+
+}
+
+sourceSets {
+    "src-py" {
+        java {
+            srcDir "src-py"
+        }
+    }
 }
 
 fabricApi {
@@ -97,48 +126,13 @@ fabricApi {
         enableGameTests = false
         enableClientGameTests = true
         eula = true
-        username = "Mqtt-Bot"
+        username = mcUsername as String
     }
 }
 
-sourceSets {
-////    client {
-////        compileClasspath += main.compileClasspath
-////        runtimeClasspath += main.runtimeClasspath
-////    }
-//    gametest {
-//        compileClasspath += sourceSets.main.compileClasspath
-////        compileClasspath += sourceSets.client.compileClasspath
-////
-////        runtimeClasspath += sourceSets.main.runtimeClasspath
-////        runtimeClasspath += sourceSets.client.runtimeClasspath
-//    }
-//    "src-py" {
-//        java {
-//            srcDir "src-py"
-//        }
-//    }
-}
 
-compileJava.dependsOn spotlessApply
-
-afterEvaluate {
-    sourceSets {
-//        gametest {
-//            compileClasspath += sourceSets.main.compileClasspath
-//
-//            runtimeClasspath += sourceSets.main.runtimeClasspath
-//        }
-        "src-py" {
-            java {
-                srcDir "src-py"
-            }
-        }
-    }
-
-}
 loom {
-
+// docs: <https://docs.fabricmc.net/develop/loom/options>
     accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
 
 //    splitEnvironmentSourceSets()
@@ -155,13 +149,53 @@ loom {
 //                    "--quickPlaySingleplayer", "TestFabricModWorld1"
                     "--quickPlayMultiplayer", "docker.lan:25565"
             )
+            // environmentVariable("example", "true")
+            // runDir = "run"
         }
         clientGameTest {
             source sourceSets.gametest
+            vmArgs.add("-Dfabric.client.gametest")
+            vmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
         }
     }
 }
 
+tasks.register("download", DownloadTask) {
+    url = "https://raw.githubusercontent.com/tolland/mqtt-automaton-mod/refs/heads/1.21.8-develop/LICENSE"
+    output = file("out.txt")
+}
+
+import java.util.concurrent.TimeUnit
+
+tasks.register('runClientWithTests') {
+    group = 'fabric'
+    description = 'Run client with pytest tests'
+
+    doLast {
+        // Start runClient in background
+        def clientProcess = tasks.runClient.exec()
+
+        try {
+            // Give the client time to start and connect
+            Thread.sleep(5000)
+
+            // Run pytest
+            def testProcess = new ProcessBuilder('pytest', '-v')
+                    .inheritIO()
+                    .start()
+
+            def testExitCode = testProcess.waitFor()
+
+            if (testExitCode != 0) {
+                throw new GradleException("Tests failed with exit code: $testExitCode")
+            }
+        } finally {
+            // Kill the client process
+            clientProcess.destroyForcibly()
+            clientProcess.waitFor(5, TimeUnit.SECONDS)
+        }
+    }
+}
 
 processResources {
     inputs.property "version", project.version
@@ -170,6 +204,7 @@ processResources {
         expand "version": project.version
     }
 }
+compileJava.dependsOn spotlessApply
 
 tasks.withType(JavaCompile).configureEach {
     // Minecraft 1.21 uses Java 21.

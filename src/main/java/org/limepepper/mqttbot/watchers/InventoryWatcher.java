@@ -6,6 +6,8 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import org.limepepper.mqttbot.MqttCore;
+import org.limepepper.mqttbot.action.InventoryChangeFeature;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
 
@@ -17,40 +19,36 @@ import java.util.Map;
  * Uses tick-based polling to detect inventory changes
  */
 public final class InventoryWatcher {
-    
+    private static final MqttCore CORE = MqttCore.INSTANCE;
     private static Map<String, Integer> previousItemCounts = new HashMap<>();
     private static boolean wasPreviouslyFull = false;
     private static boolean wasPreviouslyFullForPrimary = false;
-    private static String previousPrimaryItem = null;
     private static int tickCounter = 0;
-    private static final int CHECK_INTERVAL = 20; // Check every 10 ticks (0.5
-                                                  // seconds)
+    private static final int CHECK_INTERVAL = 20;
+    private static boolean enabled = true;
+    
+    private InventoryWatcher()
+    {}
     
     public static void init()
     {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            // Only check every N ticks to reduce overhead
-            if(++tickCounter < CHECK_INTERVAL)
-            {
-                return;
-            }
-            tickCounter = 0;
-            
-            // Don't monitor when container/inventory screens are open to avoid
-            // conflicts
-            if(client.screen instanceof AbstractContainerScreen)
-            {
-                return;
-            }
-            
-            // Need a valid player
-            if(client.player == null || client.level == null)
-            {
-                return;
-            }
-            
-            checkInventoryChanges(client);
-        });
+        ClientTickEvents.END_CLIENT_TICK
+            .register(InventoryWatcher::handleEndClientTick);
+    }
+    
+    private static void handleEndClientTick(Minecraft client)
+    {
+        // Don't monitor when container/inventory screens are open or
+        // player/level missing
+        if(!enabled || client.screen instanceof AbstractContainerScreen
+            || client.player == null || client.level == null
+            || (++tickCounter < CHECK_INTERVAL))
+        {
+            return;
+        }
+        tickCounter = 0;
+        
+        checkInventoryChanges(client);
     }
     
     private static void checkInventoryChanges(Minecraft client)
@@ -60,10 +58,10 @@ public final class InventoryWatcher {
         // Build current inventory snapshot
         Map<String, Integer> currentItemCounts = new HashMap<>();
         Map<String, Integer> maxStackableSpace = new HashMap<>(); // Tracks how
-                                                                  // much more
-                                                                  // of each
-                                                                  // item can
-                                                                  // fit
+        // much more
+        // of each
+        // item can
+        // fit
         int emptySlots = 0;
         int fullSlots = 0;
         
@@ -126,7 +124,8 @@ public final class InventoryWatcher {
         boolean hasChanges = false;
         
         // Check if item counts changed
-        if(!currentItemCounts.equals(previousItemCounts))
+        if((CORE.features().isEnabled(InventoryChangeFeature.class))
+            && !currentItemCounts.equals(previousItemCounts))
         {
             hasChanges = true;
             
@@ -163,7 +162,7 @@ public final class InventoryWatcher {
         previousItemCounts = currentItemCounts;
         wasPreviouslyFull = isNowFull;
         wasPreviouslyFullForPrimary = isFullForPrimaryItem;
-        previousPrimaryItem = primaryItem;
+        String previousPrimaryItem = primaryItem;
     }
     
     /**
@@ -216,6 +215,23 @@ public final class InventoryWatcher {
         return wasPreviouslyFull;
     }
     
-    private InventoryWatcher()
-    {}
+    public static boolean isEnabled()
+    {
+        return enabled;
+    }
+    
+    public static void setEnabled(boolean enabled)
+    {
+        InventoryWatcher.enabled = enabled;
+    }
+    
+    public static void disable()
+    {
+        enabled = false;
+    }
+    
+    public static void enable()
+    {
+        enabled = true;
+    }
 }

@@ -2,11 +2,14 @@ package org.limepepper.mqttbot.integrations.baritone;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
-import baritone.api.behavior.IPathingBehavior;
 import com.google.gson.*;
 import net.minecraft.world.item.Item;
 import net.wurstclient.util.ItemUtils;
 import org.limepepper.mqttbot.MqttCore;
+import org.limepepper.mqttbot.action.Action;
+import org.limepepper.mqttbot.action.Feature;
+import org.limepepper.mqttbot.action.InventoryFullFeature;
+import org.limepepper.mqttbot.action.RequiresFeatures;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
@@ -18,17 +21,16 @@ import org.limepepper.mqttbot.util.MsgUtils;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
-public final class BaritoneCollectHandler
-    implements MessageHandler, ChatMessageListener {
+public final class BaritoneCollectHandler extends Action
+    implements MessageHandler, ChatMessageListener, RequiresFeatures {
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(BaritoneCollectHandler.class);
     private static final Gson gson =
         new GsonBuilder().registerTypeAdapter(BaritoneCollectCommand.class,
             new BaritoneCollectCommandDeserializer()).create();
-    private static IBaritone baritone;
-    private static IPathingBehavior pathing;
     
     // Message patterns that we are looking for
     private static final List<MessagePattern> MESSAGE_PATTERNS =
@@ -63,7 +65,7 @@ public final class BaritoneCollectHandler
     @Override
     public void handle(MessageData msg)
     {
-        // Store correlation information
+        requiredFeatures().forEach(CORE.features()::enable);
         correlationTracker.setFrom(msg);
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
         
@@ -91,7 +93,7 @@ public final class BaritoneCollectHandler
             return;
         }
         
-        baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
+        IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
         Item item = ItemUtils.getItemFromNameOrID(cmd.block);
         List<Item> items = new ArrayList<>();
         if(item != null)
@@ -121,9 +123,16 @@ public final class BaritoneCollectHandler
                     MqttCore.INSTANCE.getPlayerName(), MsgUtils.ctSuccess(
                         correlationTracker, "baritone", "collect", message)));
                 correlationTracker.clear();
+                requiredFeatures().forEach(CORE.features()::disable);
                 break;
             }
         }
+    }
+    
+    @Override
+    public Set<Class<? extends Feature>> requiredFeatures()
+    {
+        return Set.of(InventoryFullFeature.class);
     }
     
     public record BaritoneCollectCommand(String block, int range)

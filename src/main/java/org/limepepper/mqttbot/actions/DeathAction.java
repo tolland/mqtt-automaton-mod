@@ -9,18 +9,6 @@ import org.limepepper.mqttbot.mqtt.MessageData;
 public final class DeathAction extends Action implements DeathListener {
     
     @Override
-    public void onEnable()
-    {
-        EVENTS.add(DeathListener.class, this);
-    }
-    
-    @Override
-    public void onDisable()
-    {
-        EVENTS.remove(DeathListener.class, this);
-    }
-    
-    @Override
     public void onDeath()
     {
         // MqttHandler.INSTANCE.publish("baritone/event/bot1", "onDeath");

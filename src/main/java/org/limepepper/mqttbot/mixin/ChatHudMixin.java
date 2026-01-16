@@ -41,7 +41,6 @@ public class ChatHudMixin {
         String messageText = message.get().getString();
         System.out.println("ChatHudMixin onAddMessage: " + messageText);
         
-        // Fire ChatMessageEvent for listeners to process
         EventManager
             .fire(new ChatMessageListener.ChatMessageEvent(messageText));
     }

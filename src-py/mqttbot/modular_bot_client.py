@@ -153,6 +153,7 @@ class ModularBotClient:
                     "method": "exit",
                     "request_id": str(uuid.uuid4()),
                     "params": {},
+                    "timestamp": time.time(),
                 }
             )
         )
@@ -225,7 +226,6 @@ class ModularBotClient:
 
                 await asyncio.sleep(0.1)
 
-                pprint(self._scheduler)
                 all_complete = await self._scheduler.step(self.ctx)
 
                 if all_complete:

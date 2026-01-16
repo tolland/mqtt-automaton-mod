@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 import net.wurstclient.util.ItemUtils;
@@ -28,10 +27,9 @@ public enum BaritoneBotBasicTest
     ;
     
     public static void testBaritoneIsWorking(ClientGameTestContext context,
-        TestSingleplayerContext spContext)
+        TestServerContext server)
     {
         TestInput input = context.getInput();
-        TestServerContext server = spContext.getServer();
         
         BotTest.LOGGER.info("Testing Baritone pathing functionality");
         
@@ -111,10 +109,10 @@ public enum BaritoneBotBasicTest
     }
     
     public static void testBaritoneIsWorking2(ClientGameTestContext context,
-        TestSingleplayerContext spContext)
+        TestServerContext server)
     {
         TestInput input = context.getInput();
-        TestServerContext server = spContext.getServer();
+        // TestServerContext server = spContext.getServer();
         
         BotTest.LOGGER.info("Testing Baritone pathing functionality");
         

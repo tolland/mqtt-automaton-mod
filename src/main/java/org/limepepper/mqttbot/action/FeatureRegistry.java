@@ -40,4 +40,32 @@ public final class FeatureRegistry {
     {
         return features.values();
     }
+    
+    // public void handleFeatureToggle(String name, boolean enable) {
+    // Class<? extends Feature> cls = featureByName(name);
+    // if (enable) {
+    // CORE.features().enable(cls);
+    // } else {
+    // CORE.features().disable(cls);
+    // }
+    // }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder("FeatureRegistry{");
+        
+        sb.append("enabled=").append(enabled.size()).append("/")
+            .append(features.size());
+        
+        for(Class<? extends Feature> cls : features.keySet())
+        {
+            sb.append(", ").append(cls.getSimpleName()).append("=")
+                .append(enabled.contains(cls) ? "ENABLED" : "disabled");
+        }
+        
+        sb.append("}");
+        return sb.toString();
+    }
+    
 }

@@ -1,5 +1,8 @@
 package org.limepepper.mqttbot.action;
 
-public abstract class Action extends Feature {
+import org.limepepper.mqttbot.MqttCore;
+
+public abstract class Action {
     
+    protected static final MqttCore CORE = MqttCore.INSTANCE;
 }

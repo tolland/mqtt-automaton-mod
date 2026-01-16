@@ -12,15 +12,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.core.BlockPos;
-import org.limepepper.mqttbot.MqttCore;
-import org.limepepper.mqttbot.action.Action;
+import org.limepepper.mqttbot.action.*;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
-import org.limepepper.mqttbot.mqtt.MessageHandler;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Handles Baritone command execution and pathing event tracking.
@@ -28,19 +25,9 @@ import java.util.List;
  * events.
  */
 public final class BaritonePathing extends Action
-    implements MqttMessageListener {
+    implements MqttMessageListener, RequiresFeatures {
     
     public static final BaritonePathing INSTANCE = new BaritonePathing();
-    
-    private static final MqttCore mqttCore = MqttCore.INSTANCE;
-    
-    private final List<MessageHandler> handlers = new ArrayList<>();
-    
-    // Constants
-    static final int POSITION_UPDATE_PERIOD_TICKS = 100;
-    private static final double CLOSE_ENOUGH_HEURISTIC = 4.0;
-    static final String SERVICE_NAME = "baritone";
-    static final String DEFAULT_IDENTITY = "mqttbot";
     
     // Baritone API references
     private static IBaritone baritone;
@@ -53,11 +40,12 @@ public final class BaritonePathing extends Action
     private static final ResponseBuilder responseBuilder =
         new ResponseBuilder();
     
-    private BaritonePathing()
+    /**
+     * Get the current pathing state
+     */
+    static PathingState getPathingState()
     {
-        handlers.add(BaritoneCollectHandler.create());
-        // handlers.add(new BaritoneMineHandler());
-        // handlers.add(new BaritoneCancelHandler());
+        return pathingState;
     }
     
     /**
@@ -94,31 +82,25 @@ public final class BaritonePathing extends Action
     }
     
     @Override
+    public Set<Class<? extends Feature>> requiredFeatures()
+    {
+        return Set.of(InventoryFullFeature.class, BaritonePathingFeature.class);
+    }
+    
+    @Override
     public void onMessageArrived(MqttMessageListener.MqttMessageEvent event)
     {
-        if(mqttCore.getPlayer() == null)
+        if(!CORE.isEnabled())
+            return;
+        
+        if(CORE.getPlayer() == null)
         {
             return;
         }
         
         MessageData data = event.messageData;
         
-        for(MessageHandler handler : handlers)
-        {
-            if(handler.canHandle(data))
-            {
-                try
-                {
-                    handler.handle(data);
-                }catch(Exception ex)
-                {
-                    System.out.printf("Failed to handle message %s %s%n", data,
-                        ex);
-                }
-            }
-        }
-        
-        if(!SERVICE_NAME.equals(data.getService()))
+        if(!Constants.SERVICE_NAME.equals(data.getService()))
         {
             return;
         }
@@ -131,11 +113,11 @@ public final class BaritonePathing extends Action
         switch(method)
         {
             case "goto" -> handleGotoCommand(data);
-            case "pause" -> mqttCore.sendChat("#pause");
-            case "resume" -> mqttCore.sendChat("#resume");
+            case "pause" -> CORE.sendChat("#pause");
+            case "resume" -> CORE.sendChat("#resume");
             case "cancel" ->
             {
-                mqttCore.sendChat("#cancel");
+                CORE.sendChat("#cancel");
                 correlationTracker.clear();
             }
             case "chat" -> handleLegacyChatCommand(data);
@@ -146,6 +128,7 @@ public final class BaritonePathing extends Action
     
     private void handleGotoCommand(MessageData data)
     {
+        requiredFeatures().forEach(CORE.features()::enable);
         try
         {
             JsonElement paramsEl = data.getParams();
@@ -172,9 +155,9 @@ public final class BaritonePathing extends Action
                 + correlationTracker.getRequestId() + ", correlationId="
                 + correlationTracker.getCorrelationId());
             
-            if(mqttCore.getPlayer() != null)
+            if(CORE.getPlayer() != null)
             {
-                mqttCore.sendChat(gotoCmd);
+                CORE.sendChat(gotoCmd);
             }else
             {
                 System.out.println(
@@ -202,9 +185,9 @@ public final class BaritonePathing extends Action
                 cmd = params.get("message").getAsString();
         }
         System.out.println("Legacy chat cmd: " + cmd);
-        if(mqttCore.getPlayer() != null && cmd != null)
+        if(CORE.getPlayer() != null && cmd != null)
         {
-            mqttCore.sendChat(cmd);
+            CORE.sendChat(cmd);
         }
     }
     
@@ -213,6 +196,10 @@ public final class BaritonePathing extends Action
      */
     private static void handlePathEvent(PathEvent event)
     {
+        if(!CORE.features().isEnabled(BaritonePathingFeature.class))
+        {
+            return;
+        }
         switch(event)
         {
             case CALC_FINISHED_NOW_EXECUTING ->
@@ -239,11 +226,14 @@ public final class BaritonePathing extends Action
             }
             case CANCELED ->
             {
+                // @TODO how to handle this on the client?
+                // do we need to notify the client it was canceled?
                 if(pathingState.isPathActive())
                 {
                     pathingState.setPathActive(false);
                     correlationTracker.clear();
                 }
+                INSTANCE.requiredFeatures().forEach(CORE.features()::disable);
             }
             default ->
             {
@@ -260,21 +250,23 @@ public final class BaritonePathing extends Action
             : Double.NaN;
         
         System.out.println("Goal pos heuristic: " + heuristic);
-        responseBuilder.sendPathingEvent("CALC_FAILED", "initial");
+        ResponseBuilder.sendPathingEvent("CALC_FAILED", "initial");
         
-        if(heuristic < CLOSE_ENOUGH_HEURISTIC && !pathingState.isAnnounced())
+        if(heuristic < Constants.CLOSE_ENOUGH_HEURISTIC
+            && !pathingState.isAnnounced())
         {
             // Close enough to goal, announce success
             BetterBlockPos feet = baritone.getPlayerContext().playerFeet();
-            responseBuilder.sendGotoSuccess("Goal reached (close enough)",
+            ResponseBuilder.sendGotoSuccess("Goal reached (close enough)",
                 feet.x, feet.y, feet.z);
             pathingState.setAnnounced(true);
         }else
         {
             // Too far, send failure
-            responseBuilder.sendGotoFailure("Path calculation failed",
+            ResponseBuilder.sendGotoFailure("Path calculation failed",
                 "Could not find path to goal");
         }
+        INSTANCE.requiredFeatures().forEach(CORE.features()::disable);
     }
     
     /**
@@ -282,7 +274,8 @@ public final class BaritonePathing extends Action
      */
     private static void handleTick(net.minecraft.client.Minecraft client)
     {
-        if(client.player == null || pathing.getGoal() == null)
+        if(client.player == null || pathing.getGoal() == null
+            || (!CORE.features().isEnabled(BaritonePathingFeature.class)))
         {
             return;
         }
@@ -310,10 +303,11 @@ public final class BaritonePathing extends Action
         if(inGoal && hasGoalChanged)
         {
             pathingState.setAnnounced(true);
-            responseBuilder.sendGotoSuccess("Goal reached", feet.x, feet.y,
+            ResponseBuilder.sendGotoSuccess("Goal reached", feet.x, feet.y,
                 feet.z);
             pathingState.done();
             correlationTracker.clear();
+            INSTANCE.requiredFeatures().forEach(CORE.features()::disable);
         }
         
         /*

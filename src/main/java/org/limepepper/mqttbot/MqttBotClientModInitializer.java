@@ -1,11 +1,6 @@
 package org.limepepper.mqttbot;
 
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import org.limepepper.mqttbot.event.EventManager;
-import org.limepepper.mqttbot.events.ClientListener;
 import org.limepepper.mqttbot.integrations.baritone.BaritonePathing;
 import org.limepepper.mqttbot.integrations.command.SendCommandHandler;
 import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
@@ -16,11 +11,11 @@ import org.limepepper.mqttbot.integrations.wurst.WurstHandler;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.limepepper.mqttbot.watchers.ClientNightWatcher;
 import org.limepepper.mqttbot.watchers.InventoryWatcher;
+import org.limepepper.mqttbot.watchers.PlayerEventWatcher;
 
 public class MqttBotClientModInitializer implements ClientModInitializer {
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(MqttBotClientModInitializer.class);
-    private static boolean initialized;
     
     @Override
     public void onInitializeClient()
@@ -30,10 +25,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         
         ClientNightWatcher.init();
         InventoryWatcher.init();
-        
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            EventManager.fire(ClientListener.ClientJoinEvent.INSTANCE);
-        });
+        PlayerEventWatcher.init();
         
         SleepUtil.init();
         SleepMessageHandler.init();
@@ -41,14 +33,33 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         WarpMessageHandler.init();
         SendCommandHandler.init();
         InventoryQueryHandler.init();
-        initialized = true;
         
         if(net.fabricmc.loader.api.FabricLoader.getInstance()
             .isModLoaded("baritone"))
         {
-            LOGGER.info(
-                "Baritone mod detected, initializing Baritone integration");
-            BaritonePathing.init();
+            try
+            {
+                Class<?> baritoneApi = Class.forName("baritone.api.IBaritone");
+                try
+                {
+                    baritoneApi.getMethod("getCollectProcess");
+                    LOGGER.info(
+                        "Baritone mod detected and compatible API present, initializing Baritone integration");
+                    BaritonePathing.init();
+                }catch(NoSuchMethodException nsme)
+                {
+                    LOGGER.info(
+                        "Baritone mod detected but required method getCollectProcess() not found; skipping Baritone integration");
+                }
+            }catch(ClassNotFoundException cnfe)
+            {
+                LOGGER.info(
+                    "Baritone mod loaded but API classes not found; skipping Baritone integration");
+            }catch(Throwable t)
+            {
+                LOGGER.info("Failed to initialize Baritone integration: "
+                    + t.getMessage());
+            }
         }else
         {
             LOGGER
@@ -64,15 +75,6 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         {
             LOGGER.info("Wurst mod not loaded, skipping Wurst integration");
         }
-        
-        ClientSendMessageEvents.CHAT.register(
-            (message -> LOGGER.info("Sent chat message: " + message)));
-        
-        ClientReceiveMessageEvents.CHAT.register((message, signedMessage,
-            sender, params, receptionTimestamp) -> LOGGER.info(
-                "Received chat message sent by {} at time {}: {}",
-                sender == null ? "null" : sender.getName(),
-                receptionTimestamp.toEpochMilli(), message.getString()));
         
     }
 }

@@ -1,10 +1,19 @@
 package org.limepepper.mqttbot;
 
+import baritone.api.BaritoneAPI;
+import baritone.api.IBaritone;
+import baritone.api.behavior.IPathingBehavior;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import org.limepepper.mqttbot.action.BaritonePathingFeature;
+import org.limepepper.mqttbot.action.FeatureRegistry;
+import org.limepepper.mqttbot.action.InventoryFullFeature;
 import org.limepepper.mqttbot.actions.*;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.*;
+import org.limepepper.mqttbot.integrations.baritone.BaritoneCollectHandler;
+import org.limepepper.mqttbot.integrations.baritone.BaritoneStateHandler;
+import org.limepepper.mqttbot.integrations.client.ClientStateHandler;
 import org.limepepper.mqttbot.mqtt.MqttClientInternal;
 
 public enum MqttCore
@@ -12,13 +21,17 @@ public enum MqttCore
     INSTANCE;
     
     public static final Minecraft MC = Minecraft.getInstance();
+    // Baritone API references
+    public static IBaritone baritone =
+        BaritoneAPI.getProvider().getPrimaryBaritone();
+    public static final IPathingBehavior pathing =
+        baritone.getPathingBehavior();
     private BotState botState = BotState.IDLE;
     
     public void initialize()
     {
         System.out.println("Starting MqttBot Client...");
         
-        // ensure initialized first
         EventManager eventManager = EventManager.INSTANCE;
         
         eventManager.add(ClientListener.class, new ClientAction());
@@ -27,10 +40,25 @@ public enum MqttCore
         eventManager.add(DayNightListener.class, new DayNightAction());
         eventManager.add(InventoryListener.class, new InventoryAction());
         eventManager.add(ChatMessageListener.class, new ChatMessageAction());
+        eventManager.add(MqttMessageListener.class,
+            new MessageDispatcherAction(BaritoneCollectHandler.create(),
+                BaritoneStateHandler.create(), ClientStateHandler.create()));
         
         // PlayerJoinCallback.EVENT.register(new PlayerJoinHandler());
         
         MqttClientInternal handler = MqttClientInternal.INSTANCE;
+        
+        // Things that can be toggled
+        features().register(new InventoryFullFeature());
+        features().register(new BaritonePathingFeature());
+        
+    }
+    
+    private final FeatureRegistry featureRegistry = new FeatureRegistry();
+    
+    public FeatureRegistry features()
+    {
+        return featureRegistry;
     }
     
     public EventManager getEventManager()

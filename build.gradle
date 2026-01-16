@@ -83,6 +83,11 @@ dependencies {
     implementation "io.moquette:moquette-broker:0.17"
 
     testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
+
+    testImplementation "org.mockito:mockito-core:${project.mockito_version}"
+// optional for JUnit 5 integration if you plan to use MockitoExtension
+//    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+
 }
 
 fabricApi {
@@ -114,6 +119,8 @@ sourceSets {
 //        }
 //    }
 }
+
+compileJava.dependsOn spotlessApply
 
 afterEvaluate {
     sourceSets {

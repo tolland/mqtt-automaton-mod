@@ -1,15 +1,13 @@
 import asyncio
-import pytest
-from typing import AsyncGenerator
-from unittest.mock import Mock, AsyncMock
-
-
 import os
 import tempfile
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Any
+from unittest.mock import Mock, AsyncMock
 
 import pytest
+
+from mqttbot.core.scheduler import Scheduler
 
 """
 Pytest configuration and shared fixtures.
@@ -77,23 +75,28 @@ def scheduler():
 
 
 @pytest.fixture
-def sample_patterns():
+def sample_patterns() -> dict[str, Any]:
     """Sample pattern definitions for testing"""
     return {
-        "row_01": [
-            "~ ~ ~-5",
-            "~ ~ ~-10",
-            {"type": "dwell", "period": "2s"},
-            "~ ~ ~5",
-        ],
-        "row_02": [
-            "~5 ~ ~",
-            "~10 ~ ~",
-            "~-15 ~ ~",
-        ],
-        "simple": [
-            "~ ~ ~10",
-        ],
+        "patterns": {
+            "row_01": {
+                "steps": [
+                    "~ ~ ~-5",
+                    "~ ~ ~-10",
+                    {"type": "dwell", "params": {"period": "1s"}},
+                    "~ ~ ~5",
+                ]},
+            "row_02": {
+                "steps": [
+                    "~5 ~ ~",
+                    "~10 ~ ~",
+                    "~-15 ~ ~",
+                ]},
+            "simple": {
+                "steps": [
+                    "~ ~ ~10",
+                ]},
+        }
     }
 
 

@@ -29,9 +29,9 @@ class TaskBase(ABC):
         """
         self._resume(ctx)
 
-    @trace
+    # @trace
     def step(self, ctx: Context) -> TaskStatus:
-        print(f"Stepping task: {type(self).__name__}")
+        # print(f"Stepping task: {type(self).__name__}")
         return self._step(ctx)
 
     @abstractmethod

@@ -30,7 +30,7 @@ public final class SleepMessageHandler extends Action
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
         MessageData data = mqttMessageEvent.messageData;
-        System.out.println("recieved message in sleep handler");
+        // System.out.println("recieved message in sleep handler");
         if(!mqttMessageEvent.messageData.getService().equals("sleep"))
             return;
         System.out.println("message for sleep service");
@@ -47,7 +47,7 @@ public final class SleepMessageHandler extends Action
             }
         }else
         {
-            System.out.println("unknown method in baritone");
+            System.out.println("unknown method in sleep handler");
         }
     }
     

@@ -34,6 +34,9 @@ class TaskCompiler:
     def compile_pattern(self, p_name: str, anchor_pos: tuple) -> Generator[Task, None, None]:
         self.current_pos = anchor_pos
         pattern = self.patterns_lib[p_name]
+        if pattern is None:
+            # Unknown pattern - nothing to yield
+            return
 
         for step in pattern:
             yield from self.compile_step(step)

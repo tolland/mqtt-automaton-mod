@@ -1,5 +1,6 @@
 package org.limepepper.mqttbot.integrations.warp;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
@@ -34,7 +35,7 @@ public final class WarpMessageHandler extends Action
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
         MessageData data = mqttMessageEvent.messageData;
-        System.out.println("Received message in warp handler");
+        // System.out.println("Received message in warp handler");
         
         if(!data.getService().equals("warp"))
         {
@@ -68,13 +69,15 @@ public final class WarpMessageHandler extends Action
                 return;
             }
             
-            JsonObject params = data.getParams();
-            if(params == null)
+            JsonElement paramsEl = data.getParams();
+            if(paramsEl == null || paramsEl.isJsonNull()
+                || !paramsEl.isJsonObject())
             {
                 System.out
                     .println("Error: warp teleport command missing params");
                 return;
             }
+            JsonObject params = paramsEl.getAsJsonObject();
             
             // Extract parameters
             String warpName =
@@ -86,7 +89,8 @@ public final class WarpMessageHandler extends Action
             
             // Extract target coordinates
             JsonObject target =
-                params.has("target") ? params.getAsJsonObject("target") : null;
+                params.has("target") && params.get("target").isJsonObject()
+                    ? params.getAsJsonObject("target") : null;
             if(target == null || !target.has("x") || !target.has("y")
                 || !target.has("z"))
             {

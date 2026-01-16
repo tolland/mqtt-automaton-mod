@@ -47,7 +47,16 @@ class PatternStep(StepBase):
 
     type: str
     coords: Coords
-    dwell_seconds: Optional[float] = None
+    # dwell is represented as standalone TaskStep elsewhere; PatternStep only
+    # represents coordinate-based 'goto' steps.
+
+    @property
+    def relative_coords(self) -> tuple[float, float, float]:
+        """Return the raw numeric offsets for the step axes (useful for tests).
+
+        Returns offsets as integers for x,y,z (for relative tokens these are the offsets, for absolute tokens they are the absolute values).
+        """
+        return self.coords.x.value, self.coords.y.value, self.coords.z.value
 
     @classmethod
     def from_string(cls, step_str: str) -> "PatternStep":
@@ -71,15 +80,17 @@ class PatternStep(StepBase):
                 }
             },
         }
-        if self.dwell_seconds is not None:
-            data["params"]["dwell_seconds"] = self.dwell_seconds
         return data
 
 
 @rich_repr
 @dataclass
 class Pattern:
-    """Configuration for a Patterns Section"""
+    """
+    Configuration for a Patterns Section
+
+    Pattern has iteratble nature so that iterating over it yields all steps in order:
+    """
 
     pattern_id: str
     steps: list[StepBase]

@@ -9,6 +9,7 @@ from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.model.patterns.patterns_config import PatternsConfig
 from mqttbot.model.tasks.task import TaskFactory, Task, TaskCompiler
+from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
 
 """PatternThread - expands waypoints and patterns into deterministic task sequences"""
 
@@ -31,7 +32,7 @@ class PatternThread(TaskThread):
         thread_id: str,
         priority: TaskPriority,
         waypoints: list[dict[str, Any]],
-        patterns: PatternsConfig,
+        patterns: PatternsConfig | dict,
         on_suspend: Optional[Callable[["TaskThread"], Awaitable[None]]] = None,
         on_resume: Optional[Callable[["TaskThread", Context], Awaitable[None]]] = None,
     ) -> None:
@@ -40,7 +41,25 @@ class PatternThread(TaskThread):
         super().__init__(thread_id, priority, on_suspend, on_resume)
 
         self.waypoints = waypoints
-        self.patterns_config = patterns
+
+        # Normalize patterns input: accept raw dicts (as tests provide) or a
+        # PatternsConfig instance produced by PatternsConfigParser
+        if isinstance(patterns, PatternsConfig):
+            self.patterns_config = patterns
+        else:
+            # If tests passed a dict in the old shape, parse into PatternsConfig
+            # PatternsConfigParser expects the top-level YAML shape
+            # Support both shapes: either {'patterns': {...}} or {'name': [...]} directly
+            if isinstance(patterns, dict) and "patterns" not in patterns:
+                patterns_input = {"patterns": patterns}
+            else:
+                patterns_input = patterns if isinstance(patterns, dict) else {}
+            self.patterns_config = PatternsConfigParser.from_yaml(patterns_input)
+
+        # Backwards-compatible convenience attribute used by older code/tests
+        # that expect a dictionary-like or iterable of patterns.
+        self.patterns = self.patterns_config
+
         self.current_task_index = 0
 
     def expand_pattern(self, name: str, start_pos: tuple) -> Generator[Task, None, None]:

@@ -1,8 +1,10 @@
 package org.limepepper.mqttbot.mqtt;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import java.time.Instant;
 
 /**
  * Structured MQTT message format for inter-service communication
@@ -10,22 +12,57 @@ import com.google.gson.JsonSyntaxException;
 public class MessageData {
     private static final Gson gson = new Gson();
     
-    private String service; // Target service/module (e.g., "baritone",
-    // "inventory", "chat")
-    private String method; // Method to call on the service (e.g., "goto",
-    // "mine", "say")
-    private String requestId; // Unique request identifier
-    private String correlationId; // Correlation ID for request/response
-    // tracking
-    private JsonObject params; // Arbitrary parameters for the method (requests)
-    private JsonObject response; // Structured response data (replies)
-    private String identity; // Source of the message (e.g., "python_client",
-    // "web_dashboard")
-    private String message; // Free text field for debug/informational content
+    /**
+     * Target service/module (e.g., "baritone", "inventory", "chat")
+     */
+    private String service;
+    
+    /**
+     * Method to call on the service (e.g., "goto", "mine", "say")
+     */
+    private String method;
+    
+    /**
+     * Unique request identifier
+     */
+    private String requestId;
+    
+    /**
+     * Correlation ID for request/response tracking
+     */
+    private String correlationId;
+    
+    /**
+     * Arbitrary parameters for the method (requests)
+     */
+    private JsonElement params;
+    
+    /**
+     * Structured response data (replies)
+     */
+    private JsonElement response;
+    
+    /**
+     * Source of the message (e.g., "python_client", "web_dashboard")
+     */
+    private String identity;
+    
+    /**
+     * Free text field for debug/informational content
+     */
+    private String message;
+    
+    /**
+     * ISO-8601 timestamp for when this message was created (UTC)
+     */
+    private String timestamp;
     
     // Default constructor
     public MessageData()
-    {}
+    {
+        // Populate timestamp centrally so all messages created in code have it
+        this.timestamp = Instant.now().toString();
+    }
     
     /**
      * MessageData is JsonObject representing an MQTT-bot mqtt message
@@ -46,7 +83,7 @@ public class MessageData {
      *            A human readable message for logging/debugging
      */
     public MessageData(String service, String method, String requestId,
-        String correlationId, JsonObject params, JsonObject response,
+        String correlationId, JsonElement params, JsonElement response,
         String identity, String message)
     {
         this.service = service;
@@ -57,6 +94,7 @@ public class MessageData {
         this.response = response;
         this.identity = identity;
         this.message = message;
+        this.timestamp = Instant.now().toString();
     }
     
     /**
@@ -78,7 +116,7 @@ public class MessageData {
      *            A human readable message for logging/debugging
      */
     public MessageData(String service, String method, String requestId,
-        String correlationId, JsonObject params, String identity,
+        String correlationId, JsonElement params, String identity,
         String message)
     {
         this(service, method, requestId, correlationId, params, null, identity,
@@ -96,7 +134,12 @@ public class MessageData {
     {
         try
         {
-            return gson.fromJson(jsonString, MessageData.class);
+            MessageData md = gson.fromJson(jsonString, MessageData.class);
+            if(md != null && (md.timestamp == null || md.timestamp.isEmpty()))
+            {
+                md.timestamp = Instant.now().toString();
+            }
+            return md;
         }catch(JsonSyntaxException e)
         {
             System.err.println(
@@ -168,21 +211,33 @@ public class MessageData {
         this.correlationId = correlationId;
     }
     
-    public JsonObject getParams()
+    public JsonElement getParams()
     {
         return params;
     }
     
+    public void setParams(JsonElement params)
+    {
+        this.params = params;
+    }
+    
+    // Backwards-compatible overload for callers that pass JsonObject
     public void setParams(JsonObject params)
     {
         this.params = params;
     }
     
-    public JsonObject getResponse()
+    public JsonElement getResponse()
     {
         return response;
     }
     
+    public void setResponse(JsonElement response)
+    {
+        this.response = response;
+    }
+    
+    // Backwards-compatible overload for callers that expect JsonObject
     public void setResponse(JsonObject response)
     {
         this.response = response;
@@ -208,12 +263,22 @@ public class MessageData {
         this.message = message;
     }
     
+    public String getTimestamp()
+    {
+        return timestamp;
+    }
+    
+    public void setTimestamp(String timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+    
     @Override
     public String toString()
     {
         return String.format(
-            "MqttMessage{service='%s', method='%s', requestId='%s', correlationId='%s', identity='%s', hasParams=%s, hasResponse=%s, message='%s'}",
+            "MqttMessage{service='%s', method='%s', requestId='%s', correlationId='%s', identity='%s', hasParams=%s, hasResponse=%s, timestamp='%s', message='%s'}",
             service, method, requestId, correlationId, identity,
-            (params != null), (response != null), message);
+            (params != null), (response != null), timestamp, message);
     }
 }

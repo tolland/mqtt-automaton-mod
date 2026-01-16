@@ -10,7 +10,12 @@ from mqttbot.core.tasks.task_priority import TaskStatus
 
 @task("command")
 class CommandTask(TaskBase):
-    """Run arbitrary command"""
+    """
+    Run arbitrary command
+
+    This is a simple mqtt wrapper. The service, method, and params are sent
+
+    """
 
     def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):
         super().__init__()

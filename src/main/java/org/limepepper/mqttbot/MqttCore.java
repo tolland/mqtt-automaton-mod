@@ -12,6 +12,7 @@ public enum MqttCore
     INSTANCE;
     
     public static final Minecraft MC = Minecraft.getInstance();
+    private BotState botState = BotState.IDLE;
     
     public void initialize()
     {
@@ -76,5 +77,25 @@ public enum MqttCore
             return MC.getUser().getName();
         }
         return "unknown";
+    }
+    
+    public BotState getBotState()
+    {
+        return botState;
+    }
+    
+    public void setBotState(BotState botState)
+    {
+        this.botState = botState;
+    }
+    
+    /**
+     * Check what state the bot is in.
+     */
+    public enum BotState
+    {
+        IDLE,
+        BUSY,
+        ERROR
     }
 }

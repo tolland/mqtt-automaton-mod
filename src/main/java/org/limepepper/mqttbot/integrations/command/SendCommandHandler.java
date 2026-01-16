@@ -1,5 +1,6 @@
 package org.limepepper.mqttbot.integrations.command;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
@@ -34,49 +35,70 @@ public final class SendCommandHandler extends Action
         switch(mqttMessageEvent.messageData.getMethod())
         {
             case "chatMessage":
-            String cmd = data.getParams().get("message").getAsString();
-            System.out.println("cmd is " + cmd);
-            if(MC.player != null)
             {
-                
-                MC.getConnection().sendChat(cmd);
+                JsonElement paramsEl = data.getParams();
+                String cmd = null;
+                if(paramsEl != null && paramsEl.isJsonObject())
+                {
+                    JsonObject params = paramsEl.getAsJsonObject();
+                    if(params.has("message"))
+                        cmd = params.get("message").getAsString();
+                }
+                System.out.println("cmd is " + cmd);
+                if(cmd != null && MC.player != null)
+                {
+                    MC.getConnection().sendChat(cmd);
+                }
             }
-            
             break;
             case "chatCommand":
-            String chatCommand = data.getParams().get("message").getAsString();
-            System.out.println("cmd is " + chatCommand);
-            if(MC.player != null)
             {
-                
-                MC.getConnection().sendCommand(chatCommand);
+                JsonElement paramsEl = data.getParams();
+                String chatCommand = null;
+                if(paramsEl != null && paramsEl.isJsonObject())
+                {
+                    JsonObject params = paramsEl.getAsJsonObject();
+                    if(params.has("message"))
+                        chatCommand = params.get("message").getAsString();
+                }
+                System.out.println("cmd is " + chatCommand);
+                if(chatCommand != null && MC.player != null)
+                {
+                    MC.getConnection().sendCommand(chatCommand);
+                }
             }
-            
             break;
             case "sendCommand":
-            String sendCommand = data.getParams().get("message").getAsString();
-            System.out.println("cmd is " + sendCommand);
-            if(MC.player != null)
             {
-                
-                MC.getConnection().sendCommand(sendCommand);
-                
-                String botId = MC.getUser().getName();
-                
-                JsonObject successParams = new JsonObject();
-                successParams.addProperty("status", "success");
-                successParams.addProperty("message", "message sent");
-                
-                MessageData replyData = new MessageData("wurst",
-                    mqttMessageEvent.messageData.getMethod(),
-                    mqttMessageEvent.messageData.getRequestId(),
-                    mqttMessageEvent.messageData.getCorrelationId(), null,
-                    successParams, "minecraft_client",
-                    "mqttbot_client_" + botId);
-                EventManager.fire(
-                    new MqttReplyListener.MqttReplyEvent(botId, replyData));
+                JsonElement paramsEl = data.getParams();
+                String sendCommand = null;
+                if(paramsEl != null && paramsEl.isJsonObject())
+                {
+                    JsonObject params = paramsEl.getAsJsonObject();
+                    if(params.has("message"))
+                        sendCommand = params.get("message").getAsString();
+                }
+                System.out.println("cmd is " + sendCommand);
+                if(sendCommand != null && MC.player != null)
+                {
+                    MC.getConnection().sendCommand(sendCommand);
+                    
+                    String botId = MC.getUser().getName();
+                    
+                    JsonObject successParams = new JsonObject();
+                    successParams.addProperty("status", "success");
+                    successParams.addProperty("message", "message sent");
+                    
+                    MessageData replyData = new MessageData("wurst",
+                        mqttMessageEvent.messageData.getMethod(),
+                        mqttMessageEvent.messageData.getRequestId(),
+                        mqttMessageEvent.messageData.getCorrelationId(), null,
+                        successParams, "minecraft_client",
+                        "mqttbot_client_" + botId);
+                    EventManager.fire(
+                        new MqttReplyListener.MqttReplyEvent(botId, replyData));
+                }
             }
-            
             break;
             default:
             System.out.println("unknownn method in commands handler");

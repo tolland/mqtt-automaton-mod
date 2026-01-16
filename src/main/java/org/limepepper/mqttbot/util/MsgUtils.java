@@ -1,24 +1,51 @@
 package org.limepepper.mqttbot.util;
 
 import com.google.gson.JsonObject;
+import org.limepepper.mqttbot.integrations.baritone.CorrelationTracker;
 import org.limepepper.mqttbot.mqtt.MessageData;
 
-public enum MsgUtils {
+public enum MsgUtils
+{
     INSTANCE;
-
-    public static String formatMessage(String botId, String method, String params) {
-        return String.format("{\"botId\": \"%s\", \"method\": \"%s\", \"params\": \"%s\"}", botId, method, params);
+    
+    public static String formatMessage(String botId, String method,
+        String params)
+    {
+        return String.format(
+            "{\"botId\": \"%s\", \"method\": \"%s\", \"params\": \"%s\"}",
+            botId, method, params);
     }
-
-    public static MessageData msgData(
-            String service,
-            String method,
-            JsonObject params
-    ) {
+    
+    public static MessageData msgData(String service, String method,
+        JsonObject params)
+    {
         MessageData msgData = new MessageData();
         msgData.setService(service);
         msgData.setMethod(method);
         msgData.setParams(params);
         return msgData;
     }
+    
+    /**
+     * Strip Minecraft color codes from a message
+     * Color codes are in the format §x where x is a character
+     */
+    public static String stripColorCodes(String message)
+    {
+        if(message == null)
+            return "";
+        return message.replaceAll("§[0-9a-fk-or]", "");
+    }
+    
+    public static MessageData ctSuccess(CorrelationTracker ct, String service,
+        String method, String message)
+    {
+        JsonObject resp = new JsonObject();
+        resp.addProperty("status", "success");
+        resp.addProperty("message", message);
+        return new MessageData(service, method, ct.getRequestId(),
+            ct.getCorrelationId(), null, resp, "mqttbot", message);
+        
+    }
+    
 }

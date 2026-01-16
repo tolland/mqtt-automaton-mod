@@ -41,7 +41,13 @@ class DwellTask(TaskBase):
             reason: Optional description (for logging)
         """
         super().__init__()
-        self.duration = params["period"]
+        # Support both legacy 'period' key and normalized 'dwell_seconds' from pattern parsing
+        if params is None:
+            params = {}
+        self.duration = params.get("period", params.get("dwell_seconds"))
+        if self.duration is None:
+            raise KeyError("DwellTask requires a 'period' or 'dwell_seconds' parameter")
+        self.duration = float(self.duration)
         self.reason = params.get("reason", "")
         self.start_time: float = 0.0
 

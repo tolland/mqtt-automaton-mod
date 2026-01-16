@@ -29,14 +29,17 @@ class TestPatternExpanderParsing:
     def test_parse_dwell(self):
         """Test parsing dwell steps"""
         step = PatternExpander.parse_pattern_step({"type": "dwell", "period": "4s"})
+        # Dwell is represented as a TaskStep (standalone task)
         assert step.type == "dwell"
-        assert step.dwell_seconds == 4.0
+        assert hasattr(step, "params")
+        assert step.params["period"] == 4.0
 
     def test_parse_dwell_milliseconds(self):
         """Test parsing dwell with milliseconds"""
         step = PatternExpander.parse_pattern_step({"type": "dwell", "period": "500ms"})
         assert step.type == "dwell"
-        assert step.dwell_seconds == 0.5
+        assert hasattr(step, "params")
+        assert step.params["period"] == 0.5
 
     def test_parse_tilde_no_offset(self):
         """Test parsing ~ with no offset"""

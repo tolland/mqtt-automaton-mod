@@ -1,5 +1,6 @@
 package org.limepepper.mqttbot.integrations.inventory;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -124,13 +125,16 @@ public final class InventoryQueryHandler extends Action
             return;
         }
         
-        if(data.getParams() == null || !data.getParams().has("itemId"))
+        JsonElement paramsEl = data.getParams();
+        if(paramsEl == null || !paramsEl.isJsonObject()
+            || !paramsEl.getAsJsonObject().has("itemId"))
         {
             sendErrorResponse(data, "Missing 'itemId' parameter");
             return;
         }
         
-        String targetItemId = data.getParams().get("itemId").getAsString();
+        String targetItemId =
+            paramsEl.getAsJsonObject().get("itemId").getAsString();
         Inventory inventory = MC.player.getInventory();
         int totalCount = 0;
         

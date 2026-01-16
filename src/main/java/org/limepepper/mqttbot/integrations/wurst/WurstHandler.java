@@ -1,5 +1,7 @@
 package org.limepepper.mqttbot.integrations.wurst;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
@@ -84,13 +86,15 @@ public class WurstHandler extends Action implements MqttMessageListener {
     {
         try
         {
-            JsonObject params = data.getParams();
-            if(params == null)
+            JsonElement paramsEl = data.getParams();
+            if(paramsEl == null || paramsEl.isJsonNull()
+                || !paramsEl.isJsonObject())
             {
                 sendErrorReply(data, "No parameters provided for command",
                     "MISSING_PARAMETERS");
                 return;
             }
+            JsonObject params = paramsEl.getAsJsonObject();
             
             // Get the command name
             String commandName = null;
@@ -108,15 +112,16 @@ public class WurstHandler extends Action implements MqttMessageListener {
             List<String> args = new ArrayList<>();
             if(params.has("args"))
             {
-                if(params.get("args").isJsonArray())
+                JsonElement argsEl = params.get("args");
+                if(argsEl.isJsonArray())
                 {
                     // Handle array of arguments
-                    params.get("args").getAsJsonArray()
-                        .forEach(element -> args.add(element.getAsString()));
+                    JsonArray arr = argsEl.getAsJsonArray();
+                    arr.forEach(element -> args.add(element.getAsString()));
                 }else
                 {
                     // Handle single string argument (split by spaces)
-                    String argsString = params.get("args").getAsString();
+                    String argsString = argsEl.getAsString();
                     if(!argsString.trim().isEmpty())
                     {
                         args.addAll(Arrays.asList(argsString.split("\\s+")));

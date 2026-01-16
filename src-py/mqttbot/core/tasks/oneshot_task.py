@@ -30,7 +30,7 @@ class OneShotTask(TaskBase):
                 service=self.service,
                 method=self.method,
                 params=self.params,
-                correlation_id=ctx.correlation_id,
+                correlation_id=self.correlation_id,
             )
             # Send via context
             ctx.message_sender(message)

@@ -30,7 +30,7 @@ class CommandTask(TaskBase):
                 service=self.service,
                 method=self.method,
                 params=self.params,
-                correlation_id=ctx.correlation_id,
+                correlation_id=self.correlation_id,
             )
             # Send via context
             ctx.bot_service.send_message(message)

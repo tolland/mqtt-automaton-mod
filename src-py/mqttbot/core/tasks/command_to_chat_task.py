@@ -54,7 +54,7 @@ class CommandToChatTask(TaskBase):
                 service=self.service,
                 method=self.method,
                 params=self.params,
-                correlation_id=ctx.correlation_id,
+                correlation_id=self.correlation_id,
             )
             # Send via context mqtt direct, don't want bot_service to
             # track requestId

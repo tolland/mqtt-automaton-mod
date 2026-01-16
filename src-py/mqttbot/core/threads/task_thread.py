@@ -39,7 +39,8 @@ class TaskThread:
         self._on_resume = on_resume
 
     def enqueue_task(self, task: Task) -> None:
-        """Add task to this thread's queue"""
+        """Add task to this thread's queue and inject correlation_id"""
+        task.correlation_id = self.correlation_id
         self.task_queue.append(task)
 
     async def start(self, ctx: Context) -> None:

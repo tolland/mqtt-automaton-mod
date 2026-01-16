@@ -87,14 +87,18 @@ class Scheduler:
         # Execute current thread
         if self.current_thread:
             try:
+                # Set correlation_id from current thread before stepping
+                ctx.correlation_id = self.current_thread.correlation_id
                 completed = await self.current_thread.step(ctx)
                 if completed:
                     self.current_thread.state = ThreadStatus.COMPLETED
                     self.current_thread = None
+                    ctx.correlation_id = None  # Clear when thread completes
                     await self._resume_suspended(ctx)
             except Exception as e:
                 self.current_thread.state = ThreadStatus.FAILED
                 self.current_thread = None
+                ctx.correlation_id = None  # Clear on failure
                 raise e
         elif self.ready_threads:
             await self._start_next_thread(ctx)
@@ -123,10 +127,14 @@ class Scheduler:
         """Pop highest-priority ready thread"""
         if not self.ready_threads:
             self.current_thread = None
+            ctx.correlation_id = None
             return
 
         thread = heapq.heappop(self.ready_threads)
         self.current_thread = thread
+
+        # Set correlation_id from the thread being started
+        ctx.correlation_id = thread.correlation_id
 
         if thread.state == ThreadStatus.READY:
             await thread.start(ctx)
@@ -139,6 +147,8 @@ class Scheduler:
             return
 
         thread = self.suspended_stack.pop()
+        # Set correlation_id from the resumed thread
+        ctx.correlation_id = thread.correlation_id
         await thread.resume(ctx)
         self.current_thread = thread
 

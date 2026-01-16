@@ -65,7 +65,8 @@ public class InventoryAction extends Action implements InventoryListener {
             responseData.addProperty("fullSlots", fullSlots);
             responseData.addProperty("totalSlots", emptySlots + fullSlots);
             responseData.addProperty("player", playerName);
-            responseData.addProperty("timestamp", System.currentTimeMillis());
+            // timestamp is set at the MessageData level; avoid duplicating it
+            // here
             
             // Add primary item information
             if(primaryItem != null)
@@ -117,7 +118,7 @@ public class InventoryAction extends Action implements InventoryListener {
             responseData.addProperty("totalCount", totalCount);
             responseData.addProperty("delta", newCount - oldCount);
             responseData.addProperty("player", playerName);
-            responseData.addProperty("timestamp", System.currentTimeMillis());
+            // timestamp is provided at the MessageData level; don't duplicate
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
                 new MessageData("inventory", "item_count_change",

@@ -118,7 +118,7 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             resp.addProperty("raw_message", rawMessage);
             resp.addProperty("clean_message", cleanMessage);
             resp.addProperty("player", playerName);
-            resp.addProperty("timestamp", System.currentTimeMillis());
+            // timestamp is provided at the MessageData level; don't duplicate
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
                 new MessageData("events", "chat_message",

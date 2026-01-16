@@ -41,3 +41,16 @@ replay_*.log
 /uv.lock
 *.ods#
 /configs/
+
+# python
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+.env
+.venv
+venv/

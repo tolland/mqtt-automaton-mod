@@ -16,6 +16,7 @@ class Settings:
     topic_state: str
     topic_inventory: str
     topic_events: str
+    topic_heartbeats: str
     timeout_seconds: int
     max_retries: int
     retry_delay_seconds: int

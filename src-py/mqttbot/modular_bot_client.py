@@ -19,6 +19,7 @@ from mqttbot.core.events.event_manager_helper import EventManagerHelper
 from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
 from mqttbot.core.scheduler import Scheduler
 from mqttbot.core.services.bot_service import BotService
+from mqttbot.core.state.baritone.baritone_module import BaritoneModule
 from mqttbot.core.state.blackboard import TypedBlackboard
 from mqttbot.core.state.events.events_module import EventsModule
 from mqttbot.core.state.wurst_module import WurstModule
@@ -68,12 +69,12 @@ class ModularBotClient:
 
         # Now with type safety, you can do:
         self.blackboard = TypedBlackboard()
-        # self.blackboard.register_module("baritone", BaritoneModule())
-        # self.blackboard.register_module("events", DateTimeModule())
-        # self.blackboard.register_module("inventory", InventoryModule())
-        # self.blackboard.register_module("position", PositionModule())
+        self.blackboard.register_module("baritone", BaritoneModule())
         self.blackboard.register_module("wurst", WurstModule())
         self.blackboard.register_module("events", EventsModule())
+        
+        # Subscribe to baritone state changes for console output
+        self._setup_baritone_state_dumper()
 
         self.ctx = Context(
             **{
@@ -91,38 +92,91 @@ class ModularBotClient:
         # Print initialization summary
         pprint(self)
 
-    def _handle_mqtt_message(self, payload: str) -> None:
-        """Handle incoming MQTT message payload turn into MessageData"""
+    def _setup_baritone_state_dumper(self) -> None:
+        """Subscribe to baritone state changes and dump to console with rich formatting"""
+        def dump_baritone_state(state):
+            """Callback to dump baritone state to console"""
+            print("\n[baritone] State Update:")
+            print("=" * 60)
+            
+            if state.current_state:
+                print(f"Phase: {state.current_state.phase}")
+                print(f"Has Active Request: {state.current_state.has_active_request}")
+            
+            if state.history_stats:
+                print(f"\nHistory Stats:")
+                print(f"  Total Requests: {state.history_stats.total_requests}")
+                print(f"  Successful: {state.history_stats.successful}")
+                print(f"  Failed: {state.history_stats.failed}")
+                print(f"  Stuck: {state.history_stats.stuck}")
+                print(f"  Cancelled: {state.history_stats.cancelled}")
+                print(f"  Avg Duration: {state.history_stats.avg_duration_seconds:.2f}s")
+            
+            if state.request_history:
+                print(f"\nRecent Requests ({len(state.request_history)}):")
+                for i, req in enumerate(state.request_history[-3:], 1):  # Show last 3
+                    print(f"  [{i}] {req.request_id[:8]}... - {req.phase}")
+                    if req.target_x is not None:
+                        print(f"      Target: ({req.target_x}, {req.target_y}, {req.target_z})")
+                    if req.failure_reason:
+                        print(f"      Failure: {req.failure_reason}")
+            
+            if state.current_request_timeline:
+                print(f"\nCurrent Request Timeline ({len(state.current_request_timeline)} events):")
+                for event in state.current_request_timeline[-5:]:  # Show last 5 events
+                    print(f"  {event}")
+            
+            print("=" * 60)
+            print()
+        
+        self.blackboard.subscribe("baritone", dump_baritone_state)
+
+    def _handle_mqtt_message(self, topic: str, payload: str) -> None:
+        """Handle incoming MQTT message payload turn into MessageData
+        
+        Args:
+            topic: MQTT topic the message was received on
+            payload: Message payload string
+        """
         try:
             # Parse as structured MessageData
             message_data = MessageData.from_json(payload)
             if message_data:
-                self._process_message(message_data)
+                self._process_message(topic, message_data)
         except Exception as e:
             print(f"[mqtt] Error processing message: {e}")
             raise
 
-    def _process_message(self, message_data):
+    def _process_message(self, topic: str, message_data):
         """
-        Distribute incoming message to bot service and event manager
-        :param message_data:
-        :type message_data:
-        :return:
-        :rtype:
+        Distribute incoming message based on topic routing
+        
+        Args:
+            topic: MQTT topic the message was received on
+            message_data: Parsed MessageData object
         """
-
-        self.bot_service.handle_response(message_data)
-
+        # Route reply messages to bot_service for request/response tracking
+        if topic == self.mqtt.topic_reply:
+            self.bot_service.handle_response(message_data)
+        
+        # Route baritone state messages to blackboard (even if on topic_reply)
+        if message_data.service == "baritone" and message_data.method == "state":
+            self.blackboard.emit_event(message_data.service, message_data)
+        
         self.blackboard.emit_event(message_data.service, message_data)
-
-        if self._event_queue:
-            try:
-                self._event_queue.put_nowait(message_data)
-            except asyncio.QueueFull:
-                print(
-                    f"[mqtt] Event queue full, dropping {message_data.service}:{message_data.method}"
-                )
-                raise ValueError("Event queue full")
+        
+        # Add reply messages to async queue as well (for event processing)
+        # This allows reply messages to also trigger event handlers if needed
+        if topic == self.mqtt.topic_reply or topic in (self.mqtt.topic_events, self.mqtt.topic_pos, 
+                                                        self.mqtt.topic_state, self.mqtt.topic_inventory):
+            if self._event_queue:
+                try:
+                    self._event_queue.put_nowait(message_data)
+                except asyncio.QueueFull:
+                    print(
+                        f"[mqtt] Event queue full, dropping {message_data.service}:{message_data.method}"
+                    )
+                    raise ValueError("Event queue full")
 
     async def _handle_event_async(self, message_data):
         """Handle a single event"""
@@ -215,12 +269,47 @@ class ModularBotClient:
         self.running = True
         print(f"[bot] Bot started successfully")
 
+    async def _wait_for_player_join(self, timeout: float = 60.0) -> None:
+        """
+        Wait for player join event (liveness check) before starting bot operations.
+        
+        Args:
+            timeout: Maximum time to wait in seconds
+            
+        Raises:
+            TimeoutError: If player join event is not received within timeout
+        """
+        start_time = time.time()
+        check_interval = 0.1  # Check every 100ms
+        
+        while time.time() - start_time < timeout:
+            # Check if player has joined by checking blackboard state
+            events_module = self.blackboard.get_module("events")
+            if events_module:
+                events_state = events_module.get_state()
+                if events_state and events_state.player_joined:
+                    return
+            
+            await asyncio.sleep(check_interval)
+        
+        # Timeout reached
+        raise TimeoutError(
+            f"Player join event not received within {timeout} seconds. "
+            "Make sure the Minecraft client is logged in and the mod is running."
+        )
+
     async def run(self) -> int:
         """Run the bot (main execution loop)"""
         self._event_queue = asyncio.Queue(maxsize=100)
 
         try:
             self.connect()
+            
+            # Wait for liveness check - player must join before we start
+            print(f"[bot] Waiting for player join event (liveness check)...")
+            await self._wait_for_player_join(timeout=60.0)
+            print(f"[bot] Player join confirmed, proceeding with bot startup")
+            
             self.configure()
             self.start()
 

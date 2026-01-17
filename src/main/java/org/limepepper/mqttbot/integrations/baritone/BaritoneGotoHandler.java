@@ -78,33 +78,35 @@ public final class BaritoneGotoHandler extends Action
     {
         LOGGER.trace("=== HANDLE GOTO START ===");
         LOGGER.trace("Message: {}", msg.toString());
-
+        
         try
         {
             // Enable required features
             requiredFeatures().forEach(CORE.features()::enable);
             LOGGER.trace("Features enabled");
-
+            
             // Extract and validate correlation IDs - fail fast if invalid
             CorrelationIds ids = CorrelationIds.fromMessage(msg);
-            LOGGER.trace("Extracted correlation IDs: requestId={}, correlationId={}",
+            LOGGER.trace(
+                "Extracted correlation IDs: requestId={}, correlationId={}",
                 ids.requestId(), ids.correlationId());
-
+            
             // Parse command parameters
             JsonElement paramsEl = msg.getParams();
             BaritoneGotoCommand cmd;
             cmd = gson.fromJson(paramsEl, BaritoneGotoCommand.class);
-            LOGGER.trace("Parsed command: x={}, y={}, z={}", cmd.x, cmd.y, cmd.z);
-
+            LOGGER.trace("Parsed command: x={}, y={}, z={}", cmd.x, cmd.y,
+                cmd.z);
+            
             // Create target BlockPos from command
-            BlockPos targetPos = new BlockPos((int)cmd.x, (int)cmd.y, (int)cmd.z);
+            BlockPos targetPos =
+                new BlockPos((int)cmd.x, (int)cmd.y, (int)cmd.z);
             LOGGER.trace("Target BlockPos: {}", targetPos);
-
+            
             // Check current state before canceling
             LOGGER.trace("hasActiveRequest BEFORE cancel: {}",
                 PathingState.INSTANCE.hasActiveRequest());
-
-
+            
             // CRITICAL: Cancel Baritone BEFORE creating the request
             // If we cancel after, Baritone fires CANCELED event which our
             // handler treats as a failure since there's now an active request
@@ -118,43 +120,41 @@ public final class BaritoneGotoHandler extends Action
                 LOGGER.warn("Error calling Baritone cancelEverything(): {}",
                     e.getMessage());
             }
-
+            
             // Give Baritone a moment to process the cancel
             LOGGER.trace("Waiting 50ms for Baritone to process cancel...");
             Thread.sleep(50);
-
+            
             // Check state after cancel and sleep
             LOGGER.trace("hasActiveRequest AFTER cancel+sleep: {}",
                 PathingState.INSTANCE.hasActiveRequest());
-
-
+            
             // Now create the request (after Baritone is clean)
             LOGGER.trace("Creating new PathingRequest...");
             PathingState.INSTANCE.startRequest(ids, targetPos);
-            LOGGER.trace("PathingRequest created, transitioning to CALCULATING...");
+            LOGGER.trace(
+                "PathingRequest created, transitioning to CALCULATING...");
             PathingState.INSTANCE.transitionTo(PathingPhase.CALCULATING);
             LOGGER.trace("Phase transition complete");
-
+            
             // Set bot state
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
             LOGGER.trace("Bot state set to BUSY");
-
-
+            
             // Use Baritone API directly instead of chat command
             Goal goal = new GoalBlock(targetPos);
             PathingState.INSTANCE.setBaritoneGoal(goal);
             LOGGER.trace("Calling setGoalAndPath with {}", goal);
             MqttCore.baritone.getCustomGoalProcess().setGoalAndPath(goal);
             LOGGER.trace("setGoalAndPath returned");
-
+            
             PathingState.INSTANCE.logEvent("GOTO_COMMAND_SENT",
                 String.format("Using Baritone API: GoalBlock(%d, %d, %d)",
                     targetPos.getX(), targetPos.getY(), targetPos.getZ()));
-
+            
             LOGGER.info("Sent goto command to Baritone: {}", targetPos);
             LOGGER.trace("=== HANDLE GOTO END ===");
-
-
+            
         }catch(Exception e)
         {
             LOGGER.error("=== HANDLE GOTO ERROR ===");
@@ -172,13 +172,13 @@ public final class BaritoneGotoHandler extends Action
     {
         LOGGER.trace(">>> PATH EVENT: {} (hasActiveRequest={})", event,
             PathingState.INSTANCE.hasActiveRequest());
-
+        
         if(!PathingState.INSTANCE.hasActiveRequest())
         {
             LOGGER.trace("    Ignoring event - no active request");
             return; // Ignore events when no active request
         }
-
+        
         LOGGER.trace("    Processing event for active request");
         PathingState.INSTANCE.logEvent("BARITONE_EVENT", event.toString());
         
@@ -261,7 +261,7 @@ public final class BaritoneGotoHandler extends Action
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
         requiredFeatures().forEach(CORE.features()::disable);
     }
-
+    
     /**
      * Handles Baritone CANCELED event. Checks if player is at/near goal and
      * sends appropriate success or failure response.
@@ -270,19 +270,19 @@ public final class BaritoneGotoHandler extends Action
     {
         Goal canceledGoal = PathingState.INSTANCE.getBaritoneGoal();
         BetterBlockPos feet = MqttCore.baritone.getPlayerContext().playerFeet();
-
+        
         double heuristic =
             (canceledGoal != null)
                 ? canceledGoal.heuristic(feet)
                 : Double.NaN;
-
+        
         LOGGER.debug("CANCELED - Goal heuristic: {}", heuristic);
         PathingState.INSTANCE.logEvent("BARITONE_CANCELED",
             String.format("Heuristic: %.2f", heuristic));
-
+        
         double threshold =
             BaritoneConfig.getInstance().getCloseEnoughHeuristic();
-
+        
         if(heuristic < threshold)
         {
             // Already at goal - Baritone canceled because no pathing needed
@@ -301,11 +301,11 @@ public final class BaritoneGotoHandler extends Action
             ResponseBuilder.sendGotoFailure("Baritone canceled", reason);
             PathingState.INSTANCE.completeFailed(reason);
         }
-
+        
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
         requiredFeatures().forEach(CORE.features()::disable);
     }
-
+    
     /**
      * Tick handler for stuck detection, timeout detection, and goal completion
      * checking (backup for unreliable Baritone AT_GOAL events)

@@ -3,7 +3,7 @@ package org.limepepper.mqttbot.actions;
 import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
-import org.limepepper.mqttbot.events.ClientListener;
+import org.limepepper.mqttbot.events.HeartbeatListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 
@@ -12,17 +12,15 @@ import java.util.UUID;
 /**
  * Game, Player and mc client related event actions.
  */
-public class ClientAction extends Action implements ClientListener {
+public class HeartbeatAction extends Action implements HeartbeatListener {
     @Override
-    public void onClientJoin()
+    public void onHeartbeat()
     {
-        // MqttHandler.INSTANCE.publish("baritone/event/bot1", "client join");
-        // @TODO these should send actual data about the join
         var mc = Minecraft.getInstance();
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(
             CORE.getPlayerName(),
             new MessageData("events",
-                "player_join",
+                "heartbeat",
                 UUID.randomUUID().toString(),
                 null,
                 null,
@@ -30,16 +28,5 @@ public class ClientAction extends Action implements ClientListener {
                 null),
             "events"));
         
-    }
-    
-    @Override
-    public void onClientDisconnect()
-    {
-        // @TODO these should send actual data about the disconnect
-        EventManager
-            .fire(new MqttReplyListener.MqttReplyEvent(CORE.getPlayerName(),
-                new MessageData("events", "player_disconnect",
-                    UUID.randomUUID().toString(), null, null, null, null),
-                "events"));
     }
 }

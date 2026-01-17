@@ -16,7 +16,7 @@ public class MqttBotLogger {
     
     public MqttBotLogger(Class<?> clazz)
     {
-        this(clazz.getSimpleName());
+        this(clazz.getName());
     }
     
     public void trace(String message, Object... args)

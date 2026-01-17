@@ -18,13 +18,13 @@ class MqttClient:
     def __init__(
         self,
         settings: Settings,
-        message_callback: Optional[Callable[[str], None]] = None,
+        message_callback: Optional[Callable[[str, str], None]] = None,
     ):
         """Initialize MQTT client
 
         Args:
             settings: Settings object containing MQTT configuration
-            message_callback: Optional callback function to handle incoming messages
+            message_callback: Optional callback function to handle incoming messages (topic, payload)
         """
         self.settings = settings
         self.message_callback = message_callback
@@ -37,6 +37,7 @@ class MqttClient:
         self.topic_pos = settings.topic_pos
         self.topic_state = settings.topic_state
         self.topic_inventory = settings.topic_inventory
+        self.topic_heartbeats = settings.topic_heartbeats
         self.topic_events = settings.topic_events
 
     def _setup_client(self) -> None:
@@ -58,6 +59,7 @@ class MqttClient:
         self._client.subscribe(self.topic_state, qos=0)
         self._client.subscribe(self.topic_inventory, qos=0)
         self._client.subscribe(self.topic_events, qos=0)
+        self._client.subscribe(self.topic_heartbeats, qos=0)
         self._mqtt_connected = True
 
     def _on_disconnect(self, client, userdata, rc):
@@ -67,12 +69,13 @@ class MqttClient:
 
     def _on_message(self, client, userdata, msg):
         """Handle incoming MQTT messages"""
+        topic = msg.topic
         payload = msg.payload.decode("utf-8", errors="replace").strip()
-        print(f"[mqtt] < {self.topic_cmd}: {payload}")
+        print(f"[mqtt] < {topic}: {payload}")
 
         if self.message_callback:
             try:
-                self.message_callback(payload)
+                self.message_callback(topic, payload)
             except Exception as e:
                 print(f"[mqtt] Error in message callback: {e}")
                 raise

@@ -39,7 +39,7 @@ enum PathingState
     {
         LOGGER.trace("startRequest called: requestId={}, target={}",
             ids.requestId(), targetPos);
-
+        
         // Cancel existing request if present
         if(currentRequest != null && currentRequest.getPhase().isActive())
         {
@@ -67,7 +67,7 @@ enum PathingState
     {
         LOGGER.trace("transitionTo called: newPhase={}, currentRequest={}",
             newPhase, currentRequest);
-
+        
         if(currentRequest == null)
         {
             LOGGER.warn("Attempted to transition to {} but no active request",
@@ -80,7 +80,7 @@ enum PathingState
         LOGGER.debug("Phase transition: {} -> {}", oldPhase, newPhase);
         LOGGER.trace("After transition: isTerminal={}, isActive={}",
             newPhase.isTerminal(), newPhase.isActive());
-
+        
         // If reached terminal state, record to history
         if(newPhase.isTerminal())
         {
@@ -131,7 +131,8 @@ enum PathingState
      */
     boolean hasActiveRequest()
     {
-        boolean result = currentRequest != null && currentRequest.getPhase().isActive();
+        boolean result =
+            currentRequest != null && currentRequest.getPhase().isActive();
         LOGGER.trace("hasActiveRequest: currentRequest={}, phase={}, result={}",
             currentRequest,
             currentRequest != null ? currentRequest.getPhase() : "null",

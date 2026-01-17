@@ -1,16 +1,21 @@
 package org.limepepper.mqttbot.watchers;
 
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.ClientListener;
+import org.limepepper.mqttbot.events.HeartbeatListener;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
-public class PlayerEventWatcher {
+public class GameEventWatcher {
     private static final MqttBotLogger LOGGER =
-        new MqttBotLogger(PlayerEventWatcher.class);
+        new MqttBotLogger(GameEventWatcher.class);
+    
+    private static final int CHECK_INTERVAL = 100;
+    private static int tickCounter = 0;
     
     public static void init()
     {
@@ -30,5 +35,19 @@ public class PlayerEventWatcher {
                 "Received chat message sent by {} at time {}: {}",
                 sender == null ? "null" : sender.getName(),
                 receptionTimestamp.toEpochMilli(), message.getString()));
+        
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            
+            if(client.level == null)
+                return;
+            
+            if(++tickCounter < CHECK_INTERVAL)
+            {
+                return;
+            }
+            tickCounter = 0;
+            
+            EventManager.fire(HeartbeatListener.HeaertbeatEvent.INSTANCE);
+        });
     }
 }

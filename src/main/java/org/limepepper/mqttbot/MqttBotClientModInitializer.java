@@ -10,7 +10,7 @@ import org.limepepper.mqttbot.integrations.wurst.WurstHandler;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.limepepper.mqttbot.watchers.ClientNightWatcher;
 import org.limepepper.mqttbot.watchers.InventoryWatcher;
-import org.limepepper.mqttbot.watchers.PlayerEventWatcher;
+import org.limepepper.mqttbot.watchers.GameEventWatcher;
 
 public class MqttBotClientModInitializer implements ClientModInitializer {
     private static final MqttBotLogger LOGGER =
@@ -24,7 +24,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         
         ClientNightWatcher.init();
         InventoryWatcher.init();
-        PlayerEventWatcher.init();
+        GameEventWatcher.init();
         
         SleepUtil.init();
         SleepMessageHandler.init();

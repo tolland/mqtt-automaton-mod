@@ -15,14 +15,14 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 
 
 def build_settings(
-    config_path: str | Path,
-    broker: Optional[str] = None,
-    port: Optional[int] = None,
-    client_id: Optional[str] = None,
-    timeout: Optional[int] = None,
-    retries: Optional[int] = None,
-    retry_delay: Optional[int] = None,
-    log_level: Optional[str] = None,
+        config_path: str | Path,
+        broker: Optional[str] = None,
+        port: Optional[int] = None,
+        client_id: Optional[str] = None,
+        timeout: Optional[int] = None,
+        retries: Optional[int] = None,
+        retry_delay: Optional[int] = None,
+        log_level: Optional[str] = None,
 ) -> Settings:
     """
     Build Settings object from configuration file and CLI arguments.
@@ -51,6 +51,7 @@ def build_settings(
         topic_state=f"mqttbot/{expected_player_name}/state",
         topic_inventory=f"mqttbot/{expected_player_name}/inventory",
         topic_events=f"mqttbot/{expected_player_name}/events",
+        topic_heartbeats=f"mqttbot/{expected_player_name}/heartbeats",
         timeout_seconds=timeout or cfg.get("timeout_seconds", 300),
         max_retries=retries or cfg.get("max_retries", 2),
         retry_delay_seconds=retry_delay or cfg.get("retry_delay_seconds", 3),

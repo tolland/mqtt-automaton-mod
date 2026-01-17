@@ -56,6 +56,10 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
             sampleClient = new MqttClient(broker, clientId, persistence);
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(true);
+            connOpts.setWill("mqttbot/bots/lwt",
+                "payload".getBytes(StandardCharsets.UTF_8), 2, // QoS
+                false);
+            connOpts.setAutomaticReconnect(true);
             
             sampleClient.setCallback(new MqttCallback()
             {
@@ -65,10 +69,17 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
                 }
                 
                 public void messageArrived(String topic, MqttMessage message)
-                    throws Exception
                 {
-                    LOGGER.debugMqtt("MQTT message received on topic {}: {}",
-                        topic, message.toString());
+                    if(message.toString() == null
+                        || message.toString().isEmpty())
+                    {
+                        LOGGER.debugMqtt("Ignoring empty MQTT message on topic {}",
+                            topic);
+                        return;
+                    }
+                    LOGGER.debugMqtt(
+                        "MQTT message received on topic {}: {} - isRetained: {}",
+                        topic, message.toString(), message.isRetained());
                     handleMqttMessage(topic, message.toString());
                 }
                 
@@ -77,9 +88,6 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
                     LOGGER.debugMqtt("MQTT message delivery complete");
                 }
             });
-            connOpts.setWill("mqttbot/bots/lwt",
-                "payload".getBytes(StandardCharsets.UTF_8), 2, // QoS
-                false);
             
             sampleClient.connect(connOpts);
             LOGGER.info("Connected to MQTT broker: {}", broker);
@@ -153,8 +161,9 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
         }else
         {
             // Fallback: try to handle as legacy format based on topic
-            LOGGER.warn("Received invalid/legacy message format: {}",
-                rawMessage);
+            LOGGER.warn(
+                "Received invalid/legacy message format: '{}' on topic: {}",
+                rawMessage, topic);
             throw new IllegalArgumentException(
                 "Invalid or unsupported MQTT message format");
         }

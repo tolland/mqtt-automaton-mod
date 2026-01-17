@@ -78,9 +78,9 @@ public class MqttBotLogger {
     
     public void debugMqtt(String message, Object... args)
     {
-        if(config.isDebugMqtt() && config.isLogLevelEnabled("DEBUG"))
-        {
-            logger.debug("[MQTT] " + message, args);
-        }
+        // if(config.isDebugMqtt() && config.isLogLevelEnabled("DEBUG"))
+        // {
+        logger.debug("[MQTT] " + message, args);
+        // }
     }
 }

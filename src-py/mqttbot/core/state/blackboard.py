@@ -50,10 +50,8 @@ class TypedBlackboard:
 
         module = self._modules[module_name]
         old_facts = copy.deepcopy(module.get_state())
-        print(old_facts)
         module.handle_event(event)
         new_facts = module.get_state()
-        print(new_facts)
 
         for key in new_facts.__dataclass_fields__:
             value = getattr(new_facts, key)

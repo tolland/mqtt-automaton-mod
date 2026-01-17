@@ -8,4 +8,3 @@ from mqttbot import MessageData
 class EventsState:
     message: Optional[MessageData] = None
     player_joined: bool = False
-    player_join_message: Optional[MessageData] = None

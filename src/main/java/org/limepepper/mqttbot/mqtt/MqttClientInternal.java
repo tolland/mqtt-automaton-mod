@@ -73,7 +73,8 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
                     if(message.toString() == null
                         || message.toString().isEmpty())
                     {
-                        LOGGER.debugMqtt("Ignoring empty MQTT message on topic {}",
+                        LOGGER.debugMqtt(
+                            "Ignoring empty MQTT message on topic {}",
                             topic);
                         return;
                     }

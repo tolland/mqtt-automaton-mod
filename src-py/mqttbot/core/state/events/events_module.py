@@ -13,10 +13,8 @@ class EventsModule(StateModule[EventsState]):
             self._state.message = message_data
         elif message_data.service == "events" and message_data.method == "player_join":
             self._state.player_joined = True
-            self._state.player_join_message = message_data
         elif message_data.service == "events" and message_data.method == "heartbeat":
             self._state.player_joined = True
-            self._state.player_join_message = message_data
 
     def get_state(self) -> EventsState:
         return self._state

@@ -18,6 +18,7 @@ class PatternStepConfig:
         """Rich, human-friendly representation (falls back to a simple repr on error)."""
         try:
             import json
+
             return json.dumps(self.to_dict(), indent=2, sort_keys=True)
         except Exception:
             return (

@@ -5,6 +5,7 @@ from typing import Optional, Any, Iterator
 
 class StepBase(ABC):
     """Base class for pattern steps"""
+
     pass
 
     def __iter__(self) -> Iterator["StepBase"]:

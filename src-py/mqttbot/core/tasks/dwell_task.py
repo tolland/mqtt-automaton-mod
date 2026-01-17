@@ -29,10 +29,10 @@ class DwellTask(TaskBase):
     """
 
     def __init__(
-            self,
-            service: str = None,
-            method: str = None,
-            params: dict[str, Any] = None,
+        self,
+        service: str = None,
+        method: str = None,
+        params: dict[str, Any] = None,
     ):
         """Initialize dwell task
 

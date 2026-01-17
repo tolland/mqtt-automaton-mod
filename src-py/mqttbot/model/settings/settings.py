@@ -13,6 +13,9 @@ class Settings:
     topic_cmd: str
     topic_reply: str
     topic_pos: str
+    topic_state: str
+    topic_inventory: str
+    topic_events: str
     timeout_seconds: int
     max_retries: int
     retry_delay_seconds: int

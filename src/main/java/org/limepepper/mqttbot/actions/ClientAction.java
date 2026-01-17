@@ -9,6 +9,9 @@ import org.limepepper.mqttbot.mqtt.MessageData;
 
 import java.util.UUID;
 
+/**
+ * Game, Player and mc client related event actions.
+ */
 public class ClientAction extends Action implements ClientListener {
     @Override
     public void onClientJoin()
@@ -16,17 +19,25 @@ public class ClientAction extends Action implements ClientListener {
         // MqttHandler.INSTANCE.publish("baritone/event/bot1", "client join");
         var mc = Minecraft.getInstance();
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-            CORE.getPlayerName(), new MessageData("player", "join",
-                UUID.randomUUID().toString(), null, null, null, null)));
+            CORE.getPlayerName(),
+            new MessageData("player",
+                "join",
+                UUID.randomUUID().toString(),
+                null,
+                null,
+                null,
+                null),
+            "events"));
         
     }
     
     @Override
     public void onClientDisconnect()
     {
-        EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-            CORE.getPlayerName(), new MessageData("player", "disconnect",
-                UUID.randomUUID().toString(), null, null, null, null)));
-        
+        EventManager
+            .fire(new MqttReplyListener.MqttReplyEvent(CORE.getPlayerName(),
+                new MessageData("player", "disconnect",
+                    UUID.randomUUID().toString(), null, null, null, null),
+                "events"));
     }
 }

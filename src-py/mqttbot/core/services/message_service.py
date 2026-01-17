@@ -83,7 +83,11 @@ class MessageService:
             result = self.pending_requests.get(request_id)
             if not result:
                 return None
-            if result.status in (RequestStatus.SUCCESS, RequestStatus.FAILED, RequestStatus.TIMEOUT):
+            if result.status in (
+                RequestStatus.SUCCESS,
+                RequestStatus.FAILED,
+                RequestStatus.TIMEOUT,
+            ):
                 self.pending_requests.pop(request_id)
             return result
 

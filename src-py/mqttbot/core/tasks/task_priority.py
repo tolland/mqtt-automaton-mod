@@ -1,5 +1,6 @@
 from enum import Enum, auto, IntEnum
 
+
 class TaskPriority(IntEnum):
     # Pillager attack, immediate threat
     CRITICAL = 0

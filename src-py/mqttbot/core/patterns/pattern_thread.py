@@ -36,8 +36,7 @@ class PatternThread(TaskThread):
         on_suspend: Optional[Callable[["TaskThread"], Awaitable[None]]] = None,
         on_resume: Optional[Callable[["TaskThread", Context], Awaitable[None]]] = None,
     ) -> None:
-        """Initialize a pattern-based thread
-        """
+        """Initialize a pattern-based thread"""
         super().__init__(thread_id, priority, on_suspend, on_resume)
 
         self.waypoints = waypoints
@@ -83,8 +82,7 @@ class PatternThread(TaskThread):
             yield from TaskFactory.from_config(step, context)
 
     def build_task_sequence(self) -> None:
-        """Build the full task sequence from waypoints and patterns
-        """
+        """Build the full task sequence from waypoints and patterns"""
         self.task_queue.clear()
         compiler = TaskCompiler(self.patterns_config)
 
@@ -101,8 +99,6 @@ class PatternThread(TaskThread):
                     self.enqueue_task(task)
                 wp_pos = compiler.current_pos
 
-
-
     async def suspend(self) -> None:
         """Suspend - save waypoint and task index for resumption"""
         print(f"[PatternThread] Suspending at task index {self.current_task_index}")
@@ -111,7 +107,6 @@ class PatternThread(TaskThread):
             self.task_queue.appendleft(self.current_task)
             self.current_task.status = TaskStatus.READY
             self.current_task = None
-
 
     async def resume(self, ctx: Context) -> None:
         """Resume - rebuild task sequence and skip to where we were
@@ -167,7 +162,9 @@ class PatternThread(TaskThread):
         for task in tasks:
             if isinstance(task, GotoTask):
                 # Check if this is a waypoint goto
-                waypoint = self.waypoints[waypoint_idx] if waypoint_idx < len(self.waypoints) else None
+                waypoint = (
+                    self.waypoints[waypoint_idx] if waypoint_idx < len(self.waypoints) else None
+                )
 
                 if waypoint and task.target == (waypoint["x"], waypoint["y"], waypoint["z"]):
                     # This is a waypoint goto - create new waypoint node

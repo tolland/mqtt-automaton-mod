@@ -85,7 +85,7 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
             LOGGER.info("Connected to MQTT broker: {}", broker);
             
             // all command messages
-            sampleClient.subscribe("mqttbot/bots/command");
+            sampleClient.subscribe("mqttbot/*/command");
             // commands for this specific bot
             String clientTopic = String.format("mqttbot/%s/command", clientId);
             LOGGER.info("Subscribing to MQTT topics: mqttbot/bots/command, {}",
@@ -107,17 +107,19 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
      * Messages from mod services router back here to be published to MQTT
      * broker
      *
-     * @param mqttReplyEvent
+     * @param event
      *            event containing reply data in {@link MessageData} format
      */
     @Override
-    public void onReplyArrived(MqttReplyEvent mqttReplyEvent)
+    public void onReplyArrived(MqttReplyEvent event)
     {
         LOGGER.debug("Handling MqttReplyEvent for bot: {}",
-            mqttReplyEvent.botId);
-        LOGGER.debugMqtt("Reply data: {}", mqttReplyEvent.messageData.toJson());
-        publish("mqttbot/" + mqttReplyEvent.botId + "/reply",
-            mqttReplyEvent.messageData.toJson());
+            event.botId);
+        LOGGER.debugMqtt("Reply data: {}", event.messageData.toJson());
+        var msg = event.messageData;
+        var botId = event.botId;
+        var topic = String.format("mqttbot/%s/%s", botId, event.topic);
+        publish(topic, msg.toJson());
     }
     
     /**
@@ -136,7 +138,7 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
         if(!topic.endsWith("command"))
             return;
         String botId = topic.split("/")[1]; // Extracts 'Player123' from
-                                            // 'mqttbot/Player123/command'
+        // 'mqttbot/Player123/command'
         LOGGER.debugMqtt("Raw message for bot {}: {}", botId, rawMessage);
         
         // Try to parse as structured JSON message first
@@ -153,6 +155,8 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
             // Fallback: try to handle as legacy format based on topic
             LOGGER.warn("Received invalid/legacy message format: {}",
                 rawMessage);
+            throw new IllegalArgumentException(
+                "Invalid or unsupported MQTT message format");
         }
     }
     

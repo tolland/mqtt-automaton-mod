@@ -64,7 +64,7 @@ public enum BaritoneBotBasicTest
                     {null, null, null, null, null, null, null}, // Z=1
                     {null, null, null, null, null, null, null} // Z=2
                 });
-                
+            
             // Teleport to test location
             testCtx.teleportPlayer(0.5F, 0, 0.5f, 0f, 0f);
             
@@ -160,7 +160,7 @@ public enum BaritoneBotBasicTest
                     {null, null, null, null, null, null, null}, // Z=1
                     {null, null, null, null, null, null, null} // Z=2
                 });
-                
+            
             // Teleport to test location
             testCtx.teleportPlayer(0.5F, 0, 0.5f, 0f, 0f);
             

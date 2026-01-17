@@ -65,7 +65,7 @@ public enum AutoFarmTest
                     {null, null, null}, // Z=1: empty
                     {null, null, null} // Z=2: empty
                 });
-                
+            
             // Set up layer at Y=0 (player level)
             // 5x3 array: center (2,1) is player position
             // Original: Z=-2 (interactable), Z=-1 (carrot), Z=0 (player)
@@ -77,7 +77,7 @@ public enum AutoFarmTest
                     {null, null, null}, // Z=1: empty
                     {null, null, null} // Z=2: empty
                 });
-                
+            
             // Teleport to test location with specific rotation
             testCtx.teleportPlayer(0.3F, 0, 0.4f, -175.8f, 33.5f);
             

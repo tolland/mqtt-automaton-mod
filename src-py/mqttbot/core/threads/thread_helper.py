@@ -13,18 +13,14 @@ class ThreadHelper:
     """Helper class for thread management."""
 
     @staticmethod
-    def _create_task_from_step(
-            step: TaskStep,
-            trigger_msg: MessageData
-    ) -> Optional[Task]:
+    def _create_task_from_step(step: TaskStep, trigger_msg: MessageData) -> Optional[Task]:
         """Create a task from a step definition"""
 
         return TaskFactory.create(step.to_dict())
 
     @staticmethod
     def _create_thread_from_thread_config(
-            config: ThreadConfig,
-            patterns: PatternsConfig
+        config: ThreadConfig, patterns: PatternsConfig
     ) -> TaskThread:
         """Create a TaskThread from a ThreadConfig"""
 

@@ -16,6 +16,7 @@ class GotoTaskState(Enum):
     WAITING = "waiting"
     DONE = "done"
 
+
 @task("goto")
 class GotoTask(TaskBase):
 
@@ -62,7 +63,9 @@ class GotoTask(TaskBase):
         if self._state == GotoTaskState.INIT:
             # Send request
             print(f"[GotoTask] Sending goto {self.target}")
-            self.request_id = bot_service.send_goto(*self.target, correlation_id=self.correlation_id)
+            self.request_id = bot_service.send_goto(
+                *self.target, correlation_id=self.correlation_id
+            )
             self._sent_time = time.time()
             self._state = GotoTaskState.SENT
             return TaskStatus.RUNNING
@@ -95,7 +98,6 @@ class GotoTask(TaskBase):
     def _suspend(self) -> None:
         """Suspend - save state for resumption"""
         print(f"[GotoTask] Suspended at {self.target}")
-
 
     def _resume(self, ctx: Context) -> None:
         """Resume - restore state"""

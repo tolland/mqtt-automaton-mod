@@ -13,15 +13,23 @@ public interface MqttReplyListener extends Listener {
     
     void onReplyArrived(MqttReplyEvent mqttReplyEvent);
     
-    public static class MqttReplyEvent extends Event<MqttReplyListener> {
+    class MqttReplyEvent extends Event<MqttReplyListener> {
         
         public String botId;
         public MessageData messageData;
+        public String topic;
         
         public MqttReplyEvent(String botId, MessageData messageData)
         {
+            this(botId, messageData, "reply");
+        }
+        
+        public MqttReplyEvent(String botId, MessageData messageData,
+            String topic)
+        {
             this.botId = botId;
             this.messageData = messageData;
+            this.topic = topic;
         }
         
         @Override

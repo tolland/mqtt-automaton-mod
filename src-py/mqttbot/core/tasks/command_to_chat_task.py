@@ -42,7 +42,7 @@ class CommandToChatTask(TaskBase):
             if "clean_message" in event_state.message.response:
                 clean_message = event_state.message.response["clean_message"]
                 print(f"[CommandToChatTask] Clean message: {clean_message}")
-                if '[Wurst] All items sold successfully' in clean_message:
+                if "[Wurst] All items sold successfully" in clean_message:
                     print(f"[CommandToChatTask] Detected successful sell message.")
                     self.found = True
 

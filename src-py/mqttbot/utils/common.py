@@ -28,6 +28,7 @@ def parse_dwell(dwell_spec: Any) -> float:
 
     return 0.0
 
+
 def resolve_coordinates(step: str, base_xyz: tuple[float, float, float]) -> tuple[int, int, int]:
     """
     Parse a pattern step "a b c" → absolute target from current (x,y,z)

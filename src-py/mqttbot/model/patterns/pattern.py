@@ -21,6 +21,7 @@ class CoordAxis:
             return CoordAxis("relative", offset)
         return CoordAxis("absolute", int(token))
 
+
 @dataclass(frozen=True)
 class Coords:
     x: CoordAxis
@@ -40,6 +41,7 @@ class Coords:
             axis(self.y, oy),
             axis(self.z, oz),
         )
+
 
 @dataclass
 class PatternStep(StepBase):

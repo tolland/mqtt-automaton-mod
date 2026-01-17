@@ -35,6 +35,9 @@ class MqttClient:
         self.topic_cmd = settings.topic_cmd
         self.topic_reply = settings.topic_reply
         self.topic_pos = settings.topic_pos
+        self.topic_state = settings.topic_state
+        self.topic_inventory = settings.topic_inventory
+        self.topic_events = settings.topic_events
 
     def _setup_client(self) -> None:
         """Setup MQTT client with callbacks"""
@@ -52,6 +55,9 @@ class MqttClient:
         print(f"[mqtt] Connected → subscribing {self.topic_reply}")
         self._client.subscribe(self.topic_reply, qos=0)
         self._client.subscribe(self.topic_pos, qos=0)
+        self._client.subscribe(self.topic_state, qos=0)
+        self._client.subscribe(self.topic_inventory, qos=0)
+        self._client.subscribe(self.topic_events, qos=0)
         self._mqtt_connected = True
 
     def _on_disconnect(self, client, userdata, rc):
@@ -97,17 +103,21 @@ class MqttClient:
             self._client.loop_stop()
             self._client.disconnect()
 
-    def send(self, message: str) -> None:
+    def send(self, topic: str, message: str) -> None:
         """Send MQTT message
 
         Args:
             message: Message string to send
+            :param message:
+            :type message:
+            :param topic:
+            :type topic:
         """
         if not self._client:
             raise RuntimeError("MQTT client not initialized. Call connect() first.")
 
         print(f"[mqtt] → {self.topic_cmd}: {message}")
-        self._client.publish(self.topic_cmd, message, qos=0, retain=False)
+        self._client.publish(topic, message, qos=0, retain=False)
 
     @property
     def is_connected(self) -> bool:

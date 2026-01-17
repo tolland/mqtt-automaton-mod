@@ -22,8 +22,7 @@ class PatternExpander:
 
     @staticmethod
     def parse_pattern_step(step_def: str | dict) -> Optional[StepBase]:
-        """Parse a pattern step definition into either relative coords or a concrete task step
-        """
+        """Parse a pattern step definition into either relative coords or a concrete task step"""
         if isinstance(step_def, dict):
             # Support dwell shorthands either at top level or inside params
             t = step_def.get("type")
@@ -62,11 +61,13 @@ class PatternExpander:
                 dx = PatternExpander._parse_axis(tokens[0])
                 dy = PatternExpander._parse_axis(tokens[1])
                 dz = PatternExpander._parse_axis(tokens[2])
+
                 # tokens starting with ~ are relative offsets
                 def resolve(tok, d, cur):
                     if tok.startswith("~"):
                         return cur + d
                     return d
+
                 nx = resolve(tokens[0], dx, cx)
                 ny = resolve(tokens[1], dy, cy)
                 nz = resolve(tokens[2], dz, cz)

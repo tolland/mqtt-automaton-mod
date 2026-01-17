@@ -18,6 +18,12 @@ import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.Set;
 
+/**
+ * This is a handler for '#goto x y z' style baritone commands.
+ * In order to detect progress and completion, we listen to Baritone pathing events
+ * and also use a tick handler to check for goal completion and send position
+ * updates.
+ */
 public final class BaritoneGotoHandler extends Action
     implements MessageHandler, RequiresFeatures {
     private static final MqttBotLogger LOGGER =
@@ -30,7 +36,7 @@ public final class BaritoneGotoHandler extends Action
         /*
          * Register pathing event listener
          * Baritone is currently not sending an AT_GOAL event when reaching the
-         * goal
+         * goal reliably. Need to find out why @TODO
          * so we also check for goal completion in the tick handler,
          * However, it does send CALC_FAILED when it cannot find a path
          */

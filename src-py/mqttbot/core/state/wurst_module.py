@@ -1,5 +1,3 @@
-
-
 from mqttbot import MessageData
 from mqttbot.core.state.state_module import StateModule
 from mqttbot.core.state.wurst_state import WurstState

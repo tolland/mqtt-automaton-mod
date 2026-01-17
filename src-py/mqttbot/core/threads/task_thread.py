@@ -58,7 +58,6 @@ class TaskThread:
         if self._on_suspend:
             await self._on_suspend(self)
 
-
     async def resume(self, ctx: Context) -> None:
         """Resume from suspension, potentially with different task strategy"""
         self.state = ThreadStatus.RUNNING

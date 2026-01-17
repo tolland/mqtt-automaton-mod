@@ -6,9 +6,9 @@ from asyncio import Queue
 from typing import Any, Optional
 
 import yaml
-from rich import inspect, print as rprint
-from rich.pretty import pprint
+from rich import inspect
 from rich import print
+from rich.pretty import pprint
 from rich.repr import rich_repr
 
 from mqttbot import MessageData
@@ -55,6 +55,8 @@ class ModularBotClient:
         self._event_queue: Optional[Queue] = None
         self.running = False
         self.event_manager = EventManager(self.config.get("event_handlers", {}))
+
+        pprint(self.settings)
 
         # State
         self._last_position = None
@@ -139,7 +141,8 @@ class ModularBotClient:
 
     def send_mqtt_message(self, message: MessageData) -> None:
         """Public method to send MQTT message"""
-        self.mqtt.send(message.to_json())
+        topic = f"mqttbot/{self.settings.client_id}/command"
+        self.mqtt.send(topic, message.to_json())
 
     def connect(self) -> None:
         """Connect to MQTT broker"""
@@ -197,12 +200,11 @@ class ModularBotClient:
         self.threads = []
         for thread_config in self.thread_configs:
             thread = ThreadHelper._create_thread_from_thread_config(
-                thread_config,
-                self.patterns_configs)
+                thread_config, self.patterns_configs
+            )
             self.threads.append(thread)
             inspect(thread)
             print(thread)
-
 
     def start(self) -> None:
         """Start the bot by registering threads with the scheduler"""

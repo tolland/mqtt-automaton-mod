@@ -1,4 +1,3 @@
-
 from mqttbot import MessageData
 from mqttbot.core.state.baritone.baritone_state import BaritoneState, BaritoneStatus
 from mqttbot.core.state.state_module import StateModule

@@ -9,4 +9,5 @@ def task(name: str | None = None):
         task_name = name or cls.__name__.removesuffix("Task").lower()
         TaskRegistry.register(task_name, cls)
         return cls
+
     return decorator

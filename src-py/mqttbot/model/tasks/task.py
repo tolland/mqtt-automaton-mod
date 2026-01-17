@@ -57,15 +57,17 @@ class TaskCompiler:
                 elif isinstance(step_item, PatternStep) and step_config.type == "goto":
                     coords = step_item.coords.resolve(self.current_pos)
                     self.current_pos = coords
-                    config_def.update({
-                        "params": {
-                            "target": {
-                                "x": coords[0],
-                                "y": coords[1],
-                                "z": coords[2],
+                    config_def.update(
+                        {
+                            "params": {
+                                "target": {
+                                    "x": coords[0],
+                                    "y": coords[1],
+                                    "z": coords[2],
+                                }
                             }
                         }
-                    })
+                    )
 
                 yield TaskFactory.create(config_def)
         except:

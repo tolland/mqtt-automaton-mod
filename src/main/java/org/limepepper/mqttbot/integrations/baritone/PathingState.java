@@ -37,6 +37,9 @@ enum PathingState
      */
     void startRequest(CorrelationIds ids, BlockPos targetPos)
     {
+        LOGGER.trace("startRequest called: requestId={}, target={}",
+            ids.requestId(), targetPos);
+
         // Cancel existing request if present
         if(currentRequest != null && currentRequest.getPhase().isActive())
         {
@@ -51,6 +54,7 @@ enum PathingState
         // Create new request
         currentRequest = new PathingRequest(ids, targetPos);
         LOGGER.info("Started new pathing request: {}", currentRequest);
+        LOGGER.trace("currentRequest is now: {}", currentRequest);
     }
     
     /**
@@ -61,6 +65,9 @@ enum PathingState
      */
     void transitionTo(PathingPhase newPhase)
     {
+        LOGGER.trace("transitionTo called: newPhase={}, currentRequest={}",
+            newPhase, currentRequest);
+
         if(currentRequest == null)
         {
             LOGGER.warn("Attempted to transition to {} but no active request",
@@ -71,13 +78,17 @@ enum PathingState
         PathingPhase oldPhase = currentRequest.getPhase();
         currentRequest.transitionTo(newPhase);
         LOGGER.debug("Phase transition: {} -> {}", oldPhase, newPhase);
-        
+        LOGGER.trace("After transition: isTerminal={}, isActive={}",
+            newPhase.isTerminal(), newPhase.isActive());
+
         // If reached terminal state, record to history
         if(newPhase.isTerminal())
         {
+            LOGGER.trace("Terminal state reached, recording to history");
             RequestHistory.INSTANCE.recordRequest(currentRequest);
             if(newPhase == PathingPhase.IDLE)
             {
+                LOGGER.trace("Setting currentRequest to null");
                 currentRequest = null;
             }
         }
@@ -120,7 +131,12 @@ enum PathingState
      */
     boolean hasActiveRequest()
     {
-        return currentRequest != null && currentRequest.getPhase().isActive();
+        boolean result = currentRequest != null && currentRequest.getPhase().isActive();
+        LOGGER.trace("hasActiveRequest: currentRequest={}, phase={}, result={}",
+            currentRequest,
+            currentRequest != null ? currentRequest.getPhase() : "null",
+            result);
+        return result;
     }
     
     /**

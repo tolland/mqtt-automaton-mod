@@ -10,6 +10,7 @@ import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.action.InventoryChangeFeature;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +20,10 @@ import java.util.Map;
  * Uses tick-based polling to detect inventory changes
  */
 public final class InventoryWatcher {
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(InventoryWatcher.class);
+    
     private static final MqttCore CORE = MqttCore.INSTANCE;
     private static Map<String, Integer> previousItemCounts = new HashMap<>();
     private static boolean wasPreviouslyFull = false;
@@ -140,7 +145,7 @@ public final class InventoryWatcher {
         // Check if inventory became full (no empty slots)
         if(isNowFull && !wasPreviouslyFull)
         {
-            System.out.println(
+            LOGGER.debug(
                 "[InventoryWatcher] Inventory is now full (no empty slots)!");
             EventManager.fire(new InventoryListener.InventoryFullEvent(
                 new HashMap<>(currentItemCounts)));
@@ -150,8 +155,8 @@ public final class InventoryWatcher {
         // of it)
         if(isFullForPrimaryItem && !wasPreviouslyFullForPrimary)
         {
-            System.out.println(
-                "[InventoryWatcher] Inventory is full for primary item: "
+            LOGGER
+                .debug("[InventoryWatcher] Inventory is full for primary item: "
                     + primaryItem + " (count: "
                     + currentItemCounts.get(primaryItem) + ")");
             EventManager.fire(new InventoryListener.InventoryFullEvent(

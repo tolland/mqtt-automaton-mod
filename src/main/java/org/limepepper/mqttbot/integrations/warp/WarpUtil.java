@@ -7,6 +7,7 @@ import net.minecraft.world.phys.Vec3;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
  * Warp utility for handling server-side teleport commands with position-based
@@ -14,6 +15,9 @@ import org.limepepper.mqttbot.mqtt.MessageData;
  * Similar to SleepUtil but for warp/teleport operations.
  */
 public final class WarpUtil {
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(WarpUtil.class);
     
     private static boolean enabled = false;
     private static String requestId = null;
@@ -69,7 +73,7 @@ public final class WarpUtil {
         waitTicks = 0;
         phase = Phase.WAITING_FOR_TELEPORT;
         
-        System.out.println("[WarpUtil] Starting warp to '" + name + "' at "
+        LOGGER.debug("[WarpUtil] Starting warp to '" + name + "' at "
             + targetPos + " (radius: " + radius + ")");
     }
     
@@ -143,7 +147,7 @@ public final class WarpUtil {
         sendStandardResponse("success", message, null);
         phase = Phase.COMPLETED;
         enabled = false;
-        System.out.println("[WarpUtil] " + message);
+        LOGGER.debug("[WarpUtil] " + message);
     }
     
     /**
@@ -154,7 +158,7 @@ public final class WarpUtil {
         sendStandardResponse("failure", "Warp failed", reason);
         phase = Phase.FAILED;
         enabled = false;
-        System.out.println("[WarpUtil] Warp failed: " + reason);
+        LOGGER.debug("[WarpUtil] Warp failed: " + reason);
     }
     
     /**

@@ -107,7 +107,7 @@ public enum BotTestHelper
                 .append(entry.getValue()).append("\n");
         }
         
-        System.out.println(sb);
+        LOGGER.debug(sb);
     }
     
     public static void runWurstCommand(ClientGameTestContext context,

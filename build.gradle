@@ -136,6 +136,7 @@ loom {
     accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
 
 //    splitEnvironmentSourceSets()
+    log4jConfigs.from(file("configs/log4j.xml"))
 
     mods {
         "mqttbot" {

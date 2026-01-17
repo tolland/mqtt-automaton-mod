@@ -2,6 +2,7 @@ package org.limepepper.mqttbot.events;
 
 import org.limepepper.mqttbot.event.Event;
 import org.limepepper.mqttbot.event.Listener;
+import org.limepepper.mqttbot.util.MsgUtils;
 
 import java.util.ArrayList;
 
@@ -20,7 +21,7 @@ public interface ChatMessageListener extends Listener {
         
         public ChatMessageEvent(String message)
         {
-            this.message = message;
+            this.message = MsgUtils.stripColorCodes(message);
             this.timestamp = System.currentTimeMillis();
         }
         

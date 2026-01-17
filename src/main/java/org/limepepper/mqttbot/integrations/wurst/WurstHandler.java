@@ -14,6 +14,7 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WurstHandler extends Action implements MqttMessageListener {
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(WurstHandler.class);
     public static final Minecraft MC = Minecraft.getInstance();
     
     // Queue to hold commands that need to be executed on the main thread
@@ -52,14 +55,14 @@ public class WurstHandler extends Action implements MqttMessageListener {
         MqttMessageListener.MqttMessageEvent mqttMessageEvent)
     {
         MessageData data = mqttMessageEvent.messageData;
-        System.out.println("received message in wurst handler");
+        LOGGER.debug("received message in wurst handler");
         
         if(!data.getService().equals("wurst"))
         {
             return;
         }
         
-        System.out.println("message for wurst service");
+        LOGGER.debug("message for wurst service");
         
         // Check if player is online
         if(MC.player == null)
@@ -159,7 +162,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
                 return;
             }
             
-            System.out.println("Executing Wurst command: " + task.commandName
+            LOGGER.debug("Executing Wurst command: " + task.commandName
                 + " with args: " + task.args);
             cmd.call(task.args.toArray(new String[0]));
             

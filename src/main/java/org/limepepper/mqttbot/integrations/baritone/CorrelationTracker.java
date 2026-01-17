@@ -6,7 +6,10 @@ import org.limepepper.mqttbot.mqtt.MessageData;
 /**
  * Tracks correlation information (requestId, correlationId, identity)
  */
-public class CorrelationTracker {
+public enum CorrelationTracker
+{
+    INSTANCE;
+    
     private String requestId;
     private String correlationId;
     

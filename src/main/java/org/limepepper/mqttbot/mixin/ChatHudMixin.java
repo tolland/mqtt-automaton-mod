@@ -10,9 +10,11 @@ import net.minecraft.network.chat.MessageSignature;
 import org.jetbrains.annotations.Nullable;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -25,6 +27,11 @@ import java.util.List;
  */
 @Mixin(ChatComponent.class)
 public class ChatHudMixin {
+    
+    @Unique
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(ChatHudMixin.class);
+    
     @Shadow
     @Final
     private List<GuiMessage.Line> trimmedMessages;
@@ -39,7 +46,7 @@ public class ChatHudMixin {
         @Local(argsOnly = true) LocalRef<GuiMessageTag> indicator)
     {
         String messageText = message.get().getString();
-        System.out.println("ChatHudMixin onAddMessage: " + messageText);
+        LOGGER.debug("ChatHudMixin onAddMessage: " + messageText);
         
         EventManager
             .fire(new ChatMessageListener.ChatMessageEvent(messageText));

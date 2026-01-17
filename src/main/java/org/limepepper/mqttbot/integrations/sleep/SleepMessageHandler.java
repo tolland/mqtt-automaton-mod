@@ -5,9 +5,13 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 public final class SleepMessageHandler extends Action
     implements MqttMessageListener {
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(SleepMessageHandler.class);
     
     public static final SleepMessageHandler INSTANCE =
         new SleepMessageHandler();
@@ -23,17 +27,17 @@ public final class SleepMessageHandler extends Action
     {
         EventManager.INSTANCE.add(MqttMessageListener.class,
             SleepMessageHandler.INSTANCE);
-        System.out.println("SleepMessageHandler initialized");
+        LOGGER.debug("SleepMessageHandler initialized");
     }
     
     @Override
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
         MessageData data = mqttMessageEvent.messageData;
-        // System.out.println("recieved message in sleep handler");
+        // LOGGER.debug("recieved message in sleep handler");
         if(!mqttMessageEvent.messageData.getService().equals("sleep"))
             return;
-        System.out.println("message for sleep service");
+        LOGGER.debug("message for sleep service");
         if(mqttMessageEvent.messageData.getMethod().equals("start"))
         {
             if(MC.player != null)
@@ -47,7 +51,7 @@ public final class SleepMessageHandler extends Action
             }
         }else
         {
-            System.out.println("unknown method in sleep handler");
+            LOGGER.debug("unknown method in sleep handler");
         }
     }
     

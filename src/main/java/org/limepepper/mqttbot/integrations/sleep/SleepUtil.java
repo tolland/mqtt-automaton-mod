@@ -21,8 +21,12 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 public final class SleepUtil {
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(SleepUtil.class);
     
     public static final Minecraft MC = Minecraft.getInstance();
     
@@ -409,6 +413,6 @@ public final class SleepUtil {
             sb.append(",\"extra\":").append(extraJson);
         sb.append('}');
         // Example: Mqtt.publish("baritone/"+clientId+"/event", sb.toString());
-        System.out.println("[Sleep] " + sb);
+        LOGGER.debug("[Sleep] " + sb);
     }
 }

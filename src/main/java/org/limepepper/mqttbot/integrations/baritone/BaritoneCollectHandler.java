@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+/**
+ * BaritoneCollectHandler implements handler for '#collect <block> <range>'
+ * command.
+ * Baritone does not send an event at the end, so we look for various chat
+ * messages that correspond to succes, failure, or inventory full.
+ */
 public final class BaritoneCollectHandler extends Action
     implements MessageHandler, ChatMessageListener, RequiresFeatures {
     private static final MqttBotLogger LOGGER =
@@ -35,15 +41,6 @@ public final class BaritoneCollectHandler extends Action
     // Message patterns that we are looking for
     private static final List<MessagePattern> MESSAGE_PATTERNS =
         new ArrayList<>();
-    
-    /*
-     * Correlation tracker for matching requests and responses
-     * TODO so we are tracking this in various places, but as the bot
-     * is one task only, its not entirely clear whether we need
-     * multiple trackers or a single shared one would suffice
-     */
-    static final CorrelationTracker correlationTracker =
-        new CorrelationTracker();
     
     private BaritoneCollectHandler()
     {
@@ -66,7 +63,7 @@ public final class BaritoneCollectHandler extends Action
     public void handle(MessageData msg)
     {
         requiredFeatures().forEach(CORE.features()::enable);
-        correlationTracker.setFrom(msg);
+        CorrelationTracker.INSTANCE.setFrom(msg);
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
         
         JsonElement paramsEl = msg.getParams();
@@ -76,7 +73,7 @@ public final class BaritoneCollectHandler extends Action
                 "Missing params for baritone collect request (requestId={})",
                 msg.getRequestId());
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-            correlationTracker.clear();
+            CorrelationTracker.INSTANCE.clear();
             return;
         }
         
@@ -89,7 +86,7 @@ public final class BaritoneCollectHandler extends Action
             LOGGER.error("Failed to parse BaritoneCollectCommand: {}",
                 e.getMessage(), e);
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-            correlationTracker.clear();
+            CorrelationTracker.INSTANCE.clear();
             return;
         }
         
@@ -116,13 +113,16 @@ public final class BaritoneCollectHandler extends Action
         {
             if(pattern.matches(cleanMessage))
             {
-                LOGGER.info("Matched chat pattern: {} - {}", pattern.source,
+                LOGGER.debug("Matched chat pattern: {} - {}", pattern.source,
                     pattern.eventType);
                 MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
+                
                 EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-                    MqttCore.INSTANCE.getPlayerName(), MsgUtils.ctSuccess(
-                        correlationTracker, "baritone", "collect", message)));
-                correlationTracker.clear();
+                    MqttCore.INSTANCE.getPlayerName(),
+                    MsgUtils.ctSuccess(CorrelationTracker.INSTANCE, "baritone",
+                        "collect", pattern.eventType, message)));
+                
+                CorrelationTracker.INSTANCE.clear();
                 requiredFeatures().forEach(CORE.features()::disable);
                 break;
             }
@@ -142,7 +142,11 @@ public final class BaritoneCollectHandler extends Action
     {
         MESSAGE_PATTERNS.add(new MessagePattern(
             Pattern.compile("\\[Baritone\\] No more items to collect"),
-            "baritone", "collect_complete"));
+            "baritone", "success"));
+        MESSAGE_PATTERNS.add(new MessagePattern(
+            Pattern.compile(
+                "\\[Baritone\\] Collect failed - unable to path to items"),
+            "baritone", "success"));
     }
     
     /**

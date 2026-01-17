@@ -1,6 +1,5 @@
 package org.limepepper.mqttbot.integrations.baritone;
 
-import baritone.api.pathing.goals.Goal;
 import com.google.gson.JsonObject;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
@@ -54,38 +53,9 @@ public final class BaritoneStateHandler extends Action
     {
         try
         {
-            PathingState pathingState = BaritonePathing.getPathingState();
-            JsonObject response = new JsonObject();
-            response.addProperty("stateType", "pathingState");
-            response.addProperty("pathActive", pathingState.isPathActive());
-            response.addProperty("announced", pathingState.isAnnounced());
-            
-            // Add goal information if available
-            Goal currentGoal = pathingState.getCurrentGoal();
-            if(currentGoal != null)
-            {
-                GoalDataExtractor.GoalData goalData =
-                    GoalDataExtractor.extract(currentGoal);
-                if(goalData != null)
-                {
-                    if(goalData.x() != null)
-                        response.addProperty("goalX", goalData.x());
-                    if(goalData.y() != null)
-                        response.addProperty("goalY", goalData.y());
-                    if(goalData.z() != null)
-                        response.addProperty("goalZ", goalData.z());
-                    response.addProperty("goalType", goalData.kind());
-                }
-            }else
-            {
-                response.addProperty("goalType", (String)null);
-            }
-            
-            response.addProperty("player", playerName);
-            
-            MessageData messageData =
-                new MessageData(Constants.SERVICE_NAME, "state", requestId,
-                    correlationId, null, response, playerName, null);
+            MessageData messageData = new MessageData(Constants.SERVICE_NAME,
+                "state", requestId, correlationId, null,
+                PathingState.INSTANCE.toJson(), playerName, null);
             
             EventManager.fire(
                 new MqttReplyListener.MqttReplyEvent(playerName, messageData));
@@ -103,14 +73,12 @@ public final class BaritoneStateHandler extends Action
     {
         try
         {
-            CorrelationTracker correlationTracker =
-                BaritonePathing.correlationTracker;
             JsonObject response = new JsonObject();
             response.addProperty("stateType", "correlationTracker");
             response.addProperty("requestId",
-                correlationTracker.getRequestId());
+                CorrelationTracker.INSTANCE.getRequestId());
             response.addProperty("correlationId",
-                correlationTracker.getCorrelationId());
+                CorrelationTracker.INSTANCE.getCorrelationId());
             response.addProperty("player", playerName);
             
             MessageData messageData =

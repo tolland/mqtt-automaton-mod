@@ -12,13 +12,18 @@ import org.limepepper.mqttbot.actions.*;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.*;
 import org.limepepper.mqttbot.integrations.baritone.BaritoneCollectHandler;
+import org.limepepper.mqttbot.integrations.baritone.BaritoneGotoHandler;
 import org.limepepper.mqttbot.integrations.baritone.BaritoneStateHandler;
-import org.limepepper.mqttbot.integrations.client.ClientStateHandler;
+import org.limepepper.mqttbot.integrations.client.BotStateHandler;
 import org.limepepper.mqttbot.mqtt.MqttClientInternal;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 public enum MqttCore
 {
     INSTANCE;
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(MqttCore.class);
     
     public static final Minecraft MC = Minecraft.getInstance();
     // Baritone API references
@@ -30,7 +35,7 @@ public enum MqttCore
     
     public void initialize()
     {
-        System.out.println("Starting MqttBot Client...");
+        LOGGER.debug("Starting MqttBot Client...");
         
         EventManager eventManager = EventManager.INSTANCE;
         
@@ -41,8 +46,9 @@ public enum MqttCore
         eventManager.add(InventoryListener.class, new InventoryAction());
         eventManager.add(ChatMessageListener.class, new ChatMessageAction());
         eventManager.add(MqttMessageListener.class,
-            new MessageDispatcherAction(BaritoneCollectHandler.create(),
-                BaritoneStateHandler.create(), ClientStateHandler.create()));
+            new MessageDispatcherAction(BaritoneGotoHandler.create(),
+                BaritoneCollectHandler.create(), BaritoneStateHandler.create(),
+                BotStateHandler.create()));
         
         // PlayerJoinCallback.EVENT.register(new PlayerJoinHandler());
         

@@ -7,6 +7,7 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.Map;
 import java.util.UUID;
@@ -15,6 +16,8 @@ import java.util.UUID;
  * Converts inventory events into MQTT messages
  */
 public class InventoryAction extends Action implements InventoryListener {
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(InventoryAction.class);
     
     @Override
     public void onInventoryChange(Map<String, Integer> itemCounts,
@@ -88,9 +91,8 @@ public class InventoryAction extends Action implements InventoryListener {
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
             
-            System.out.println(
-                "[InventoryAction] Sent " + eventType + " event: " + fullSlots
-                    + " full slots, " + emptySlots + " empty slots");
+            LOGGER.debug("[InventoryAction] Sent " + eventType + " event: "
+                + fullSlots + " full slots, " + emptySlots + " empty slots");
             
         }catch(Exception e)
         {
@@ -125,8 +127,8 @@ public class InventoryAction extends Action implements InventoryListener {
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
             
-            System.out.println("[InventoryAction] Item count change: " + itemId
-                + " (" + oldCount + " -> " + newCount + ")");
+            LOGGER.debug("[InventoryAction] Item count change: " + itemId + " ("
+                + oldCount + " -> " + newCount + ")");
             
         }catch(Exception e)
         {

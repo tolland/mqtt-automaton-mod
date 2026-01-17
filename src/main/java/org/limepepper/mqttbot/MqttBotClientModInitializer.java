@@ -1,7 +1,6 @@
 package org.limepepper.mqttbot;
 
 import net.fabricmc.api.ClientModInitializer;
-import org.limepepper.mqttbot.integrations.baritone.BaritonePathing;
 import org.limepepper.mqttbot.integrations.command.SendCommandHandler;
 import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
 import org.limepepper.mqttbot.integrations.sleep.SleepMessageHandler;
@@ -40,21 +39,8 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
             try
             {
                 Class<?> baritoneApi = Class.forName("baritone.api.IBaritone");
-                try
-                {
-                    baritoneApi.getMethod("getCollectProcess");
-                    LOGGER.info(
-                        "Baritone mod detected and compatible API present, initializing Baritone integration");
-                    BaritonePathing.init();
-                }catch(NoSuchMethodException nsme)
-                {
-                    LOGGER.info(
-                        "Baritone mod detected but required method getCollectProcess() not found; skipping Baritone integration");
-                }
-            }catch(ClassNotFoundException cnfe)
-            {
-                LOGGER.info(
-                    "Baritone mod loaded but API classes not found; skipping Baritone integration");
+                baritoneApi.getMethod("getCollectProcess");
+                
             }catch(Throwable t)
             {
                 LOGGER.info("Failed to initialize Baritone integration: "

@@ -8,6 +8,7 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
  * handlers a request over mqtt for the client to send a command to the server
@@ -15,7 +16,8 @@ import org.limepepper.mqttbot.mqtt.MessageData;
  */
 public final class SendCommandHandler extends Action
     implements MqttMessageListener {
-    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(SendCommandHandler.class);
     public static final Minecraft MC = Minecraft.getInstance();
     
     public static void init()
@@ -27,11 +29,12 @@ public final class SendCommandHandler extends Action
     @Override
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
+        
         MessageData data = mqttMessageEvent.messageData;
-        System.out.println("received message in commands handler");
+        LOGGER.debug("received message in commands handler");
         if(!mqttMessageEvent.messageData.getService().equals("commands"))
             return;
-        System.out.println("message for commands service");
+        LOGGER.debug("message for commands service");
         switch(mqttMessageEvent.messageData.getMethod())
         {
             case "chatMessage":
@@ -44,7 +47,7 @@ public final class SendCommandHandler extends Action
                     if(params.has("message"))
                         cmd = params.get("message").getAsString();
                 }
-                System.out.println("cmd is " + cmd);
+                LOGGER.debug("cmd is " + cmd);
                 if(cmd != null && MC.player != null)
                 {
                     MC.getConnection().sendChat(cmd);
@@ -61,7 +64,7 @@ public final class SendCommandHandler extends Action
                     if(params.has("message"))
                         chatCommand = params.get("message").getAsString();
                 }
-                System.out.println("cmd is " + chatCommand);
+                LOGGER.debug("cmd is " + chatCommand);
                 if(chatCommand != null && MC.player != null)
                 {
                     MC.getConnection().sendCommand(chatCommand);
@@ -78,7 +81,7 @@ public final class SendCommandHandler extends Action
                     if(params.has("message"))
                         sendCommand = params.get("message").getAsString();
                 }
-                System.out.println("cmd is " + sendCommand);
+                LOGGER.debug("cmd is " + sendCommand);
                 if(sendCommand != null && MC.player != null)
                 {
                     MC.getConnection().sendCommand(sendCommand);
@@ -101,7 +104,7 @@ public final class SendCommandHandler extends Action
             }
             break;
             default:
-            System.out.println("unknownn method in commands handler");
+            LOGGER.debug("unknownn method in commands handler");
         }
     }
     

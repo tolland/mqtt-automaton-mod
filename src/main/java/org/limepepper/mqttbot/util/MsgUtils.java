@@ -38,10 +38,10 @@ public enum MsgUtils
     }
     
     public static MessageData ctSuccess(CorrelationTracker ct, String service,
-        String method, String message)
+        String method, String event_type, String message)
     {
         JsonObject resp = new JsonObject();
-        resp.addProperty("status", "success");
+        resp.addProperty("status", event_type);
         resp.addProperty("message", message);
         return new MessageData(service, method, ct.getRequestId(),
             ct.getCorrelationId(), null, resp, "mqttbot", message);

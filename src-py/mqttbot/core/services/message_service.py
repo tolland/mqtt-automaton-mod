@@ -80,9 +80,12 @@ class MessageService:
             RequestResult if available, None if still pending
         """
         with self._lock:
-            if request_id not in self.pending_requests:
+            result = self.pending_requests.get(request_id)
+            if not result:
                 return None
-            return self.pending_requests[request_id]
+            if result.status in (RequestStatus.SUCCESS, RequestStatus.FAILED, RequestStatus.TIMEOUT):
+                self.pending_requests.pop(request_id)
+            return result
 
     def handle_response(self, message_data: MessageData) -> None:
         """
@@ -92,12 +95,12 @@ class MessageService:
             message_data: The response message data
         """
         request_id = message_data.request_id
-        # Use service name from message for better logging (supports multiple services)
-        service_name = message_data.service or self.service_name
+
+        service_name = message_data.service
 
         if not request_id:
             print(f"[{service_name}] No request_id in response: {message_data}")
-            return
+            raise ValueError("Response message missing request_id")
 
         print(f"pending_requests: {self.pending_requests.keys()}")
 
@@ -123,40 +126,3 @@ class MessageService:
                 print(f"[{service_name}] Request {request_id} failed: {error}")
             else:
                 print(f"[{service_name}] Request {request_id} unknown status: {status}")
-
-    async def send_and_wait(
-        self, message_data: MessageData, timeout: float = 60.0
-    ) -> RequestResult:
-        """
-        Send a message and wait asynchronously for success or failure.
-
-        Args:
-            message_data: The message to send
-            timeout: Maximum time to wait in seconds
-
-        Returns:
-            RequestResult with status SUCCESS, FAILED, or TIMEOUT
-        """
-        request_id = self.send_message(message_data)
-        start_time = time.time()
-
-        while True:
-            result = self.get_result(request_id)
-            if result is not None:
-                return result
-
-            if time.time() - start_time > timeout:
-                with self._lock:
-                    if request_id in self.pending_requests:
-                        self.pending_requests[request_id] = RequestResult(
-                            request_id=request_id,
-                            status=RequestStatus.TIMEOUT,
-                            error=f"No response within {timeout}s",
-                        )
-                return self.pending_requests.get(request_id) or RequestResult(
-                    request_id=request_id,
-                    status=RequestStatus.TIMEOUT,
-                    error=f"No response within {timeout}s",
-                )
-
-            await asyncio.sleep(0.1)  # Poll every 100ms

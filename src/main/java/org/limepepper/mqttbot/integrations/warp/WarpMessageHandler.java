@@ -7,6 +7,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
  * Message handler for warp/teleport commands
@@ -14,6 +15,8 @@ import org.limepepper.mqttbot.mqtt.MessageData;
  */
 public final class WarpMessageHandler extends Action
     implements MqttMessageListener {
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(WarpMessageHandler.class);
     
     public static final WarpMessageHandler INSTANCE = new WarpMessageHandler();
     public static final Minecraft MC = Minecraft.getInstance();
@@ -28,7 +31,7 @@ public final class WarpMessageHandler extends Action
     {
         EventManager.INSTANCE.add(MqttMessageListener.class,
             WarpMessageHandler.INSTANCE);
-        System.out.println("WarpMessageHandler initialized");
+        LOGGER.debug("WarpMessageHandler initialized");
     }
     
     @Override
@@ -37,14 +40,14 @@ public final class WarpMessageHandler extends Action
         if(!CORE.isEnabled())
             return;
         MessageData data = mqttMessageEvent.messageData;
-        // System.out.println("Received message in warp handler");
+        // LOGGER.debug("Received message in warp handler");
         
         if(!data.getService().equals("warp"))
         {
             return;
         }
         
-        System.out.println("Message for warp service: " + data.getMethod());
+        LOGGER.debug("Message for warp service: " + data.getMethod());
         
         switch(data.getMethod())
         {
@@ -66,7 +69,7 @@ public final class WarpMessageHandler extends Action
         {
             if(MC.player == null)
             {
-                System.out.println(
+                LOGGER.debug(
                     "Error: Player is null, cannot execute warp command");
                 return;
             }
@@ -96,7 +99,7 @@ public final class WarpMessageHandler extends Action
             if(target == null || !target.has("x") || !target.has("y")
                 || !target.has("z"))
             {
-                System.out.println(
+                LOGGER.debug(
                     "Error: warp teleport command missing target coordinates");
                 return;
             }
@@ -107,7 +110,7 @@ public final class WarpMessageHandler extends Action
             
             if(warpName == null || warpName.trim().isEmpty())
             {
-                System.out.println("Error: warp teleport command missing name");
+                LOGGER.debug("Error: warp teleport command missing name");
                 return;
             }
             
@@ -116,7 +119,7 @@ public final class WarpMessageHandler extends Action
             // Examples: "warp {name}", "home tp {name}", "/warp {name}", "/home
             // {name}"
             String warpCommand = commandTemplate.replace("{name}", warpName);
-            System.out.println("Executing warp command: " + warpCommand);
+            LOGGER.debug("Executing warp command: " + warpCommand);
             
             // Send the warp command
             MC.getConnection().sendCommand(warpCommand);
@@ -127,7 +130,7 @@ public final class WarpMessageHandler extends Action
             
         }catch(Exception e)
         {
-            System.out.println(
+            LOGGER.debug(
                 "Error handling warp teleport command: " + e.getMessage());
             e.printStackTrace();
         }

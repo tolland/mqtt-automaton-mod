@@ -40,8 +40,8 @@ class ResponseBuilder {
     
     static void sendPathingEvent(String type, String detail)
     {
-        JsonObject response = createPathingResponse(type,
-            BaritonePathing.pathing.getGoal(), detail);
+        JsonObject response =
+            createPathingResponse(type, MqttCore.pathing.getGoal(), detail);
         sendResponse("pathing", response);
     }
     
@@ -56,9 +56,9 @@ class ResponseBuilder {
         {
             String playerName = mqttCore.getPlayerName();
             MessageData messageData = new MessageData(Constants.SERVICE_NAME,
-                method, BaritonePathing.correlationTracker.getRequestId(),
-                BaritonePathing.correlationTracker.getCorrelationId(), null,
-                response, mqttCore.getPlayerName(), null);
+                method, CorrelationTracker.INSTANCE.getRequestId(),
+                CorrelationTracker.INSTANCE.getCorrelationId(), null, response,
+                mqttCore.getPlayerName(), null);
             
             EventManager.fire(
                 new MqttReplyListener.MqttReplyEvent(playerName, messageData));

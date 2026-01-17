@@ -11,6 +11,7 @@ import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,9 @@ import java.util.UUID;
  */
 public final class InventoryQueryHandler extends Action
     implements MqttMessageListener {
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(InventoryQueryHandler.class);
     
     public static final Minecraft MC = Minecraft.getInstance();
     
@@ -60,7 +64,7 @@ public final class InventoryQueryHandler extends Action
             break;
             
             default:
-            System.out.println(
+            LOGGER.debug(
                 "[InventoryQueryHandler] Unknown method: " + data.getMethod());
         }
     }

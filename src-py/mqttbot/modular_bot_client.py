@@ -120,6 +120,7 @@ class ModularBotClient:
                 print(
                     f"[mqtt] Event queue full, dropping {message_data.service}:{message_data.method}"
                 )
+                raise ValueError("Event queue full")
 
     async def _handle_event_async(self, message_data):
         """Handle a single event"""

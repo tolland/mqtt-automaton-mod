@@ -18,7 +18,7 @@ public abstract class ClientPlayerEntityMixin {
     // private void onHurt(DamageSource source, float amount,
     // CallbackInfoReturnable<Boolean> cir) {
     // if (cir.getReturnValue()) {
-    // System.out.println("The player received damage from: " +
+    // LOGGER.debug("The player received damage from: " +
     // source.getMsgId());
     // EventManager.fire(DamageListener.DamageEvent.INSTANCE);
     // }

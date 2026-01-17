@@ -1,8 +1,12 @@
 package org.limepepper.mqttbot.integrations.command;
 
+import org.limepepper.mqttbot.util.MqttBotLogger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SendCommandHandlerTest {
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(SendCommandHandlerTest.class);
     
     @org.junit.jupiter.api.BeforeEach
     void setUp()
@@ -16,6 +20,6 @@ class SendCommandHandlerTest {
     void onMessageArrived()
     {
         // dummy test
-        System.out.println("onMessageArrived");
+        LOGGER.debug("onMessageArrived");
     }
 }

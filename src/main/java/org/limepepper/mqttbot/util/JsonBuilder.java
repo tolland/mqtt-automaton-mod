@@ -20,16 +20,14 @@ public class JsonBuilder {
     
     private static JsonElement toElement(Object value)
     {
-        if(value == null)
-            return JsonNull.INSTANCE;
-        if(value instanceof String)
-            return new JsonPrimitive((String)value);
-        if(value instanceof Number)
-            return new JsonPrimitive((Number)value);
-        if(value instanceof Boolean)
-            return new JsonPrimitive((Boolean)value);
-        if(value instanceof JsonElement)
-            return (JsonElement)value;
-        return new JsonPrimitive(value.toString());
+        return switch(value)
+        {
+            case null -> JsonNull.INSTANCE;
+            case String s -> new JsonPrimitive(s);
+            case Number number -> new JsonPrimitive(number);
+            case Boolean b -> new JsonPrimitive(b);
+            case JsonElement jsonElement -> jsonElement;
+            default -> new JsonPrimitive(value.toString());
+        };
     }
 }

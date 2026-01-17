@@ -2,12 +2,15 @@
 <Configuration>
   <Appenders>
     <File name="MqttBotFile" fileName="logs/mqttbot.log" append="true">
-      <PatternLayout pattern="[%d{HH:mm:ss}] %-5level %logger{1}:%L - %m%n" />
+      <PatternLayout pattern="[%d{HH:mm:ss}] %-5level %logger:%L - %m%n" />
     </File>
   </Appenders>
   <Loggers>
     <Logger name="org.limepepper.mqttbot" level="debug" additivity="false">
+      <!-- always write to file -->
       <AppenderRef ref="MqttBotFile" />
+      <!-- also write to console when level is WARN or higher -->
+      <AppenderRef ref="SysOut" level="warn" />
     </Logger>
   </Loggers>
 </Configuration>

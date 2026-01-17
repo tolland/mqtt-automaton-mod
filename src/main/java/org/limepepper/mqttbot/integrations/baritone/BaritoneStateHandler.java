@@ -48,44 +48,47 @@ public final class BaritoneStateHandler extends Action
     @Override
     public void handle(MessageData msg) throws Exception
     {
+        System.out.println("Handling Baritone state request");
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();
         String correlationId = msg.getCorrelationId();
-
+        
         // Build comprehensive state response
         JsonObject response = new JsonObject();
         response.addProperty("stateType", "baritoneState");
-
+        
         // Include current pathing state
         response.add("currentState", PathingState.INSTANCE.toJson());
-
+        
         // Include request history (last 10 requests)
         response.add("requestHistory", RequestHistory.INSTANCE.toJson());
-
+        
         // Include history statistics
         response.add("historyStats", RequestHistory.INSTANCE.getStatistics());
-
+        
         // Include event timeline for current request if active
         PathingRequest currentRequest =
             PathingState.INSTANCE.getCurrentRequest();
         if(currentRequest != null)
         {
-            com.google.gson.JsonArray timeline = new com.google.gson.JsonArray();
+            com.google.gson.JsonArray timeline =
+                new com.google.gson.JsonArray();
             for(String event : currentRequest.getEventTimeline())
             {
                 timeline.add(event);
             }
             response.add("currentRequestTimeline", timeline);
         }
-
+        
         // Send response
         MessageData messageData = new MessageData(Constants.SERVICE_NAME,
             "state", requestId, correlationId, null, response, playerName,
             null);
-
+        
         EventManager
-            .fire(new MqttReplyListener.MqttReplyEvent(playerName, messageData));
-
+            .fire(
+                new MqttReplyListener.MqttReplyEvent(playerName, messageData));
+        
         LOGGER.debug("Sent comprehensive state response with history");
     }
     

@@ -100,6 +100,20 @@ public final class BaritoneGotoHandler extends Action
             // Set bot state
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
 
+            // Cancel any existing Baritone processes before starting new one
+            // This is critical after teleports or when preempting existing
+            // requests
+            try
+            {
+                MqttCore.baritone.getPathingBehavior().cancelEverything();
+                PathingState.INSTANCE.logEvent("BARITONE_CANCELLED",
+                    "Cleared existing Baritone state before starting new goal");
+            }catch(Exception e)
+            {
+                LOGGER.warn("Error calling Baritone cancelEverything(): {}",
+                    e.getMessage());
+            }
+
             // Use Baritone API directly instead of chat command
             Goal goal = new GoalBlock(targetPos);
             PathingState.INSTANCE.setBaritoneGoal(goal);
@@ -194,8 +208,7 @@ public final class BaritoneGotoHandler extends Action
         PathingState.INSTANCE.logEvent("CALC_FAILED",
             String.format("Heuristic: %.2f", heuristic));
 
-        double threshold =
-            BaritoneConfig.getInstance().getCloseEnoughHeuristic();
+        double threshold = BaritoneConfig.getInstance().getCloseEnoughHeuristic();
 
         if(heuristic < threshold)
         {

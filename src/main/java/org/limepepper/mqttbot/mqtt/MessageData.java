@@ -171,7 +171,7 @@ public class MessageData {
         return service != null && !service.trim().isEmpty() && method != null
             && !method.trim().isEmpty();
     }
-
+    
     /**
      * Validates that this message is a valid request with all required fields
      * including correlation IDs.
@@ -184,7 +184,7 @@ public class MessageData {
         return isValid() && requestId != null && !requestId.trim().isEmpty()
             && correlationId != null && !correlationId.trim().isEmpty();
     }
-
+    
     /**
      * Validates that this message is a valid response with all required fields
      * including correlation IDs.

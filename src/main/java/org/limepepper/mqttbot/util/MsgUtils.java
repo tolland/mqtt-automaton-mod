@@ -62,7 +62,7 @@ public enum MsgUtils
         resp.addProperty("message", message);
         return new MessageData(service, method, ids.requestId(),
             ids.correlationId(), null, resp, "mqttbot", message);
-
+        
     }
     
 }

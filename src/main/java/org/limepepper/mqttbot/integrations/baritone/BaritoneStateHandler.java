@@ -1,6 +1,5 @@
 package org.limepepper.mqttbot.integrations.baritone;
 
-import com.google.gson.JsonObject;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
@@ -40,7 +39,7 @@ public final class BaritoneStateHandler extends Action
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();
         String correlationId = msg.getCorrelationId();
-
+        
         // Send pathingState response (includes correlation IDs if active)
         sendPathingStateResponse(playerName, requestId, correlationId);
     }

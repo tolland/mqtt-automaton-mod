@@ -161,6 +161,7 @@ public final class BaritoneGotoHandler extends Action
             }
             case CANCELED ->
             {
+                // @TODO how to handle this on the client?
                 PathingState.INSTANCE.logEvent("BARITONE_CANCELED",
                     "Baritone canceled the path");
                 PathingState.INSTANCE.completeFailed("Baritone canceled");

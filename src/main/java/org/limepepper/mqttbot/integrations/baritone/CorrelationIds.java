@@ -25,7 +25,7 @@ import java.util.Objects;
 public record CorrelationIds(@NotNull String requestId,
     @NotNull String correlationId)
 {
-
+    
     /**
      * Compact constructor with validation. Ensures both IDs are non-null and
      * non-empty.
@@ -41,7 +41,7 @@ public record CorrelationIds(@NotNull String requestId,
             "requestId cannot be null - this indicates a protocol violation");
         Objects.requireNonNull(correlationId,
             "correlationId cannot be null - this indicates a protocol violation");
-
+        
         if(requestId.trim().isEmpty())
         {
             throw new IllegalArgumentException(
@@ -53,7 +53,7 @@ public record CorrelationIds(@NotNull String requestId,
                 "correlationId cannot be empty - this indicates a protocol violation");
         }
     }
-
+    
     /**
      * Extracts and validates correlation IDs from an incoming MQTT message.
      * This is the primary factory method for creating CorrelationIds from

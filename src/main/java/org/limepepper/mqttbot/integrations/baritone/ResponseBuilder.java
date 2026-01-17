@@ -68,12 +68,12 @@ class ResponseBuilder {
         {
             // Get correlation IDs from PathingState - fail fast if not set
             CorrelationIds ids = PathingState.INSTANCE.requireCorrelationIds();
-
+            
             String playerName = mqttCore.getPlayerName();
             MessageData messageData = new MessageData(Constants.SERVICE_NAME,
                 method, ids.requestId(), ids.correlationId(), null, response,
                 mqttCore.getPlayerName(), null);
-
+            
             EventManager.fire(
                 new MqttReplyListener.MqttReplyEvent(playerName, messageData));
         }catch(IllegalStateException e)

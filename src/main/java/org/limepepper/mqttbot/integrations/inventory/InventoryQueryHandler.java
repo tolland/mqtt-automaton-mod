@@ -199,7 +199,7 @@ public final class InventoryQueryHandler extends Action
     private void sendResponse(MessageData originalData, JsonObject responseData)
     {
         String playerName = MC.getUser().getName();
-
+        
         // Preserve the original requestId - don't create a new one!
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
             new MessageData("inventory", originalData.getMethod(),

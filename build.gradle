@@ -132,11 +132,11 @@ fabricApi {
 
 
 loom {
-// docs: <https://docs.fabricmc.net/develop/loom/options>
+    // docs: <https://docs.fabricmc.net/develop/loom/options>
     accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
 
-//    splitEnvironmentSourceSets()
-    // log4jConfigs.from(file("configs/log4j.xml"))
+    // splitEnvironmentSourceSets() # currently breaking gametests
+    log4jConfigs.from(file("configs/log4j.xml"))
 
     mods {
         "mqttbot" {

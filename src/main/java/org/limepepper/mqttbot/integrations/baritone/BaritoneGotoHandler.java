@@ -99,7 +99,8 @@ public final class BaritoneGotoHandler extends Action
             try
             {
                 MqttCore.baritone.getPathingBehavior().cancelEverything();
-                LOGGER.debug("Cleared existing Baritone state before new request");
+                LOGGER.debug(
+                    "Cleared existing Baritone state before new request");
             }catch(Exception e)
             {
                 LOGGER.warn("Error calling Baritone cancelEverything(): {}",
@@ -109,10 +110,10 @@ public final class BaritoneGotoHandler extends Action
             // Now create the request (after Baritone is clean)
             PathingState.INSTANCE.startRequest(ids, targetPos);
             PathingState.INSTANCE.transitionTo(PathingPhase.CALCULATING);
-
+            
             // Set bot state
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
-
+            
             // Use Baritone API directly instead of chat command
             Goal goal = new GoalBlock(targetPos);
             PathingState.INSTANCE.setBaritoneGoal(goal);

@@ -34,6 +34,13 @@ class MessageData:
         # Remove None values to keep JSON clean
         return json.dumps({k: v for k, v in data.items() if v is not None})
 
+    # @TODO this needs to be a warning log
+    @staticmethod
+    def _patch_request_id() -> str:
+        """Ensure request_id is set."""
+        print(f"[MessageData] Patching request_id as missing")
+        return str(uuid.uuid4())
+
     @classmethod
     def from_json(cls, json_str: str) -> Optional["MessageData"]:
         """Parse JSON string into MessageData object."""
@@ -42,7 +49,7 @@ class MessageData:
             return cls(
                 service=data.get("service"),
                 method=data.get("method"),
-                request_id=data.get("requestId", str(uuid.uuid4())),
+                request_id=data.get("requestId", MessageData._patch_request_id()),
                 correlation_id=data.get("correlationId"),
                 params=data.get("params", {}),
                 response=data.get("response", {}),

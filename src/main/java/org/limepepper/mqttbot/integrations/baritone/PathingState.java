@@ -5,9 +5,6 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
-import java.time.Duration;
-import java.time.Instant;
-
 /**
  * Proper state machine for Baritone pathing requests. Tracks the current
  * request, phase transitions, and delegates to PathingRequest for detailed
@@ -21,14 +18,14 @@ import java.time.Instant;
 enum PathingState
 {
     INSTANCE;
-
+    
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(PathingState.class);
-
+    
     private PathingRequest currentRequest = null;
-
+    
     // ========== Request Lifecycle ==========
-
+    
     /**
      * Start a new pathing request. If there's an existing active request, it
      * will be cancelled.
@@ -43,18 +40,19 @@ enum PathingState
         // Cancel existing request if present
         if(currentRequest != null && currentRequest.getPhase().isActive())
         {
-            LOGGER.warn("New request received while {} is active - cancelling old request",
+            LOGGER.warn(
+                "New request received while {} is active - cancelling old request",
                 currentRequest.getPhase());
             currentRequest.transitionTo(PathingPhase.CANCELLED);
             currentRequest.logEvent("PREEMPTED", "New request received");
             RequestHistory.INSTANCE.recordRequest(currentRequest);
         }
-
+        
         // Create new request
         currentRequest = new PathingRequest(ids, targetPos);
         LOGGER.info("Started new pathing request: {}", currentRequest);
     }
-
+    
     /**
      * Transition current request to a new phase
      *
@@ -69,11 +67,11 @@ enum PathingState
                 newPhase);
             return;
         }
-
+        
         PathingPhase oldPhase = currentRequest.getPhase();
         currentRequest.transitionTo(newPhase);
         LOGGER.debug("Phase transition: {} -> {}", oldPhase, newPhase);
-
+        
         // If reached terminal state, record to history
         if(newPhase.isTerminal())
         {
@@ -84,7 +82,7 @@ enum PathingState
             }
         }
     }
-
+    
     /**
      * Complete the current request successfully
      */
@@ -96,7 +94,7 @@ enum PathingState
             currentRequest = null; // Clear after recording
         }
     }
-
+    
     /**
      * Fail the current request with a reason
      *
@@ -112,9 +110,9 @@ enum PathingState
             currentRequest = null; // Clear after recording
         }
     }
-
+    
     // ========== State Queries ==========
-
+    
     /**
      * Check if there's an active request
      *
@@ -124,7 +122,7 @@ enum PathingState
     {
         return currentRequest != null && currentRequest.getPhase().isActive();
     }
-
+    
     /**
      * Get current phase, or IDLE if no request
      *
@@ -135,7 +133,7 @@ enum PathingState
         return (currentRequest != null) ? currentRequest.getPhase()
             : PathingPhase.IDLE;
     }
-
+    
     /**
      * Get the current request
      *
@@ -145,7 +143,7 @@ enum PathingState
     {
         return currentRequest;
     }
-
+    
     /**
      * Require that a request is active, throw if not
      *
@@ -162,7 +160,7 @@ enum PathingState
         }
         return currentRequest;
     }
-
+    
     /**
      * Get correlation IDs for the current request
      *
@@ -174,7 +172,7 @@ enum PathingState
             ? currentRequest.getCorrelationIds()
             : null;
     }
-
+    
     /**
      * Require correlation IDs, throw if not available
      *
@@ -186,9 +184,9 @@ enum PathingState
     {
         return requireActiveRequest().getCorrelationIds();
     }
-
+    
     // ========== Baritone Goal Tracking ==========
-
+    
     /**
      * Set the Baritone Goal object for tracking (nullable)
      *
@@ -202,7 +200,7 @@ enum PathingState
             currentRequest.setBaritoneGoal(goal);
         }
     }
-
+    
     /**
      * Get the Baritone Goal object
      *
@@ -213,7 +211,7 @@ enum PathingState
         return (currentRequest != null) ? currentRequest.getBaritoneGoal()
             : null;
     }
-
+    
     /**
      * Check if player is in the Baritone goal
      *
@@ -226,9 +224,9 @@ enum PathingState
         Goal goal = getBaritoneGoal();
         return goal != null && goal.isInGoal(pos);
     }
-
+    
     // ========== Event Logging ==========
-
+    
     /**
      * Log an event to the current request's timeline
      *
@@ -244,9 +242,9 @@ enum PathingState
             currentRequest.logEvent(eventType, details);
         }
     }
-
+    
     // ========== Stuck Detection ==========
-
+    
     /**
      * Update player position for stuck detection
      *
@@ -260,7 +258,7 @@ enum PathingState
             currentRequest.updatePosition(currentPos);
         }
     }
-
+    
     /**
      * Check if the bot appears to be stuck
      *
@@ -274,14 +272,14 @@ enum PathingState
         {
             return false;
         }
-
+        
         int threshold =
             BaritoneConfig.getInstance().getStuckDetectionThresholdSeconds();
         return currentRequest.isStuck(currentPos, threshold);
     }
-
+    
     // ========== Timeout Detection ==========
-
+    
     /**
      * Check if current request has exceeded calculation timeout
      *
@@ -294,13 +292,13 @@ enum PathingState
         {
             return false;
         }
-
+        
         long elapsed = currentRequest.getElapsedTime().getSeconds();
         int timeout =
             BaritoneConfig.getInstance().getMaxCalculationTimeSeconds();
         return elapsed > timeout;
     }
-
+    
     /**
      * Check if current request has exceeded pathing timeout
      *
@@ -313,14 +311,14 @@ enum PathingState
         {
             return false;
         }
-
+        
         long elapsed = currentRequest.getElapsedTime().getSeconds();
         int timeout = BaritoneConfig.getInstance().getMaxPathingTimeSeconds();
         return elapsed > timeout;
     }
-
+    
     // ========== JSON Serialization ==========
-
+    
     /**
      * Serialize current state to JSON for MQTT transmission
      *
@@ -330,7 +328,7 @@ enum PathingState
     {
         JsonObject json = new JsonObject();
         json.addProperty("stateType", "pathingState");
-
+        
         if(currentRequest != null)
         {
             json.addProperty("hasActiveRequest", true);
@@ -339,15 +337,15 @@ enum PathingState
                 currentRequest.getCorrelationIds().requestId());
             json.addProperty("correlationId",
                 currentRequest.getCorrelationIds().correlationId());
-
+            
             BlockPos target = currentRequest.getTargetPos();
             json.addProperty("targetX", target.getX());
             json.addProperty("targetY", target.getY());
             json.addProperty("targetZ", target.getZ());
-
+            
             json.addProperty("elapsedSeconds",
                 currentRequest.getElapsedTime().getSeconds());
-
+            
             // Include Baritone goal data if available
             Goal goal = currentRequest.getBaritoneGoal();
             if(goal != null)
@@ -365,7 +363,7 @@ enum PathingState
                     json.addProperty("baritoneGoalType", goalData.kind());
                 }
             }
-
+            
             // Include last known position if available
             BlockPos lastPos = currentRequest.getLastKnownPosition();
             if(lastPos != null)
@@ -379,10 +377,10 @@ enum PathingState
             json.addProperty("hasActiveRequest", false);
             json.addProperty("phase", PathingPhase.IDLE.toString());
         }
-
+        
         // Include history statistics
         json.add("historyStats", RequestHistory.INSTANCE.getStatistics());
-
+        
         return json;
     }
 }

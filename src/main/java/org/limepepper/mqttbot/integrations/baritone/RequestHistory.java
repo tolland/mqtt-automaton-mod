@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 public enum RequestHistory
 {
     INSTANCE;
-
+    
     private final Deque<PathingRequest> history = new ArrayDeque<>();
     private int maxHistorySize = 20; // Default, configurable
-
+    
     /**
      * Records a completed request to history
      *
@@ -32,22 +32,22 @@ public enum RequestHistory
         {
             return;
         }
-
+        
         // Only record if request reached a terminal state
         if(!request.getPhase().isTerminal())
         {
             return;
         }
-
+        
         history.addFirst(request);
-
+        
         // Trim to max size
         while(history.size() > maxHistorySize)
         {
             history.removeLast();
         }
     }
-
+    
     /**
      * Get the most recent N requests
      *
@@ -59,7 +59,7 @@ public enum RequestHistory
     {
         return history.stream().limit(count).collect(Collectors.toList());
     }
-
+    
     /**
      * Get all requests in history
      *
@@ -69,7 +69,7 @@ public enum RequestHistory
     {
         return List.copyOf(history);
     }
-
+    
     /**
      * Clear all history
      */
@@ -77,7 +77,7 @@ public enum RequestHistory
     {
         history.clear();
     }
-
+    
     /**
      * Set maximum history size
      *
@@ -88,7 +88,7 @@ public enum RequestHistory
     {
         this.maxHistorySize = Math.max(1, size);
     }
-
+    
     /**
      * Dump history as formatted string for logging
      *
@@ -100,11 +100,11 @@ public enum RequestHistory
         {
             return "No request history available";
         }
-
+        
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("=== Recent Pathing Requests (%d) ===\n",
             history.size()));
-
+        
         int i = 1;
         for(PathingRequest req : history)
         {
@@ -114,13 +114,13 @@ public enum RequestHistory
                 String.format("  Phase: %s\n", req.getPhase()));
             sb.append(String.format("  Duration: %.1f seconds\n",
                 req.getElapsedTime().toMillis() / 1000.0));
-
+            
             if(req.getFailureReason() != null)
             {
                 sb.append(
                     String.format("  Failure: %s\n", req.getFailureReason()));
             }
-
+            
             // Include event timeline
             List<String> events = req.getEventTimeline();
             if(!events.isEmpty())
@@ -132,10 +132,10 @@ public enum RequestHistory
                 }
             }
         }
-
+        
         return sb.toString();
     }
-
+    
     /**
      * Dump history as JSON for MQTT transmission
      *
@@ -147,7 +147,7 @@ public enum RequestHistory
         for(PathingRequest req : history)
         {
             JsonObject json = req.toJson();
-
+            
             // Add event timeline
             JsonArray events = new JsonArray();
             for(String event : req.getEventTimeline())
@@ -155,12 +155,12 @@ public enum RequestHistory
                 events.add(event);
             }
             json.add("timeline", events);
-
+            
             array.add(json);
         }
         return array;
     }
-
+    
     /**
      * Get statistics about recent requests
      *
@@ -170,9 +170,10 @@ public enum RequestHistory
     {
         JsonObject stats = new JsonObject();
         stats.addProperty("totalRequests", history.size());
-
+        
         long successful =
-            history.stream().filter(r -> r.getPhase() == PathingPhase.GOAL_REACHED)
+            history.stream()
+                .filter(r -> r.getPhase() == PathingPhase.GOAL_REACHED)
                 .count();
         long failed =
             history.stream().filter(r -> r.getPhase() == PathingPhase.FAILED)
@@ -183,12 +184,12 @@ public enum RequestHistory
         long cancelled =
             history.stream().filter(r -> r.getPhase() == PathingPhase.CANCELLED)
                 .count();
-
+        
         stats.addProperty("successful", successful);
         stats.addProperty("failed", failed);
         stats.addProperty("stuck", stuck);
         stats.addProperty("cancelled", cancelled);
-
+        
         if(!history.isEmpty())
         {
             double avgDuration = history.stream()
@@ -196,7 +197,7 @@ public enum RequestHistory
                 .orElse(0.0);
             stats.addProperty("avgDurationSeconds", avgDuration);
         }
-
+        
         return stats;
     }
 }

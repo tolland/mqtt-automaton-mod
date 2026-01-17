@@ -11,37 +11,37 @@ public enum PathingPhase
      * No active pathing request
      */
     IDLE,
-
+    
     /**
      * Baritone is calculating a path to the goal
      */
     CALCULATING,
-
+    
     /**
      * Baritone is actively moving along the calculated path
      */
     PATHING,
-
+    
     /**
      * Player has reached the goal (or close enough)
      */
     GOAL_REACHED,
-
+    
     /**
      * Pathing failed (path calculation failed, unreachable, etc.)
      */
     FAILED,
-
+    
     /**
      * Baritone appears to be stuck (not making progress)
      */
     STUCK,
-
+    
     /**
      * Request was cancelled (by user or by new request)
      */
     CANCELLED;
-
+    
     /**
      * Check if this phase represents an active request (not terminal)
      *
@@ -51,7 +51,7 @@ public enum PathingPhase
     {
         return this == CALCULATING || this == PATHING || this == STUCK;
     }
-
+    
     /**
      * Check if this phase represents a completed request (terminal state)
      *

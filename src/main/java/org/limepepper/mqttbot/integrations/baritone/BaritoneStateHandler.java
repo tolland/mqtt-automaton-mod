@@ -48,7 +48,6 @@ public final class BaritoneStateHandler extends Action
     @Override
     public void handle(MessageData msg) throws Exception
     {
-        System.out.println("Handling Baritone state request");
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();
         String correlationId = msg.getCorrelationId();

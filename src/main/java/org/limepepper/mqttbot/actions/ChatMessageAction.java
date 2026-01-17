@@ -8,6 +8,7 @@ import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.util.MqttBotLogger;
+import org.limepepper.mqttbot.util.MsgUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,7 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
         String message = event.getMessage();
         
         // Strip Minecraft color codes for pattern matching
-        String cleanMessage = stripColorCodes(message);
+        String cleanMessage = MsgUtils.stripColorCodes(message);
         
         // Check each pattern
         for(MessagePattern pattern : MESSAGE_PATTERNS)
@@ -86,17 +87,6 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
                 break;
             }
         }
-    }
-    
-    /**
-     * Strip Minecraft color codes from a message
-     * Color codes are in the format §x where x is a character
-     */
-    private String stripColorCodes(String message)
-    {
-        if(message == null)
-            return "";
-        return message.replaceAll("§[0-9a-fk-or]", "");
     }
     
     /**

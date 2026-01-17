@@ -41,17 +41,21 @@ public enum MqttCore
         
         eventManager.add(ClientListener.class, new ClientAction());
         eventManager.add(DeathListener.class, new DeathAction());
+        // @TODO this is not working since 1.20.x changes. need to fix
         eventManager.add(DamageListener.class, new DamageAction());
         eventManager.add(DayNightListener.class, new DayNightAction());
         eventManager.add(InventoryListener.class, new InventoryAction());
         eventManager.add(ChatMessageListener.class, new ChatMessageAction());
         eventManager.add(MqttMessageListener.class,
-            new MessageDispatcherAction(BaritoneGotoHandler.create(),
-                BaritoneCollectHandler.create(), BaritoneStateHandler.create(),
-                BotStateHandler.create()));
+            // MessageDispatcher is a sub-router to redirect to specific service
+            new MessageDispatcherAction(
+                // each of these is a command type from the client
+                BaritoneGotoHandler.create(), BaritoneCollectHandler.create(),
+                BaritoneStateHandler.create(), BotStateHandler.create()));
         
         // PlayerJoinCallback.EVENT.register(new PlayerJoinHandler());
         
+        // This sources events into the EventManager from Mqtt
         MqttClientInternal handler = MqttClientInternal.INSTANCE;
         
         // Things that can be toggled

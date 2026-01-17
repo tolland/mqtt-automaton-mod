@@ -7,44 +7,41 @@ import org.limepepper.mqttbot.util.MsgUtils;
 import java.util.ArrayList;
 
 /**
- * Listener for chat messages intercepted from the chat HUD.
+ * Listener for chat messages intercepted from the chat HUD,
+ * and normal messages sent that the game client receives from
+ * other payers or the server.
  * This includes messages from mods (Wurst, Baritone) and server messages.
  */
 public interface ChatMessageListener extends Listener {
-    
+
     void onChatMessage(ChatMessageEvent chatMessageEvent);
-    
-    public static class ChatMessageEvent extends Event<ChatMessageListener> {
-        
+
+    class ChatMessageEvent extends Event<ChatMessageListener> {
+
         private final String message;
         private final long timestamp;
-        
-        public ChatMessageEvent(String message)
-        {
+
+        public ChatMessageEvent(String message) {
             this.message = MsgUtils.stripColorCodes(message);
             this.timestamp = System.currentTimeMillis();
         }
-        
-        public String getMessage()
-        {
+
+        public String getMessage() {
             return message;
         }
-        
-        public long getTimestamp()
-        {
+
+        public long getTimestamp() {
             return timestamp;
         }
-        
+
         @Override
-        public void fire(ArrayList<ChatMessageListener> listeners)
-        {
-            for(ChatMessageListener listener : listeners)
+        public void fire(ArrayList<ChatMessageListener> listeners) {
+            for (ChatMessageListener listener : listeners)
                 listener.onChatMessage(this);
         }
-        
+
         @Override
-        public Class<ChatMessageListener> getListenerType()
-        {
+        public Class<ChatMessageListener> getListenerType() {
             return ChatMessageListener.class;
         }
     }

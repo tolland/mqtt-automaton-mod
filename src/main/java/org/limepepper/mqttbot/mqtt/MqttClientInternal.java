@@ -10,13 +10,17 @@ import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * backend class for interface with a paho MQTT client.
  * Allows switching connection to a different broker
  */
 public class MqttClientInternal extends Action implements MqttReplyListener {
+    
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(MqttClientInternal.class);
+    
     private final MqttBotConfig config = MqttBotConfig.getInstance();
     
     public static final MqttClientInternal INSTANCE = new MqttClientInternal();
@@ -73,6 +77,9 @@ public class MqttClientInternal extends Action implements MqttReplyListener {
                     LOGGER.debugMqtt("MQTT message delivery complete");
                 }
             });
+            connOpts.setWill("mqttbot/bots/lwt",
+                "payload".getBytes(StandardCharsets.UTF_8), 2, // QoS
+                false);
             
             sampleClient.connect(connOpts);
             LOGGER.info("Connected to MQTT broker: {}", broker);

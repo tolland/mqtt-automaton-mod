@@ -160,7 +160,9 @@ public class MessageData {
     }
     
     /**
-     * Check if this message is valid (has required fields)
+     * Check if this message is valid (has required fields). This is a basic
+     * validation that only checks service and method. For stricter validation
+     * including correlation IDs, use isValidRequest() or isValidResponse().
      *
      * @return true if message has service and method fields
      */
@@ -168,6 +170,31 @@ public class MessageData {
     {
         return service != null && !service.trim().isEmpty() && method != null
             && !method.trim().isEmpty();
+    }
+
+    /**
+     * Validates that this message is a valid request with all required fields
+     * including correlation IDs.
+     *
+     * @return true if this is a valid request (has service, method, requestId,
+     *         and correlationId)
+     */
+    public boolean isValidRequest()
+    {
+        return isValid() && requestId != null && !requestId.trim().isEmpty()
+            && correlationId != null && !correlationId.trim().isEmpty();
+    }
+
+    /**
+     * Validates that this message is a valid response with all required fields
+     * including correlation IDs.
+     *
+     * @return true if this is a valid response (has service, method, requestId,
+     *         correlationId, and response data)
+     */
+    public boolean isValidResponse()
+    {
+        return isValidRequest() && response != null;
     }
     
     // Getters and setters

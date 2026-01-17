@@ -68,12 +68,18 @@ public final class BaritoneGotoHandler extends Action
     public void handle(MessageData msg)
     {
         requiredFeatures().forEach(CORE.features()::enable);
-        CorrelationTracker.INSTANCE.setFrom(msg);
+
+        // Extract and validate correlation IDs - fail fast if invalid
+        CorrelationIds ids = CorrelationIds.fromMessage(msg);
+
         JsonElement paramsEl = msg.getParams();
         BaritoneGotoCommand cmd;
         cmd = gson.fromJson(paramsEl, BaritoneGotoCommand.class);
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
         PathingState.INSTANCE.reset();
+
+        // Store correlation IDs in PathingState for response tracking
+        PathingState.INSTANCE.setCorrelationIds(ids);
         PathingState.INSTANCE.setPos(cmd.x, cmd.y, cmd.z);
         String gotoCmd =
             String.format("#goto %.2f %.2f %.2f", cmd.x, cmd.y, cmd.z);
@@ -105,7 +111,7 @@ public final class BaritoneGotoHandler extends Action
                 PathingState.INSTANCE.setPathActive(false);
                 PathingState.INSTANCE.setAnnounced(true);
                 PathingState.INSTANCE.updateGoal(null);
-                CorrelationTracker.INSTANCE.clear();
+                // Correlation IDs cleared by PathingState lifecycle methods
             }
             case CALC_FAILED -> handleCalcFailed();
             case NEXT_CALC_FAILED ->
@@ -120,9 +126,9 @@ public final class BaritoneGotoHandler extends Action
                 if(PathingState.INSTANCE.isPathActive())
                 {
                     PathingState.INSTANCE.setPathActive(false);
-                    
+
                 }
-                CorrelationTracker.INSTANCE.clear();
+                // Correlation IDs cleared by PathingState lifecycle methods
                 requiredFeatures().forEach(CORE.features()::disable);
             }
             default ->
@@ -207,8 +213,7 @@ public final class BaritoneGotoHandler extends Action
             PathingState.INSTANCE.setAnnounced(true);
             ResponseBuilder.sendGotoSuccess("Goal reached", feet.x, feet.y,
                 feet.z);
-            PathingState.INSTANCE.done();
-            CorrelationTracker.INSTANCE.clear();
+            PathingState.INSTANCE.done(); // Clears correlation IDs
             LOGGER.debug("Goal reached, disabling features");
             requiredFeatures().forEach(CORE.features()::disable);
         }

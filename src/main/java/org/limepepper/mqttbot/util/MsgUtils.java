@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.util;
 
 import com.google.gson.JsonObject;
-import org.limepepper.mqttbot.integrations.baritone.CorrelationTracker;
+import org.limepepper.mqttbot.integrations.baritone.CorrelationIds;
 import org.limepepper.mqttbot.mqtt.MessageData;
 
 public enum MsgUtils
@@ -37,15 +37,32 @@ public enum MsgUtils
         return message.replaceAll("§[0-9a-fk-or]", "");
     }
     
-    public static MessageData ctSuccess(CorrelationTracker ct, String service,
+    /**
+     * Creates a success MessageData with correlation IDs
+     *
+     * @param ids
+     *            The correlation IDs from the original request
+     * @param service
+     *            The service name
+     * @param method
+     *            The method name
+     * @param event_type
+     *            The event type/status
+     * @param message
+     *            The message content
+     * @return MessageData ready to send
+     */
+    public static MessageData ctSuccess(CorrelationIds ids, String service,
         String method, String event_type, String message)
     {
+        java.util.Objects.requireNonNull(ids,
+            "CorrelationIds cannot be null when creating success response");
         JsonObject resp = new JsonObject();
         resp.addProperty("status", event_type);
         resp.addProperty("message", message);
-        return new MessageData(service, method, ct.getRequestId(),
-            ct.getCorrelationId(), null, resp, "mqttbot", message);
-        
+        return new MessageData(service, method, ids.requestId(),
+            ids.correlationId(), null, resp, "mqttbot", message);
+
     }
     
 }

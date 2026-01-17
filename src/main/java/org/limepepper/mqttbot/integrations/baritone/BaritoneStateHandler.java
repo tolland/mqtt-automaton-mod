@@ -40,12 +40,9 @@ public final class BaritoneStateHandler extends Action
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();
         String correlationId = msg.getCorrelationId();
-        
-        // Send pathingState response
+
+        // Send pathingState response (includes correlation IDs if active)
         sendPathingStateResponse(playerName, requestId, correlationId);
-        
-        // Send correlationTracker response
-        sendCorrelationTrackerResponse(playerName, requestId, correlationId);
     }
     
     private void sendPathingStateResponse(String playerName, String requestId,
@@ -68,31 +65,4 @@ public final class BaritoneStateHandler extends Action
         }
     }
     
-    private void sendCorrelationTrackerResponse(String playerName,
-        String requestId, String correlationId)
-    {
-        try
-        {
-            JsonObject response = new JsonObject();
-            response.addProperty("stateType", "correlationTracker");
-            response.addProperty("requestId",
-                CorrelationTracker.INSTANCE.getRequestId());
-            response.addProperty("correlationId",
-                CorrelationTracker.INSTANCE.getCorrelationId());
-            response.addProperty("player", playerName);
-            
-            MessageData messageData =
-                new MessageData(Constants.SERVICE_NAME, "state", requestId,
-                    correlationId, null, response, playerName, null);
-            
-            EventManager.fire(
-                new MqttReplyListener.MqttReplyEvent(playerName, messageData));
-            
-            LOGGER.debug("Sent correlationTracker response");
-        }catch(Exception e)
-        {
-            LOGGER.error("Error sending correlationTracker response: {}",
-                e.getMessage(), e);
-        }
-    }
 }

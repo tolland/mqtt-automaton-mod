@@ -37,10 +37,17 @@ public final class BaritoneCollectHandler extends Action
     private static final Gson gson =
         new GsonBuilder().registerTypeAdapter(BaritoneCollectCommand.class,
             new BaritoneCollectCommandDeserializer()).create();
-    
+
     // Message patterns that we are looking for
     private static final List<MessagePattern> MESSAGE_PATTERNS =
         new ArrayList<>();
+
+    /**
+     * Correlation IDs for the current collect task. Set when a collect command
+     * is received and cleared when the task completes. This allows chat message
+     * responses to include proper requestId and correlationId.
+     */
+    private CorrelationIds correlationIds = null;
     
     private BaritoneCollectHandler()
     {
@@ -63,9 +70,12 @@ public final class BaritoneCollectHandler extends Action
     public void handle(MessageData msg)
     {
         requiredFeatures().forEach(CORE.features()::enable);
-        CorrelationTracker.INSTANCE.setFrom(msg);
+
+        // Extract and validate correlation IDs - fail fast if invalid
+        this.correlationIds = CorrelationIds.fromMessage(msg);
+
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
-        
+
         JsonElement paramsEl = msg.getParams();
         if(paramsEl == null || paramsEl.isJsonNull())
         {
@@ -73,10 +83,10 @@ public final class BaritoneCollectHandler extends Action
                 "Missing params for baritone collect request (requestId={})",
                 msg.getRequestId());
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-            CorrelationTracker.INSTANCE.clear();
+            this.correlationIds = null;
             return;
         }
-        
+
         BaritoneCollectCommand cmd;
         try
         {
@@ -86,10 +96,10 @@ public final class BaritoneCollectHandler extends Action
             LOGGER.error("Failed to parse BaritoneCollectCommand: {}",
                 e.getMessage(), e);
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-            CorrelationTracker.INSTANCE.clear();
+            this.correlationIds = null;
             return;
         }
-        
+
         IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
         Item item = ItemUtils.getItemFromNameOrID(cmd.block);
         List<Item> items = new ArrayList<>();
@@ -104,10 +114,10 @@ public final class BaritoneCollectHandler extends Action
     public void onChatMessage(ChatMessageEvent event)
     {
         String message = event.getMessage();
-        
+
         // Strip Minecraft color codes for pattern matching
         String cleanMessage = MsgUtils.stripColorCodes(message);
-        
+
         // Check each pattern
         for(MessagePattern pattern : MESSAGE_PATTERNS)
         {
@@ -116,13 +126,21 @@ public final class BaritoneCollectHandler extends Action
                 LOGGER.debug("Matched chat pattern: {} - {}", pattern.source,
                     pattern.eventType);
                 MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-                
-                EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-                    MqttCore.INSTANCE.getPlayerName(),
-                    MsgUtils.ctSuccess(CorrelationTracker.INSTANCE, "baritone",
-                        "collect", pattern.eventType, message)));
-                
-                CorrelationTracker.INSTANCE.clear();
+
+                // Only send response if we have correlation IDs set
+                if(this.correlationIds != null)
+                {
+                    EventManager.fire(new MqttReplyListener.MqttReplyEvent(
+                        MqttCore.INSTANCE.getPlayerName(),
+                        MsgUtils.ctSuccess(this.correlationIds, "baritone",
+                            "collect", pattern.eventType, message)));
+                }else
+                {
+                    LOGGER.warn(
+                        "Matched collect completion pattern but no correlation IDs set - skipping response");
+                }
+
+                this.correlationIds = null;
                 requiredFeatures().forEach(CORE.features()::disable);
                 break;
             }

@@ -54,17 +54,31 @@ class ResponseBuilder {
     {
         try
         {
+            // Get correlation IDs from PathingState - fail fast if not set
+            CorrelationIds ids = PathingState.INSTANCE.requireCorrelationIds();
+
             String playerName = mqttCore.getPlayerName();
             MessageData messageData = new MessageData(Constants.SERVICE_NAME,
-                method, CorrelationTracker.INSTANCE.getRequestId(),
-                CorrelationTracker.INSTANCE.getCorrelationId(), null, response,
+                method, ids.requestId(), ids.correlationId(), null, response,
                 mqttCore.getPlayerName(), null);
-            
+
             EventManager.fire(
                 new MqttReplyListener.MqttReplyEvent(playerName, messageData));
+        }catch(IllegalStateException e)
+        {
+            // Correlation IDs were not set - this is a bug
+            String errorMsg = String.format(
+                "FATAL: Cannot send %s response - correlation IDs not set in PathingState. "
+                    + "This indicates a bug in the handler's state management.",
+                method);
+            System.err.println(errorMsg);
+            e.printStackTrace();
+            throw new IllegalStateException(errorMsg, e);
         }catch(Exception e)
         {
+            System.err.println("Error sending response for method: " + method);
             e.printStackTrace();
+            throw new RuntimeException("Failed to send MQTT response", e);
         }
     }
     

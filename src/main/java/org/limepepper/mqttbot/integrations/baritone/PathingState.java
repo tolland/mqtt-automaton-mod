@@ -17,7 +17,15 @@ enum PathingState
     
     private boolean pathActive = false;
     private boolean announced = false;
-    
+
+    /**
+     * Correlation IDs for the current pathing task. Set when a goto command is
+     * received and cleared when the task completes or fails. This allows
+     * responses to include the proper requestId and correlationId without
+     * relying on fragile global state.
+     */
+    private CorrelationIds correlationIds = null;
+
     private Goal oldGoal = null;
     private Goal currentGoal = null;
     private int posTick = 0;
@@ -36,6 +44,50 @@ enum PathingState
     public Coords getPos()
     {
         return new Coords(poxX, poxY, poxZ);
+    }
+
+    /**
+     * Sets the correlation IDs for the current pathing task. Should be called
+     * when a goto command is received.
+     *
+     * @param ids
+     *            The validated correlation IDs from the incoming request
+     * @throws NullPointerException
+     *             if ids is null
+     */
+    void setCorrelationIds(CorrelationIds ids)
+    {
+        this.correlationIds =
+            java.util.Objects.requireNonNull(ids, "CorrelationIds cannot be null");
+    }
+
+    /**
+     * Gets the correlation IDs for the current pathing task.
+     *
+     * @return The correlation IDs, or null if no task is active
+     */
+    CorrelationIds getCorrelationIds()
+    {
+        return correlationIds;
+    }
+
+    /**
+     * Gets the correlation IDs for the current pathing task, throwing an
+     * exception if not set. Use this when you expect IDs to be present and
+     * want to fail fast if they're missing.
+     *
+     * @return The correlation IDs
+     * @throws IllegalStateException
+     *             if correlation IDs are not set
+     */
+    CorrelationIds requireCorrelationIds()
+    {
+        if(correlationIds == null)
+        {
+            throw new IllegalStateException(
+                "CorrelationIds not set - this indicates a bug in the pathing state machine");
+        }
+        return correlationIds;
     }
     
     void setPathActive(boolean active)
@@ -108,6 +160,7 @@ enum PathingState
         pathActive = false;
         announced = false;
         currentGoal = null;
+        correlationIds = null;
     }
     
     void done()
@@ -116,6 +169,7 @@ enum PathingState
         pathActive = false;
         announced = false;
         currentGoal = null;
+        correlationIds = null;
     }
     
     boolean shouldSendPosition()

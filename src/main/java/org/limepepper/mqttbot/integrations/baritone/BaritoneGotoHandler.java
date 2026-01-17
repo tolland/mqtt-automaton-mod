@@ -210,14 +210,7 @@ public final class BaritoneGotoHandler extends Action
                 ResponseBuilder.sendPathingEvent("NEXT_CALC_FAILED",
                     "next_segment");
             }
-            case CANCELED ->
-            {
-                PathingState.INSTANCE.logEvent("BARITONE_CANCELED",
-                    "Baritone canceled the path");
-                PathingState.INSTANCE.completeFailed("Baritone canceled");
-                MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-                requiredFeatures().forEach(CORE.features()::disable);
-            }
+            case CANCELED -> handleCanceled();
             default ->
             {
                 // No action needed for other events
@@ -268,7 +261,51 @@ public final class BaritoneGotoHandler extends Action
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
         requiredFeatures().forEach(CORE.features()::disable);
     }
-    
+
+    /**
+     * Handles Baritone CANCELED event. Checks if player is at/near goal and
+     * sends appropriate success or failure response.
+     */
+    private void handleCanceled()
+    {
+        Goal canceledGoal = PathingState.INSTANCE.getBaritoneGoal();
+        BetterBlockPos feet = MqttCore.baritone.getPlayerContext().playerFeet();
+
+        double heuristic =
+            (canceledGoal != null)
+                ? canceledGoal.heuristic(feet)
+                : Double.NaN;
+
+        LOGGER.debug("CANCELED - Goal heuristic: {}", heuristic);
+        PathingState.INSTANCE.logEvent("BARITONE_CANCELED",
+            String.format("Heuristic: %.2f", heuristic));
+
+        double threshold =
+            BaritoneConfig.getInstance().getCloseEnoughHeuristic();
+
+        if(heuristic < threshold)
+        {
+            // Already at goal - Baritone canceled because no pathing needed
+            LOGGER.info("Already at goal (heuristic: {} < {})", heuristic,
+                threshold);
+            ResponseBuilder.sendGotoSuccess("Already at goal",
+                feet.x, feet.y, feet.z);
+            PathingState.INSTANCE.completeSuccess();
+        }else
+        {
+            // Canceled for other reason (actual failure)
+            String reason = String.format(
+                "Baritone canceled (heuristic: %.2f >= %.2f)", heuristic,
+                threshold);
+            LOGGER.warn(reason);
+            ResponseBuilder.sendGotoFailure("Baritone canceled", reason);
+            PathingState.INSTANCE.completeFailed(reason);
+        }
+
+        MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
+        requiredFeatures().forEach(CORE.features()::disable);
+    }
+
     /**
      * Tick handler for stuck detection, timeout detection, and goal completion
      * checking (backup for unreliable Baritone AT_GOAL events)

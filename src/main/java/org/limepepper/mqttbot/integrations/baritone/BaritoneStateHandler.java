@@ -1,5 +1,6 @@
 package org.limepepper.mqttbot.integrations.baritone;
 
+import com.google.gson.JsonObject;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
@@ -7,8 +8,19 @@ import org.limepepper.mqttbot.mqtt.MessageData;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
- * Handler for baritone state queries.
- * Emits separate response objects for each relevant state component.
+ * Handler for baritone state queries. Returns comprehensive state information
+ * including current request, phase, and request history for debugging.
+ *
+ * <p>
+ * Response includes:
+ * <ul>
+ * <li>Current request details (if any)</li>
+ * <li>Current phase</li>
+ * <li>Request history statistics</li>
+ * <li>Full event timeline for current request</li>
+ * <li>Recent completed requests with their timelines</li>
+ * </ul>
+ * </p>
  */
 public final class BaritoneStateHandler extends Action
     implements org.limepepper.mqttbot.mqtt.MessageHandler {
@@ -39,29 +51,42 @@ public final class BaritoneStateHandler extends Action
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();
         String correlationId = msg.getCorrelationId();
-        
-        // Send pathingState response (includes correlation IDs if active)
-        sendPathingStateResponse(playerName, requestId, correlationId);
-    }
-    
-    private void sendPathingStateResponse(String playerName, String requestId,
-        String correlationId)
-    {
-        try
+
+        // Build comprehensive state response
+        JsonObject response = new JsonObject();
+        response.addProperty("stateType", "baritoneState");
+
+        // Include current pathing state
+        response.add("currentState", PathingState.INSTANCE.toJson());
+
+        // Include request history (last 10 requests)
+        response.add("requestHistory", RequestHistory.INSTANCE.toJson());
+
+        // Include history statistics
+        response.add("historyStats", RequestHistory.INSTANCE.getStatistics());
+
+        // Include event timeline for current request if active
+        PathingRequest currentRequest =
+            PathingState.INSTANCE.getCurrentRequest();
+        if(currentRequest != null)
         {
-            MessageData messageData = new MessageData(Constants.SERVICE_NAME,
-                "state", requestId, correlationId, null,
-                PathingState.INSTANCE.toJson(), playerName, null);
-            
-            EventManager.fire(
-                new MqttReplyListener.MqttReplyEvent(playerName, messageData));
-            
-            LOGGER.debug("Sent pathingState response");
-        }catch(Exception e)
-        {
-            LOGGER.error("Error sending pathingState response: {}",
-                e.getMessage(), e);
+            com.google.gson.JsonArray timeline = new com.google.gson.JsonArray();
+            for(String event : currentRequest.getEventTimeline())
+            {
+                timeline.add(event);
+            }
+            response.add("currentRequestTimeline", timeline);
         }
+
+        // Send response
+        MessageData messageData = new MessageData(Constants.SERVICE_NAME,
+            "state", requestId, correlationId, null, response, playerName,
+            null);
+
+        EventManager
+            .fire(new MqttReplyListener.MqttReplyEvent(playerName, messageData));
+
+        LOGGER.debug("Sent comprehensive state response with history");
     }
     
 }

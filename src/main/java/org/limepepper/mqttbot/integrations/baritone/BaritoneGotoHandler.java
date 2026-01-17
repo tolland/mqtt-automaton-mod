@@ -42,11 +42,11 @@ public final class BaritoneGotoHandler extends Action
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(BaritoneGotoHandler.class);
     private static final Gson gson = new Gson();
-    
+
     public BaritoneGotoHandler()
     {
         IEventBus bus = MqttCore.baritone.getGameEventHandler();
-        
+
         // Register Baritone path event listener
         bus.registerEventListener(new AbstractGameEventListener()
         {
@@ -56,23 +56,23 @@ public final class BaritoneGotoHandler extends Action
                 handlePathEvent(event);
             }
         });
-        
+
         // Register tick handler for stuck detection and goal completion
         ClientTickEvents.END_CLIENT_TICK.register(this::handleTick);
     }
-    
+
     public static BaritoneGotoHandler create()
     {
         return new BaritoneGotoHandler();
     }
-    
+
     @Override
     public boolean canHandle(MessageData msg)
     {
         return "baritone".equals(msg.getService())
             && "goto".equals(msg.getMethod());
     }
-    
+
     @Override
     public void handle(MessageData msg)
     {
@@ -80,37 +80,37 @@ public final class BaritoneGotoHandler extends Action
         {
             // Enable required features
             requiredFeatures().forEach(CORE.features()::enable);
-            
+
             // Extract and validate correlation IDs - fail fast if invalid
             CorrelationIds ids = CorrelationIds.fromMessage(msg);
-            
+
             // Parse command parameters
             JsonElement paramsEl = msg.getParams();
             BaritoneGotoCommand cmd;
             cmd = gson.fromJson(paramsEl, BaritoneGotoCommand.class);
-            
+
             // Create target BlockPos from command
             BlockPos targetPos =
                 new BlockPos((int)cmd.x, (int)cmd.y, (int)cmd.z);
-            
+
             // Start new pathing request (cancels any existing request)
             PathingState.INSTANCE.startRequest(ids, targetPos);
             PathingState.INSTANCE.transitionTo(PathingPhase.CALCULATING);
-            
+
             // Set bot state
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.BUSY);
-            
+
             // Use Baritone API directly instead of chat command
             Goal goal = new GoalBlock(targetPos);
             PathingState.INSTANCE.setBaritoneGoal(goal);
             MqttCore.baritone.getCustomGoalProcess().setGoalAndPath(goal);
-            
+
             PathingState.INSTANCE.logEvent("GOTO_COMMAND_SENT",
                 String.format("Using Baritone API: GoalBlock(%d, %d, %d)",
                     targetPos.getX(), targetPos.getY(), targetPos.getZ()));
-            
+
             LOGGER.info("Sent goto command to Baritone: {}", targetPos);
-            
+
         }catch(Exception e)
         {
             LOGGER.error("Error handling goto command: {}", e.getMessage(), e);
@@ -119,7 +119,7 @@ public final class BaritoneGotoHandler extends Action
             throw new RuntimeException("Failed to handle goto command", e);
         }
     }
-    
+
     /**
      * Handles pathing events from Baritone
      */
@@ -129,9 +129,9 @@ public final class BaritoneGotoHandler extends Action
         {
             return; // Ignore events when no active request
         }
-        
+
         PathingState.INSTANCE.logEvent("BARITONE_EVENT", event.toString());
-        
+
         switch(event)
         {
             case CALC_FINISHED_NOW_EXECUTING ->
@@ -175,7 +175,7 @@ public final class BaritoneGotoHandler extends Action
             }
         }
     }
-    
+
     /**
      * Handles path calculation failure. Checks if we're "close enough" to the
      * goal and succeeds if so.
@@ -184,19 +184,19 @@ public final class BaritoneGotoHandler extends Action
     {
         Goal failedGoal = PathingState.INSTANCE.getBaritoneGoal();
         BetterBlockPos feet = MqttCore.baritone.getPlayerContext().playerFeet();
-        
+
         double heuristic =
             (failedGoal != null)
                 ? failedGoal.heuristic(feet)
                 : Double.NaN;
-        
+
         LOGGER.debug("CALC_FAILED - Goal heuristic: {}", heuristic);
         PathingState.INSTANCE.logEvent("CALC_FAILED",
             String.format("Heuristic: %.2f", heuristic));
-        
+
         double threshold =
             BaritoneConfig.getInstance().getCloseEnoughHeuristic();
-        
+
         if(heuristic < threshold)
         {
             // Close enough to goal, consider it a success
@@ -215,11 +215,11 @@ public final class BaritoneGotoHandler extends Action
             ResponseBuilder.sendGotoFailure("Path calculation failed", reason);
             PathingState.INSTANCE.completeFailed(reason);
         }
-        
+
         MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
         requiredFeatures().forEach(CORE.features()::disable);
     }
-    
+
     /**
      * Tick handler for stuck detection, timeout detection, and goal completion
      * checking (backup for unreliable Baritone AT_GOAL events)
@@ -230,18 +230,18 @@ public final class BaritoneGotoHandler extends Action
         {
             return; // Nothing to do
         }
-        
+
         if(client.player == null)
         {
             return;
         }
-        
+
         BlockPos currentPos = client.player.blockPosition();
         PathingPhase phase = PathingState.INSTANCE.getPhase();
-        
+
         // Update position for stuck detection
         PathingState.INSTANCE.updatePosition(currentPos);
-        
+
         // Check for calculation timeout
         if(PathingState.INSTANCE.hasCalculationTimedOut())
         {
@@ -255,7 +255,7 @@ public final class BaritoneGotoHandler extends Action
             requiredFeatures().forEach(CORE.features()::disable);
             return;
         }
-        
+
         // Check for pathing timeout
         if(PathingState.INSTANCE.hasPathingTimedOut())
         {
@@ -268,7 +268,7 @@ public final class BaritoneGotoHandler extends Action
             requiredFeatures().forEach(CORE.features()::disable);
             return;
         }
-        
+
         // Check for stuck (only during PATHING phase)
         if(phase == PathingPhase.PATHING
             && PathingState.INSTANCE.isStuck(currentPos))
@@ -277,7 +277,7 @@ public final class BaritoneGotoHandler extends Action
             PathingState.INSTANCE.transitionTo(PathingPhase.STUCK);
             PathingState.INSTANCE.logEvent("STUCK_DETECTED",
                 String.format("Position unchanged at %s", currentPos));
-            
+
             // Auto-nudge if enabled
             if(BaritoneConfig.getInstance().isAutoNudgeWhenStuck())
             {
@@ -286,7 +286,7 @@ public final class BaritoneGotoHandler extends Action
                 PathingState.INSTANCE.transitionTo(PathingPhase.PATHING);
             }
         }
-        
+
         // Backup goal completion check (in case AT_GOAL event doesn't fire)
         if(phase == PathingPhase.PATHING || phase == PathingPhase.STUCK)
         {
@@ -303,7 +303,7 @@ public final class BaritoneGotoHandler extends Action
             }
         }
     }
-    
+
     /**
      * Nudge the player forward slightly to help unstick
      */
@@ -313,28 +313,28 @@ public final class BaritoneGotoHandler extends Action
         {
             return;
         }
-        
+
         // Get player's look direction
         Vec3 lookVec = client.player.getLookAngle();
-        
+
         // Nudge forward by 0.5 blocks
         double nudgeDistance = 0.5;
         Vec3 newPos = client.player.position()
             .add(lookVec.x * nudgeDistance, 0, lookVec.z * nudgeDistance);
-        
+
         // Teleport to new position (this is a client-side nudge)
         client.player.setPos(newPos.x, newPos.y, newPos.z);
-        
+
         LOGGER.debug("Nudged player forward by {} blocks", nudgeDistance);
     }
-    
+
     @Override
     public Set<Class<? extends Feature>> requiredFeatures()
     {
         return Set.of(InventoryFullFeature.class, BaritonePathingFeature.class);
     }
-    
+
     public record BaritoneGotoCommand(float x, float y, float z)
     {}
-    
+
 }

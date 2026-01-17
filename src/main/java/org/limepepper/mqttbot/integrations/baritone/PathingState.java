@@ -5,221 +5,384 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
+import java.time.Duration;
+import java.time.Instant;
+
 /**
- * Manages pathing state (active status, goals, announcements)
+ * Proper state machine for Baritone pathing requests. Tracks the current
+ * request, phase transitions, and delegates to PathingRequest for detailed
+ * tracking.
+ *
+ * <p>
+ * This singleton manages ONE active request at a time. New requests preempt
+ * existing ones (cancelling the old request and starting fresh).
+ * </p>
  */
 enum PathingState
 {
     INSTANCE;
-    
+
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(PathingState.class);
-    
-    private boolean pathActive = false;
-    private boolean announced = false;
+
+    private PathingRequest currentRequest = null;
+
+    // ========== Request Lifecycle ==========
 
     /**
-     * Correlation IDs for the current pathing task. Set when a goto command is
-     * received and cleared when the task completes or fails. This allows
-     * responses to include the proper requestId and correlationId without
-     * relying on fragile global state.
-     */
-    private CorrelationIds correlationIds = null;
-
-    private Goal oldGoal = null;
-    private Goal currentGoal = null;
-    private int posTick = 0;
-    private BlockPos lastSentPos = null;
-    private float poxX = Float.NaN;
-    private float poxY = Float.NaN;
-    private float poxZ = Float.NaN;
-    
-    public void setPos(float x, float y, float z)
-    {
-        this.poxX = x;
-        this.poxY = y;
-        this.poxZ = z;
-    }
-    
-    public Coords getPos()
-    {
-        return new Coords(poxX, poxY, poxZ);
-    }
-
-    /**
-     * Sets the correlation IDs for the current pathing task. Should be called
-     * when a goto command is received.
+     * Start a new pathing request. If there's an existing active request, it
+     * will be cancelled.
      *
      * @param ids
-     *            The validated correlation IDs from the incoming request
-     * @throws NullPointerException
-     *             if ids is null
+     *            Correlation IDs from the incoming MQTT message
+     * @param targetPos
+     *            Target BlockPos from the request params
      */
-    void setCorrelationIds(CorrelationIds ids)
+    void startRequest(CorrelationIds ids, BlockPos targetPos)
     {
-        this.correlationIds =
-            java.util.Objects.requireNonNull(ids, "CorrelationIds cannot be null");
+        // Cancel existing request if present
+        if(currentRequest != null && currentRequest.getPhase().isActive())
+        {
+            LOGGER.warn("New request received while {} is active - cancelling old request",
+                currentRequest.getPhase());
+            currentRequest.transitionTo(PathingPhase.CANCELLED);
+            currentRequest.logEvent("PREEMPTED", "New request received");
+            RequestHistory.INSTANCE.recordRequest(currentRequest);
+        }
+
+        // Create new request
+        currentRequest = new PathingRequest(ids, targetPos);
+        LOGGER.info("Started new pathing request: {}", currentRequest);
     }
 
     /**
-     * Gets the correlation IDs for the current pathing task.
+     * Transition current request to a new phase
      *
-     * @return The correlation IDs, or null if no task is active
+     * @param newPhase
+     *            The phase to transition to
+     */
+    void transitionTo(PathingPhase newPhase)
+    {
+        if(currentRequest == null)
+        {
+            LOGGER.warn("Attempted to transition to {} but no active request",
+                newPhase);
+            return;
+        }
+
+        PathingPhase oldPhase = currentRequest.getPhase();
+        currentRequest.transitionTo(newPhase);
+        LOGGER.debug("Phase transition: {} -> {}", oldPhase, newPhase);
+
+        // If reached terminal state, record to history
+        if(newPhase.isTerminal())
+        {
+            RequestHistory.INSTANCE.recordRequest(currentRequest);
+            if(newPhase == PathingPhase.IDLE)
+            {
+                currentRequest = null;
+            }
+        }
+    }
+
+    /**
+     * Complete the current request successfully
+     */
+    void completeSuccess()
+    {
+        if(currentRequest != null)
+        {
+            transitionTo(PathingPhase.GOAL_REACHED);
+            currentRequest = null; // Clear after recording
+        }
+    }
+
+    /**
+     * Fail the current request with a reason
+     *
+     * @param reason
+     *            Why the request failed
+     */
+    void completeFailed(String reason)
+    {
+        if(currentRequest != null)
+        {
+            currentRequest.setFailureReason(reason);
+            transitionTo(PathingPhase.FAILED);
+            currentRequest = null; // Clear after recording
+        }
+    }
+
+    // ========== State Queries ==========
+
+    /**
+     * Check if there's an active request
+     *
+     * @return true if a request is currently active
+     */
+    boolean hasActiveRequest()
+    {
+        return currentRequest != null && currentRequest.getPhase().isActive();
+    }
+
+    /**
+     * Get current phase, or IDLE if no request
+     *
+     * @return current PathingPhase
+     */
+    PathingPhase getPhase()
+    {
+        return (currentRequest != null) ? currentRequest.getPhase()
+            : PathingPhase.IDLE;
+    }
+
+    /**
+     * Get the current request
+     *
+     * @return PathingRequest or null if none active
+     */
+    PathingRequest getCurrentRequest()
+    {
+        return currentRequest;
+    }
+
+    /**
+     * Require that a request is active, throw if not
+     *
+     * @return The current PathingRequest
+     * @throws IllegalStateException
+     *             if no active request
+     */
+    PathingRequest requireActiveRequest()
+    {
+        if(currentRequest == null)
+        {
+            throw new IllegalStateException(
+                "No active pathing request - cannot perform this operation");
+        }
+        return currentRequest;
+    }
+
+    /**
+     * Get correlation IDs for the current request
+     *
+     * @return CorrelationIds or null if no active request
      */
     CorrelationIds getCorrelationIds()
     {
-        return correlationIds;
+        return (currentRequest != null)
+            ? currentRequest.getCorrelationIds()
+            : null;
     }
 
     /**
-     * Gets the correlation IDs for the current pathing task, throwing an
-     * exception if not set. Use this when you expect IDs to be present and
-     * want to fail fast if they're missing.
+     * Require correlation IDs, throw if not available
      *
-     * @return The correlation IDs
+     * @return CorrelationIds
      * @throws IllegalStateException
-     *             if correlation IDs are not set
+     *             if no active request
      */
     CorrelationIds requireCorrelationIds()
     {
-        if(correlationIds == null)
-        {
-            throw new IllegalStateException(
-                "CorrelationIds not set - this indicates a bug in the pathing state machine");
-        }
-        return correlationIds;
+        return requireActiveRequest().getCorrelationIds();
     }
-    
-    void setPathActive(boolean active)
-    {
-        this.pathActive = active;
-    }
-    
-    boolean isPathActive()
-    {
-        return pathActive;
-    }
-    
-    void setAnnounced(boolean announced)
-    {
-        this.announced = announced;
-    }
-    
-    boolean isAnnounced()
-    {
-        return announced;
-    }
-    
+
+    // ========== Baritone Goal Tracking ==========
+
     /**
-     * This is the methd to call to indicate you have arrived, but
-     * before process the don actions, this acts as a debounce flag
+     * Set the Baritone Goal object for tracking (nullable)
      *
      * @param goal
-     *            Current pathing Goal from Baritone
+     *            The Goal from Baritone, or null
      */
-    void updateGoal(Goal goal)
+    void setBaritoneGoal(Goal goal)
     {
-        this.oldGoal = this.currentGoal;
-        this.currentGoal = goal;
+        if(currentRequest != null)
+        {
+            currentRequest.setBaritoneGoal(goal);
+        }
     }
-    
-    void setGoal(Goal goal)
+
+    /**
+     * Get the Baritone Goal object
+     *
+     * @return Goal or null
+     */
+    Goal getBaritoneGoal()
     {
-        this.currentGoal = goal;
+        return (currentRequest != null) ? currentRequest.getBaritoneGoal()
+            : null;
     }
-    
-    Goal getCurrentGoal()
-    {
-        return currentGoal;
-    }
-    
-    public Goal getOldGoal()
-    {
-        return oldGoal;
-    }
-    
+
+    /**
+     * Check if player is in the Baritone goal
+     *
+     * @param pos
+     *            Player position
+     * @return true if in goal
+     */
     boolean isInGoal(BlockPos pos)
     {
-        return currentGoal != null && currentGoal.isInGoal(pos);
+        Goal goal = getBaritoneGoal();
+        return goal != null && goal.isInGoal(pos);
     }
-    
-    boolean hasGoalChanged()
+
+    // ========== Event Logging ==========
+
+    /**
+     * Log an event to the current request's timeline
+     *
+     * @param eventType
+     *            Type of event
+     * @param details
+     *            Event details
+     */
+    void logEvent(String eventType, String details)
     {
-        return oldGoal != currentGoal;
-    }
-    
-    boolean changed()
-    {
-        return hasGoalChanged();
-    }
-    
-    void reset()
-    {
-        LOGGER.debug("Resetting pathing state");
-        oldGoal = null;
-        pathActive = false;
-        announced = false;
-        currentGoal = null;
-        correlationIds = null;
-    }
-    
-    void done()
-    {
-        oldGoal = currentGoal;
-        pathActive = false;
-        announced = false;
-        currentGoal = null;
-        correlationIds = null;
-    }
-    
-    boolean shouldSendPosition()
-    {
-        if(++posTick >= Constants.POSITION_UPDATE_PERIOD_TICKS)
+        if(currentRequest != null)
         {
-            posTick = 0;
-            return true;
+            currentRequest.logEvent(eventType, details);
         }
-        return false;
     }
-    
-    boolean hasPositionChanged(BlockPos newPos)
+
+    // ========== Stuck Detection ==========
+
+    /**
+     * Update player position for stuck detection
+     *
+     * @param currentPos
+     *            Current player position
+     */
+    void updatePosition(BlockPos currentPos)
     {
-        if(!newPos.equals(lastSentPos))
+        if(currentRequest != null)
         {
-            lastSentPos = newPos;
-            return true;
+            currentRequest.updatePosition(currentPos);
         }
-        return false;
     }
-    
+
+    /**
+     * Check if the bot appears to be stuck
+     *
+     * @param currentPos
+     *            Current player position
+     * @return true if stuck
+     */
+    boolean isStuck(BlockPos currentPos)
+    {
+        if(currentRequest == null)
+        {
+            return false;
+        }
+
+        int threshold =
+            BaritoneConfig.getInstance().getStuckDetectionThresholdSeconds();
+        return currentRequest.isStuck(currentPos, threshold);
+    }
+
+    // ========== Timeout Detection ==========
+
+    /**
+     * Check if current request has exceeded calculation timeout
+     *
+     * @return true if timed out
+     */
+    boolean hasCalculationTimedOut()
+    {
+        if(currentRequest == null
+            || currentRequest.getPhase() != PathingPhase.CALCULATING)
+        {
+            return false;
+        }
+
+        long elapsed = currentRequest.getElapsedTime().getSeconds();
+        int timeout =
+            BaritoneConfig.getInstance().getMaxCalculationTimeSeconds();
+        return elapsed > timeout;
+    }
+
+    /**
+     * Check if current request has exceeded pathing timeout
+     *
+     * @return true if timed out
+     */
+    boolean hasPathingTimedOut()
+    {
+        if(currentRequest == null
+            || currentRequest.getPhase() != PathingPhase.PATHING)
+        {
+            return false;
+        }
+
+        long elapsed = currentRequest.getElapsedTime().getSeconds();
+        int timeout = BaritoneConfig.getInstance().getMaxPathingTimeSeconds();
+        return elapsed > timeout;
+    }
+
+    // ========== JSON Serialization ==========
+
+    /**
+     * Serialize current state to JSON for MQTT transmission
+     *
+     * @return JsonObject representing current state
+     */
     public JsonObject toJson()
     {
         JsonObject json = new JsonObject();
         json.addProperty("stateType", "pathingState");
-        json.addProperty("pathActive", pathActive);
-        json.addProperty("announced", announced);
-        if(currentGoal != null)
+
+        if(currentRequest != null)
         {
-            GoalDataExtractor.GoalData goalData =
-                GoalDataExtractor.extract(currentGoal);
-            if(goalData != null)
+            json.addProperty("hasActiveRequest", true);
+            json.addProperty("phase", currentRequest.getPhase().toString());
+            json.addProperty("requestId",
+                currentRequest.getCorrelationIds().requestId());
+            json.addProperty("correlationId",
+                currentRequest.getCorrelationIds().correlationId());
+
+            BlockPos target = currentRequest.getTargetPos();
+            json.addProperty("targetX", target.getX());
+            json.addProperty("targetY", target.getY());
+            json.addProperty("targetZ", target.getZ());
+
+            json.addProperty("elapsedSeconds",
+                currentRequest.getElapsedTime().getSeconds());
+
+            // Include Baritone goal data if available
+            Goal goal = currentRequest.getBaritoneGoal();
+            if(goal != null)
             {
-                if(goalData.x() != null)
-                    json.addProperty("goalX", goalData.x());
-                if(goalData.y() != null)
-                    json.addProperty("goalY", goalData.y());
-                if(goalData.z() != null)
-                    json.addProperty("goalZ", goalData.z());
-                json.addProperty("goalType", goalData.kind());
-                json.addProperty("goalDetails", goalData.details());
+                GoalDataExtractor.GoalData goalData =
+                    GoalDataExtractor.extract(goal);
+                if(goalData != null)
+                {
+                    if(goalData.x() != null)
+                        json.addProperty("baritoneGoalX", goalData.x());
+                    if(goalData.y() != null)
+                        json.addProperty("baritoneGoalY", goalData.y());
+                    if(goalData.z() != null)
+                        json.addProperty("baritoneGoalZ", goalData.z());
+                    json.addProperty("baritoneGoalType", goalData.kind());
+                }
+            }
+
+            // Include last known position if available
+            BlockPos lastPos = currentRequest.getLastKnownPosition();
+            if(lastPos != null)
+            {
+                json.addProperty("lastX", lastPos.getX());
+                json.addProperty("lastY", lastPos.getY());
+                json.addProperty("lastZ", lastPos.getZ());
             }
         }else
         {
-            json.addProperty("goalType", (String)null);
+            json.addProperty("hasActiveRequest", false);
+            json.addProperty("phase", PathingPhase.IDLE.toString());
         }
-        
-        json.add("coords", getPos().toJson());
-        
+
+        // Include history statistics
+        json.add("historyStats", RequestHistory.INSTANCE.getStatistics());
+
         return json;
     }
 }

@@ -40,13 +40,25 @@ class ResponseBuilder {
     
     static void sendPathingEvent(String type, String detail)
     {
+        // Only send if there's an active request
+        if(!PathingState.INSTANCE.hasActiveRequest())
+        {
+            return;
+        }
+
         JsonObject response =
             createPathingResponse(type, MqttCore.pathing.getGoal(), detail);
         sendResponse("pathing", response);
     }
-    
+
     static void sendPathingEventWithPayload(String type, JsonObject payload)
     {
+        // Only send if there's an active request
+        if(!PathingState.INSTANCE.hasActiveRequest())
+        {
+            return;
+        }
+
         sendResponse(type, payload);
     }
     

@@ -174,7 +174,7 @@ public class DevicePresence {
      */
     public void publishReadiness(ReadinessState state) throws MqttException
     {
-        publish(readinessTopic, state.toJson(), 1, false);
+        publish(readinessTopic, state.toJson(), 1, true);  // ← NOW RETAINED
         LOGGER.debug("Published readiness: {} (can_accept_tasks={})", state,
             state.canAcceptTasks());
     }

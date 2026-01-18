@@ -353,17 +353,35 @@ class DevicePresenceMonitor:
             True if device became available, False if timeout
         """
         if self._availability == AvailabilityState.ONLINE:
-            print(f"[{self.device_id}] Device already available")
+            logger.info(f"[{self.device_id}] Device already available")
             return True
 
-        print(f"[{self.device_id}] Waiting for device to be available...")
+        logger.info(f"[{self.device_id}] Waiting for device to be available...")
 
-        try:
-            await asyncio.wait_for(self._availability_event.wait(), timeout=timeout)
-            return self._availability == AvailabilityState.ONLINE
-        except asyncio.TimeoutError:
-            logger.error(f"[{self.device_id}] Timeout waiting for availability after {timeout}s")
-            return False
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                # Wait for ANY availability change (up to remaining time)
+                remaining = timeout - (time.time() - start_time)
+                if remaining <= 0:
+                    break
+
+                await asyncio.wait_for(self._availability_event.wait(), timeout=remaining)
+
+                # Check if we got ONLINE
+                if self._availability == AvailabilityState.ONLINE:
+                    logger.info(f"[{self.device_id}] Device is now online")
+                    return True
+                else:
+                    # Got OFFLINE or UNKNOWN - clear event and keep waiting
+                    logger.debug(f"[{self.device_id}] Got availability: {self._availability.value}, continuing to wait...")
+                    self._availability_event.clear()
+
+            except asyncio.TimeoutError:
+                break
+
+        logger.error(f"[{self.device_id}] Timeout waiting for online state after {timeout}s (current state: {self._availability.value})")
+        return False
 
     async def wait_for_config(self, timeout: float = 30.0) -> Optional[DeviceConfig]:
         """

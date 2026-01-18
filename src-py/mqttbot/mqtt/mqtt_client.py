@@ -1,13 +1,14 @@
 import sys
 import time
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 from paho.mqtt import client as mqtt
 
 from mqttbot.model.settings.settings import Settings
+from mqttbot.mqtt.device_presence import DevicePresenceMonitor
 
 
-class MqttClient:
+class MqttBotClient:
     """
     Helper class for MQTT communication.
 
@@ -16,18 +17,18 @@ class MqttClient:
     """
 
     def __init__(
-        self,
-        settings: Settings,
-        message_callback: Optional[Callable[[str, str], None]] = None,
+            self,
+            settings: Settings,
     ):
         """Initialize MQTT client
-
+    
         Args:
             settings: Settings object containing MQTT configuration
-            message_callback: Optional callback function to handle incoming messages (topic, payload)
+            message_callbacks: Optional list of callback functions to handle incoming messages (topic, payload)
         """
-        self.settings = settings
-        self.message_callback = message_callback
+        self.device_monitor: DevicePresenceMonitor | None = None
+        self.settings: Settings = settings
+        self.message_callbacks: List[Callable[[str, str], None]] = []
         self._mqtt_connected = False
         self._client: Optional[mqtt.Client] = None
 
@@ -46,6 +47,8 @@ class MqttClient:
         if rc != 0:
             print(f"[mqtt] Connect failed rc={rc}", file=sys.stderr)
             return
+        # Subscribe to device presence topics
+        self.device_monitor.subscribe()
 
         print(f"[mqtt] Connected → subscribing {self.topic_base}/#")
         self._client.subscribe(f"{self.topic_base}/#", qos=0)
@@ -62,9 +65,9 @@ class MqttClient:
         payload = msg.payload.decode("utf-8", errors="replace").strip()
         print(f"[mqtt] < {topic}: {payload}")
 
-        if self.message_callback:
+        for cb in self.message_callbacks:
             try:
-                self.message_callback(topic, payload)
+                cb(topic, payload)
             except Exception as e:
                 print(f"[mqtt] Error in message callback: {e}")
                 raise
@@ -73,6 +76,8 @@ class MqttClient:
         """Connect to MQTT broker"""
         if not self._client:
             self._setup_client()
+
+        self.device_monitor = DevicePresenceMonitor(self.settings.client_id, self._client)
 
         self._client.connect(self.settings.broker, self.settings.port, keepalive=60)
         self._client.loop_start()
@@ -110,6 +115,12 @@ class MqttClient:
 
         print(f"[mqtt] → {self.topic_base}: {message}")
         self._client.publish(topic, message, qos=0, retain=False)
+
+    def register_message_callback(self, callback: Callable[[str, str], None]) -> None:
+        """Register an additional message callback (topic, payload)"""
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        self.message_callbacks.append(callback)
 
     @property
     def is_connected(self) -> bool:

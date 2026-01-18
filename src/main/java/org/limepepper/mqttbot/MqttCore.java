@@ -60,6 +60,7 @@ public enum MqttCore
         
         // This sources events into the EventManager from Mqtt
         MqttClientInternal handler = MqttClientInternal.INSTANCE;
+        eventManager.add(ClientListener.class, new ClientUpdateStateAction());
         
         // Things that can be toggled
         features().register(new InventoryFullFeature());
@@ -113,11 +114,8 @@ public enum MqttCore
      */
     public String getPlayerName()
     {
-        if(MC.player != null)
-        {
-            return MC.getUser().getName();
-        }
-        return "unknown";
+        // User is authenticated, no need to check MC.player
+        return MC.getUser().getName();
     }
     
     public BotState getBotState()

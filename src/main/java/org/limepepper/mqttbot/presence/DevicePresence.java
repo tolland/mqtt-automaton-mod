@@ -9,6 +9,7 @@ import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.HashMap;
 
 /**
  * Generic MQTT device presence/liveness manager following Home Assistant
@@ -38,6 +39,9 @@ public class DevicePresence {
     private String stateTopic;
     private String heartbeatTopic;
     
+    static private HashMap<String, DevicePresence> instances =
+        new HashMap<String, DevicePresence>();
+    
     /**
      * Create device presence manager
      *
@@ -46,7 +50,7 @@ public class DevicePresence {
      * @param mqttClient
      *            Connected MQTT client
      */
-    public DevicePresence(String deviceId, MqttClient mqttClient)
+    private DevicePresence(String deviceId, MqttClient mqttClient)
     {
         this.deviceId = deviceId;
         this.baseTopic = "mqttbot/" + deviceId;
@@ -57,6 +61,29 @@ public class DevicePresence {
         this.readinessTopic = baseTopic + "/readiness";
         this.stateTopic = baseTopic + "/state";
         this.heartbeatTopic = baseTopic + "/heartbeat";
+    }
+    
+    public static DevicePresence createInstance(String deviceId,
+        MqttClient mqttClient)
+    {
+        if(instances.containsKey(deviceId))
+        {
+            return instances.get(deviceId);
+        }
+        DevicePresence presence = new DevicePresence(deviceId, mqttClient);
+        instances.put(deviceId, presence);
+        return presence;
+    }
+    
+    public static DevicePresence getInstance(String deviceId)
+    {
+        if(!instances.containsKey(deviceId))
+        {
+            throw new IllegalStateException(
+                "DevicePresence instance for deviceId " + deviceId
+                    + " not found. Create instance first.");
+        }
+        return instances.get(deviceId);
     }
     
     /**

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
   <Appenders>
-    <File name="MqttBotFile" fileName="logs/mqttbot.log" append="true">
+    <File name="MqttBotFile" fileName="logs/mqttbot.log" append="false">
       <PatternLayout pattern="[%d{HH:mm:ss}] %-5level %logger:%L - %m%n" />
     </File>
   </Appenders>

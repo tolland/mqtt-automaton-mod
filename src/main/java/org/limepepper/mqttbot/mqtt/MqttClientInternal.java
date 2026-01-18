@@ -56,17 +56,16 @@ public class MqttClientInternal extends Action
         String broker = config.getMqttBroker();
         qos = config.getMqttQos();
         MemoryPersistence persistence = new MemoryPersistence();
-        Minecraft mc = Minecraft.getInstance();
-        String clientId = mc.getUser().getName();
         
         LOGGER.debugMqtt("Creating MQTT client for user: {}",
-            mc.getUser().getName());
+            CORE.getPlayerName());
         
-        mqttClient = new MqttClient(broker, clientId, persistence);
+        mqttClient = new MqttClient(broker, CORE.getPlayerName(), persistence);
         
-        LOGGER.info("MQTT ClientId: {}", clientId);
+        LOGGER.info("MQTT ClientId: {}", CORE.getPlayerName());
         
-        presence = new DevicePresence(CORE.getPlayerName(), mqttClient);
+        presence =
+            DevicePresence.createInstance(CORE.getPlayerName(), mqttClient);
         MqttConnectOptions connOpts = presence.createConnectionOptions();
         
         mqttClient.setCallback(new MqttCallback()
@@ -104,7 +103,8 @@ public class MqttClientInternal extends Action
         // all command messages
         mqttClient.subscribe("mqttbot/*/command");
         // commands for this specific bot
-        String clientTopic = String.format("mqttbot/%s/command", clientId);
+        String clientTopic =
+            String.format("mqttbot/%s/command", CORE.getPlayerName());
         LOGGER.info("Subscribing to MQTT topics: mqttbot/bots/command, {}",
             clientTopic);
         mqttClient.subscribe(clientTopic);

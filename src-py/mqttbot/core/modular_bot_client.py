@@ -20,12 +20,13 @@ from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
 from mqttbot.core.scheduler import Scheduler
 from mqttbot.core.services.bot_service import BotService
 from mqttbot.core.state.baritone.baritone_module import BaritoneModule
+from mqttbot.core.state.baritone.utils import dump_baritone_state
 from mqttbot.core.state.blackboard import TypedBlackboard
 from mqttbot.core.state.events.events_module import EventsModule
 from mqttbot.core.state.wurst_module import WurstModule
 from mqttbot.core.threads.thread_helper import ThreadHelper
 from mqttbot.model.settings.settings import Settings
-from mqttbot.mqtt.mqtt_client import MqttClient
+from mqttbot.mqtt.mqtt_client import MqttBotClient
 
 """
 Modular bot client using the new behavior-based architecture
@@ -65,16 +66,18 @@ class ModularBotClient:
         self._lock = threading.Lock()
 
         # Initialize MQTT client with message callback
-        self.mqtt = MqttClient(settings, message_callback=self._handle_mqtt_message)
+        self.mqtt = MqttBotClient(settings,)
+        self.mqtt.register_message_callback(
+            self._handle_mqtt_message
+        )
 
         # Now with type safety, you can do:
         self.blackboard = TypedBlackboard()
         self.blackboard.register_module("baritone", BaritoneModule())
         self.blackboard.register_module("wurst", WurstModule())
         self.blackboard.register_module("events", EventsModule())
-        
-        # Subscribe to baritone state changes for console output
-        self._setup_baritone_state_dumper()
+
+        self.blackboard.subscribe("baritone", dump_baritone_state)
 
         self.ctx = Context(
             **{
@@ -92,44 +95,8 @@ class ModularBotClient:
         # Print initialization summary
         pprint(self)
 
-    def _setup_baritone_state_dumper(self) -> None:
-        """Subscribe to baritone state changes and dump to console with rich formatting"""
-        def dump_baritone_state(state):
-            """Callback to dump baritone state to console"""
-            print("\n[baritone] State Update:")
-            print("=" * 60)
-            
-            if state.current_state:
-                print(f"Phase: {state.current_state.phase}")
-                print(f"Has Active Request: {state.current_state.has_active_request}")
-            
-            if state.history_stats:
-                print(f"\nHistory Stats:")
-                print(f"  Total Requests: {state.history_stats.total_requests}")
-                print(f"  Successful: {state.history_stats.successful}")
-                print(f"  Failed: {state.history_stats.failed}")
-                print(f"  Stuck: {state.history_stats.stuck}")
-                print(f"  Cancelled: {state.history_stats.cancelled}")
-                print(f"  Avg Duration: {state.history_stats.avg_duration_seconds:.2f}s")
-            
-            if state.request_history:
-                print(f"\nRecent Requests ({len(state.request_history)}):")
-                for i, req in enumerate(state.request_history[-3:], 1):  # Show last 3
-                    print(f"  [{i}] {req.request_id[:8]}... - {req.phase}")
-                    if req.target_x is not None:
-                        print(f"      Target: ({req.target_x}, {req.target_y}, {req.target_z})")
-                    if req.failure_reason:
-                        print(f"      Failure: {req.failure_reason}")
-            
-            if state.current_request_timeline:
-                print(f"\nCurrent Request Timeline ({len(state.current_request_timeline)} events):")
-                for event in state.current_request_timeline[-5:]:  # Show last 5 events
-                    print(f"  {event}")
-            
-            print("=" * 60)
-            print()
-        
-        self.blackboard.subscribe("baritone", dump_baritone_state)
+
+
 
     def _handle_mqtt_message(self, topic: str, payload: str) -> None:
         """Handle incoming MQTT message payload turn into MessageData
@@ -197,9 +164,19 @@ class ModularBotClient:
         topic = f"mqttbot/{self.settings.client_id}/command"
         self.mqtt.send(topic, message.to_json())
 
-    def connect(self) -> None:
+    async def connect(self) -> None:
         """Connect to MQTT broker"""
         self.mqtt.connect()
+
+        available = await self.mqtt.device_monitor.wait_for_available(timeout=30.0)
+        if not available:
+            raise TimeoutError("Mod did not come online")
+
+        ready = await self.mqtt.device_monitor.wait_for_ready(timeout=30.0)
+        if not ready:
+            raise TimeoutError("Mod did not become ready")
+
+        print(f"[bot] Mod is ready! State: {self.device_monitor.readiness.state}")
 
     def exit(self):
         """Exit the bot gracefully"""
@@ -268,46 +245,12 @@ class ModularBotClient:
         self.running = True
         print(f"[bot] Bot started successfully")
 
-    async def _wait_for_player_join(self, timeout: float = 60.0) -> None:
-        """
-        Wait for player join event (liveness check) before starting bot operations.
-        
-        Args:
-            timeout: Maximum time to wait in seconds
-            
-        Raises:
-            TimeoutError: If player join event is not received within timeout
-        """
-        start_time = time.time()
-        check_interval = 0.1  # Check every 100ms
-        
-        while time.time() - start_time < timeout:
-            # Check if player has joined by checking blackboard state
-            events_module = self.blackboard.get_module("events")
-            if events_module:
-                events_state = events_module.get_state()
-                if events_state and events_state.player_joined:
-                    return
-            
-            await asyncio.sleep(check_interval)
-        
-        # Timeout reached
-        raise TimeoutError(
-            f"Player join event not received within {timeout} seconds. "
-            "Make sure the Minecraft client is logged in and the mod is running."
-        )
-
     async def run(self) -> int:
         """Run the bot (main execution loop)"""
         self._event_queue = asyncio.Queue(maxsize=100)
 
         try:
-            self.connect()
-            
-            # Wait for liveness check - player must join before we start
-            print(f"[bot] Waiting for player join event (liveness check)...")
-            await self._wait_for_player_join(timeout=60.0)
-            print(f"[bot] Player join confirmed, proceeding with bot startup")
+            await self.connect()
             
             self.configure()
             self.start()

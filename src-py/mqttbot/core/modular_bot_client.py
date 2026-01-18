@@ -168,10 +168,12 @@ class ModularBotClient:
         """Connect to MQTT broker"""
         self.mqtt.connect()
 
+        print(f"[bot] Waiting for mod to come online...")
         available = await self.mqtt.device_monitor.wait_for_available(timeout=30.0)
         if not available:
             raise TimeoutError("Mod did not come online")
 
+        print(f"[bot] Waiting for mod to come ready...")
         ready = await self.mqtt.device_monitor.wait_for_ready(timeout=30.0)
         if not ready:
             raise TimeoutError("Mod did not become ready")

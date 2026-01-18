@@ -217,7 +217,7 @@ class DevicePresenceMonitor:
 
         for topic, qos in topics:
             self.mqtt_client.subscribe(topic, qos=qos)
-            logger.debug(f"Subscribed to {topic} (QoS {qos})")
+            print(f"Subscribed to {topic} (QoS {qos})")
 
         # Register message callback
         self.mqtt_client.message_callback_add(self.availability_topic, self._on_availability_message)
@@ -243,6 +243,7 @@ class DevicePresenceMonitor:
 
     def _on_availability_message(self, client, userdata, msg):
         """Handle availability (online/offline) message"""
+        print(f"Received availability message: {msg.payload}")
         try:
             data = json.loads(msg.payload.decode('utf-8'))
             state_str = data.get("state", "unknown")
@@ -271,6 +272,7 @@ class DevicePresenceMonitor:
 
     def _on_readiness_message(self, client, userdata, msg):
         """Handle readiness state message"""
+        print(f"Received readiness message: {msg.payload}")
         try:
             data = json.loads(msg.payload.decode('utf-8'))
             old_readiness = self._readiness
@@ -351,9 +353,10 @@ class DevicePresenceMonitor:
             True if device became available, False if timeout
         """
         if self._availability == AvailabilityState.ONLINE:
+            print(f"[{self.device_id}] Device already available")
             return True
 
-        logger.info(f"[{self.device_id}] Waiting for device to be available...")
+        print(f"[{self.device_id}] Waiting for device to be available...")
 
         try:
             await asyncio.wait_for(self._availability_event.wait(), timeout=timeout)

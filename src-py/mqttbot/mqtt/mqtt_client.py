@@ -3,9 +3,31 @@ import time
 from typing import Callable, Optional, List
 
 from paho.mqtt import client as mqtt
+from rich.pretty import pprint
 
 from mqttbot.model.settings.settings import Settings
 from mqttbot.mqtt.device_presence import DevicePresenceMonitor
+
+
+def trace(fn):
+    def wrapper(self, *a, **kw):
+        # Print entry with method name and rich repr
+        print(f"{fn.__name__}: enter")
+        pprint(self)
+
+        try:
+            result = fn(self, *a, **kw)
+            # Print exit with method name and rich repr
+            print(f"{fn.__name__}: exit")
+            pprint(self)
+            return result
+        except Exception as e:
+            # Print exit with error
+            print(f"{fn.__name__}: exit (error: {e})")
+            pprint(self)
+            raise e
+
+    return wrapper
 
 
 class MqttBotClient:
@@ -37,11 +59,19 @@ class MqttBotClient:
 
     def _setup_client(self) -> None:
         """Setup MQTT client with callbacks"""
-        self._client = mqtt.Client(client_id=f"modular-bot-{int(time.time())}")
+        self._client = mqtt.Client(
+            client_id=f"modular-bot-{int(time.time())}",
+            clean_session=True
+        )
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.on_disconnect = self._on_disconnect
+        self._client.on_subscribe = self.on_subscribe
 
+    def on_subscribe(self, client, userdata, mid, granted_qos):
+        print("Subscribed:", mid, granted_qos)
+
+    @trace
     def _on_connect(self, client, userdata, flags, rc):
         """Handle MQTT connection"""
         if rc != 0:
@@ -50,8 +80,9 @@ class MqttBotClient:
         # Subscribe to device presence topics
         self.device_monitor.subscribe()
 
-        print(f"[mqtt] Connected → subscribing {self.topic_base}/#")
-        self._client.subscribe(f"{self.topic_base}/#", qos=0)
+        print(f"[mqtt] Connected → subscribing {self.topic_base}/reply and {self.topic_base}/events")
+        self._client.subscribe(f"{self.topic_base}/reply", qos=0)
+        self._client.subscribe(f"{self.topic_base}/events", qos=0)
         self._mqtt_connected = True
 
     def _on_disconnect(self, client, userdata, rc):
@@ -72,6 +103,7 @@ class MqttBotClient:
                 print(f"[mqtt] Error in message callback: {e}")
                 raise
 
+    @trace
     def connect(self) -> None:
         """Connect to MQTT broker"""
         if not self._client:

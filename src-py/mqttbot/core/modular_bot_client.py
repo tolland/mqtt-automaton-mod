@@ -7,7 +7,6 @@ from asyncio import Queue
 from typing import Any, Optional
 
 import yaml
-from rich import inspect
 from rich import print
 from rich.pretty import pprint
 from rich.repr import rich_repr
@@ -60,8 +59,6 @@ class ModularBotClient:
         self._event_queue: Optional[Queue] = None
         self.running = False
         self.event_manager = EventManager(self.config.get("event_handlers", {}))
-
-        pprint(self.settings)
 
         # State
         self._last_position = None
@@ -156,7 +153,6 @@ class ModularBotClient:
             )
 
             if thread:
-                inspect(thread)
                 self._scheduler.enqueue_thread(thread, singleton=True)
 
     def send_mqtt_message(self, message: MessageData) -> None:
@@ -219,7 +215,7 @@ class ModularBotClient:
 
         self.patterns_configs = PatternsConfigParser.from_yaml(self.config)
         print(f"[bot] Loaded {len(self.patterns_configs)} patterns configuration(s)")
-        pprint(self.patterns_configs)
+        # pprint(self.patterns_configs)
 
         # Parse thread configurations
         self.thread_configs = ThreadConfigParser.from_yaml(self.config)
@@ -235,8 +231,6 @@ class ModularBotClient:
                 thread_config, self.patterns_configs
             )
             self.threads.append(thread)
-            inspect(thread)
-            print(thread)
 
     def start(self) -> None:
         """Start the bot by registering threads with the scheduler"""

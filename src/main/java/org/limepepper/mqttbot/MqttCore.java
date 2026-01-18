@@ -47,7 +47,7 @@ public enum MqttCore
         eventManager.add(DayNightListener.class, new DayNightAction());
         eventManager.add(InventoryListener.class, new InventoryAction());
         eventManager.add(ChatMessageListener.class, new ChatMessageAction());
-        eventManager.add(HeartbeatListener.class, new HeartbeatAction());
+        // eventManager.add(HeartbeatListener.class, new HeartbeatAction());
         eventManager.add(MqttMessageListener.class,
             // MessageDispatcher is a sub-router to redirect to specific service
             new MessageDispatcherAction(

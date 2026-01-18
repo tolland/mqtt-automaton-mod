@@ -1,6 +1,7 @@
 package org.limepepper.mqttbot.watchers;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -49,5 +50,10 @@ public class GameEventWatcher {
             
             EventManager.fire(HeartbeatListener.HeaertbeatEvent.INSTANCE);
         });
+        
+        ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE
+            .register((client, world) -> {
+                LOGGER.info("World loaded: {}", world.dimension().location());
+            });
     }
 }

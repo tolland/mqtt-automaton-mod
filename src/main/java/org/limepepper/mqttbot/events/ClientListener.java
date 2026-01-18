@@ -6,9 +6,9 @@ import org.limepepper.mqttbot.event.Listener;
 import java.util.ArrayList;
 
 public interface ClientListener extends Listener {
-    public void onClientJoin();
+    void onClientJoin();
     
-    public void onClientDisconnect();
+    void onClientDisconnect();
     
     public static class ClientJoinEvent extends Event<ClientListener> {
         

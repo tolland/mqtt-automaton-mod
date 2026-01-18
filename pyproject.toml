@@ -38,7 +38,7 @@ dev = [
 ]
 
 [project.scripts]
-mqttbot = "mqttbot.cli:app"
+mqttbot = "mqttbot.cli:run_cli"
 
 [project.urls]
 Homepage = "https://github.com/tolland/mqtt-automaton-mod"

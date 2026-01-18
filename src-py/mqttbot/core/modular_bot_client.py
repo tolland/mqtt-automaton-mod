@@ -156,7 +156,7 @@ class ModularBotClient:
             message_data: Parsed MessageData object
         """
         # Route reply messages to bot_service for request/response tracking
-        if topic == self.mqtt.topic_reply:
+        if topic.endswith("reply"):
             self.bot_service.handle_response(message_data)
         
         # Route baritone state messages to blackboard (even if on topic_reply)
@@ -167,8 +167,7 @@ class ModularBotClient:
         
         # Add reply messages to async queue as well (for event processing)
         # This allows reply messages to also trigger event handlers if needed
-        if topic == self.mqtt.topic_reply or topic in (self.mqtt.topic_events, self.mqtt.topic_pos, 
-                                                        self.mqtt.topic_state, self.mqtt.topic_inventory):
+        if topic.endswith("reply") or topic.endswith("events"):
             if self._event_queue:
                 try:
                     self._event_queue.put_nowait(message_data)

@@ -3,7 +3,7 @@ import time
 import pytest
 
 from mqttbot.config.config import build_settings
-from mqttbot.modular_bot_client import ModularBotClient
+from mqttbot.core.modular_bot_client import ModularBotClient
 
 # pytestmark = pytest.mark.skip(reason="Requires minecraft client running")
 

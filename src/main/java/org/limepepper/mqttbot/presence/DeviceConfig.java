@@ -10,8 +10,7 @@ import java.util.Map;
  * Device configuration (capabilities, services, metadata) following Home
  * Assistant discovery pattern.
  */
-public class DeviceConfig
-{
+public class DeviceConfig {
     private final String deviceId;
     private final String name;
     private final String model;
@@ -20,7 +19,7 @@ public class DeviceConfig
     private final List<String> services;
     private final Map<String, Object> capabilities;
     private final Map<String, String> topics;
-
+    
     public DeviceConfig(String deviceId, String name, String model,
         String manufacturer, String swVersion, List<String> services,
         Map<String, Object> capabilities, Map<String, String> topics)
@@ -34,14 +33,14 @@ public class DeviceConfig
         this.capabilities = capabilities;
         this.topics = topics;
     }
-
+    
     /**
      * Convert to JSON for MQTT publication
      */
     public JsonObject toJson()
     {
         JsonObject json = new JsonObject();
-
+        
         // Device metadata
         JsonObject device = new JsonObject();
         JsonArray identifiers = new JsonArray();
@@ -52,12 +51,12 @@ public class DeviceConfig
         device.addProperty("manufacturer", manufacturer);
         device.addProperty("sw_version", swVersion);
         json.add("device", device);
-
+        
         // Services
         JsonArray servicesArray = new JsonArray();
         services.forEach(servicesArray::add);
         json.add("services", servicesArray);
-
+        
         // Capabilities
         JsonObject caps = new JsonObject();
         capabilities.forEach((key, value) -> {
@@ -73,27 +72,27 @@ public class DeviceConfig
             }
         });
         json.add("capabilities", caps);
-
+        
         // Topics
         JsonObject topicsObj = new JsonObject();
         topics.forEach(topicsObj::addProperty);
         json.add("topics", topicsObj);
-
+        
         return json;
     }
-
+    
     // Getters
-
+    
     public String getDeviceId()
     {
         return deviceId;
     }
-
+    
     public String getName()
     {
         return name;
     }
-
+    
     public List<String> getServices()
     {
         return services;

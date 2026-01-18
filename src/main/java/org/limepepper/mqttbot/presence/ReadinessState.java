@@ -18,15 +18,14 @@ import java.util.Objects;
  * </ul>
  * </p>
  */
-public class ReadinessState
-{
+public class ReadinessState {
     private final boolean ready;
     private final String state;
     private final boolean canAcceptTasks;
     private final String reason;
     private final JsonObject additionalData;
     private final Instant timestamp;
-
+    
     public ReadinessState(boolean ready, String state, boolean canAcceptTasks,
         String reason, JsonObject additionalData)
     {
@@ -37,7 +36,7 @@ public class ReadinessState
         this.additionalData = additionalData;
         this.timestamp = Instant.now();
     }
-
+    
     /**
      * Create a ready state
      */
@@ -46,7 +45,7 @@ public class ReadinessState
     {
         return new ReadinessState(true, state, true, reason, additionalData);
     }
-
+    
     /**
      * Create a not-ready state
      */
@@ -55,7 +54,7 @@ public class ReadinessState
     {
         return new ReadinessState(false, state, false, reason, additionalData);
     }
-
+    
     /**
      * Convert to JSON for MQTT publication
      */
@@ -67,44 +66,44 @@ public class ReadinessState
         json.addProperty("can_accept_tasks", canAcceptTasks);
         json.addProperty("reason", reason);
         json.addProperty("timestamp", timestamp.toString());
-
+        
         if(additionalData != null)
         {
             // Merge additional data into root
             additionalData.entrySet().forEach(
                 entry -> json.add(entry.getKey(), entry.getValue()));
         }
-
+        
         return json;
     }
-
+    
     // Getters
-
+    
     public boolean isReady()
     {
         return ready;
     }
-
+    
     public String getState()
     {
         return state;
     }
-
+    
     public boolean canAcceptTasks()
     {
         return canAcceptTasks;
     }
-
+    
     public String getReason()
     {
         return reason;
     }
-
+    
     public Instant getTimestamp()
     {
         return timestamp;
     }
-
+    
     @Override
     public String toString()
     {

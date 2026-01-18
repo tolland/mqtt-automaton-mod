@@ -24,21 +24,20 @@ import java.time.Instant;
  * </ul>
  * </p>
  */
-public class DevicePresence
-{
+public class DevicePresence {
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(DevicePresence.class);
-
+    
     private final String deviceId;
     private final String baseTopic;
     private final MqttClient mqttClient;
-
+    
     private String availabilityTopic;
     private String configTopic;
     private String readinessTopic;
     private String stateTopic;
     private String heartbeatTopic;
-
+    
     /**
      * Create device presence manager
      *
@@ -52,14 +51,14 @@ public class DevicePresence
         this.deviceId = deviceId;
         this.baseTopic = "mqttbot/" + deviceId;
         this.mqttClient = mqttClient;
-
+        
         this.availabilityTopic = baseTopic + "/availability";
         this.configTopic = baseTopic + "/config";
         this.readinessTopic = baseTopic + "/readiness";
         this.stateTopic = baseTopic + "/state";
         this.heartbeatTopic = baseTopic + "/heartbeat";
     }
-
+    
     /**
      * Setup MQTT connection with LWT (Last Will and Testament)
      *
@@ -70,25 +69,25 @@ public class DevicePresence
         MqttConnectOptions options = new MqttConnectOptions();
         options.setCleanSession(false); // Persistent session
         options.setAutomaticReconnect(true);
-        options.setKeepAliveInterval(20); // 20 second keepalive
+        options.setKeepAliveInterval(20);
         options.setConnectionTimeout(10);
-
+        
         // Set Last Will and Testament - published when connection drops
         JsonObject lwt = new JsonObject();
         lwt.addProperty("state", "offline");
         lwt.addProperty("timestamp", Instant.now().toString());
-
+        
         options.setWill(availabilityTopic,
             lwt.toString().getBytes(StandardCharsets.UTF_8), 1, // QoS 1
             true // Retained
         );
-
+        
         LOGGER.info("Created MQTT connection options with LWT on topic: {}",
             availabilityTopic);
-
+        
         return options;
     }
-
+    
     /**
      * Announce device is online (call immediately after connecting)
      *
@@ -103,11 +102,11 @@ public class DevicePresence
         availability.addProperty("state", "online");
         availability.addProperty("timestamp", Instant.now().toString());
         availability.addProperty("connection_id", connectionId);
-
+        
         publish(availabilityTopic, availability, 1, true);
         LOGGER.info("Announced device online: {}", deviceId);
     }
-
+    
     /**
      * Announce device is offline (call before disconnecting)
      *
@@ -119,11 +118,11 @@ public class DevicePresence
         JsonObject availability = new JsonObject();
         availability.addProperty("state", "offline");
         availability.addProperty("timestamp", Instant.now().toString());
-
+        
         publish(availabilityTopic, availability, 1, true);
         LOGGER.info("Announced device offline: {}", deviceId);
     }
-
+    
     /**
      * Publish device configuration (capabilities, services, etc)
      *
@@ -137,7 +136,7 @@ public class DevicePresence
         publish(configTopic, config.toJson(), 1, true);
         LOGGER.debug("Published device config for: {}", deviceId);
     }
-
+    
     /**
      * Publish readiness state
      *
@@ -152,7 +151,7 @@ public class DevicePresence
         LOGGER.debug("Published readiness: {} (can_accept_tasks={})", state,
             state.canAcceptTasks());
     }
-
+    
     /**
      * Publish detailed state (for monitoring/debugging)
      *
@@ -166,7 +165,7 @@ public class DevicePresence
         state.addProperty("timestamp", Instant.now().toString());
         publish(stateTopic, state, 0, false); // QoS 0 for frequent updates
     }
-
+    
     /**
      * Publish heartbeat (for fast liveness detection)
      *
@@ -180,10 +179,10 @@ public class DevicePresence
         JsonObject heartbeat = new JsonObject();
         heartbeat.addProperty("timestamp", Instant.now().toString());
         heartbeat.addProperty("sequence", sequence);
-
+        
         publish(heartbeatTopic, heartbeat, 0, false);
     }
-
+    
     /**
      * Helper to publish JSON object
      */
@@ -194,37 +193,37 @@ public class DevicePresence
             payload.toString().getBytes(StandardCharsets.UTF_8));
         message.setQos(qos);
         message.setRetained(retained);
-
+        
         mqttClient.publish(topic, message);
     }
-
+    
     // Getters
-
+    
     public String getDeviceId()
     {
         return deviceId;
     }
-
+    
     public String getAvailabilityTopic()
     {
         return availabilityTopic;
     }
-
+    
     public String getConfigTopic()
     {
         return configTopic;
     }
-
+    
     public String getReadinessTopic()
     {
         return readinessTopic;
     }
-
+    
     public String getStateTopic()
     {
         return stateTopic;
     }
-
+    
     public String getHeartbeatTopic()
     {
         return heartbeatTopic;

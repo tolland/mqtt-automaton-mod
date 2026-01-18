@@ -10,13 +10,7 @@ class Settings:
     port: int
     client_id: str
     expected_player_name: str
-    topic_cmd: str
-    topic_reply: str
-    topic_pos: str
-    topic_state: str
-    topic_inventory: str
-    topic_events: str
-    topic_heartbeats: str
+    topic_base: str
     timeout_seconds: int
     max_retries: int
     retry_delay_seconds: int

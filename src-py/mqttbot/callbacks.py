@@ -13,7 +13,7 @@ from mqttbot import (
     __app_name__,
 )
 from mqttbot.config.config import build_settings
-from mqttbot.modular_bot_client import ModularBotClient
+from mqttbot.core.modular_bot_client import ModularBotClient
 
 
 def _version_callback(value: bool) -> None:

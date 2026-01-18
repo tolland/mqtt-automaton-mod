@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import threading
 import time
 import uuid
@@ -31,6 +32,8 @@ from mqttbot.mqtt.mqtt_client import MqttBotClient
 """
 Modular bot client using the new behavior-based architecture
 """
+
+logger = logging.getLogger(__name__)
 
 
 def _load_config(config_path: str) -> dict[str, Any]:
@@ -66,7 +69,7 @@ class ModularBotClient:
         self._lock = threading.Lock()
 
         # Initialize MQTT client with message callback
-        self.mqtt = MqttBotClient(settings,)
+        self.mqtt = MqttBotClient(settings, )
         self.mqtt.register_message_callback(
             self._handle_mqtt_message
         )
@@ -95,9 +98,6 @@ class ModularBotClient:
         # Print initialization summary
         pprint(self)
 
-
-
-
     def _handle_mqtt_message(self, topic: str, payload: str) -> None:
         """Handle incoming MQTT message payload turn into MessageData
         
@@ -125,13 +125,13 @@ class ModularBotClient:
         # Route reply messages to bot_service for request/response tracking
         if topic.endswith("reply"):
             self.bot_service.handle_response(message_data)
-        
+
         # Route baritone state messages to blackboard (even if on topic_reply)
         if message_data.service == "baritone" and message_data.method == "state":
             self.blackboard.emit_event(message_data.service, message_data)
-        
+
         self.blackboard.emit_event(message_data.service, message_data)
-        
+
         # Add reply messages to async queue as well (for event processing)
         # This allows reply messages to also trigger event handlers if needed
         if topic.endswith("reply") or topic.endswith("events"):
@@ -168,17 +168,17 @@ class ModularBotClient:
         """Connect to MQTT broker"""
         self.mqtt.connect()
 
-        print(f"[bot] Waiting for mod to come online...")
+        logger.debug(f"[bot] Waiting for mod to come online...")
         available = await self.mqtt.device_monitor.wait_for_available(timeout=30.0)
         if not available:
             raise TimeoutError("Mod did not come online")
 
-        print(f"[bot] Waiting for mod to come ready...")
+        logger.debug(f"[bot] Waiting for mod to come ready...")
         ready = await self.mqtt.device_monitor.wait_for_ready(timeout=30.0)
         if not ready:
             raise TimeoutError("Mod did not become ready")
 
-        print(f"[bot] Mod is ready! State: {self.device_monitor.readiness.state}")
+        print(f"[bot] Mod is ready! State: {self.mqtt.device_monitor.readiness.state}")
 
     def exit(self):
         """Exit the bot gracefully"""
@@ -253,7 +253,7 @@ class ModularBotClient:
 
         try:
             await self.connect()
-            
+
             self.configure()
             self.start()
 

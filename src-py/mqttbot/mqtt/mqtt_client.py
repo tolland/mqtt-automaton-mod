@@ -3,31 +3,9 @@ import time
 from typing import Callable, Optional, List
 
 from paho.mqtt import client as mqtt
-from rich.pretty import pprint
 
 from mqttbot.model.settings.settings import Settings
 from mqttbot.mqtt.device_presence import DevicePresenceMonitor
-
-
-def trace(fn):
-    def wrapper(self, *a, **kw):
-        # Print entry with method name and rich repr
-        print(f"{fn.__name__}: enter")
-        pprint(self)
-
-        try:
-            result = fn(self, *a, **kw)
-            # Print exit with method name and rich repr
-            print(f"{fn.__name__}: exit")
-            pprint(self)
-            return result
-        except Exception as e:
-            # Print exit with error
-            print(f"{fn.__name__}: exit (error: {e})")
-            pprint(self)
-            raise e
-
-    return wrapper
 
 
 class MqttBotClient:
@@ -66,12 +44,11 @@ class MqttBotClient:
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.on_disconnect = self._on_disconnect
-        self._client.on_subscribe = self.on_subscribe
+        # self._client.on_subscribe = self.on_subscribe
 
     def on_subscribe(self, client, userdata, mid, granted_qos):
         print("Subscribed:", mid, granted_qos)
 
-    @trace
     def _on_connect(self, client, userdata, flags, rc):
         """Handle MQTT connection"""
         if rc != 0:
@@ -103,7 +80,6 @@ class MqttBotClient:
                 print(f"[mqtt] Error in message callback: {e}")
                 raise
 
-    @trace
     def connect(self) -> None:
         """Connect to MQTT broker"""
         if not self._client:

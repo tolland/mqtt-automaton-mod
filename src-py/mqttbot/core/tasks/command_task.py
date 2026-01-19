@@ -1,3 +1,5 @@
+import logging
+import uuid
 from typing import Optional, Any
 
 from mqttbot import ServiceMessage
@@ -6,9 +8,9 @@ from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult, RequestStatus
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
-
-
 from mqttbot.core.tasks.task_status import TaskState
+
+logger = logging.getLogger(__name__)
 
 
 @task("command")
@@ -59,5 +61,42 @@ class CommandTask(TaskBase):
                         return TaskStatus.FAILED
 
             return TaskStatus.RUNNING
-
         return TaskStatus.FAILED
+
+    def to_dict(self) -> dict[str, Any]:
+        """Specific override for CommandTask state."""
+        state = super().to_dict()
+        state.update(
+            {
+                "service": self.service,
+                "method": self.method,
+                "params": self.params,
+                "timeout": self.timeout,
+            }
+        )
+        return state
+
+    def _suspend(self, ctx: Context) -> None:
+        """Suspend - cancel remote operation and save state"""
+        if self.request_id:
+            logger.info(
+                f"[CommandTask] Suspending {self.service}:{self.method}, cancelling request {self.request_id}"
+            )
+            cancel_msg = ServiceMessage(
+                service=self.service,
+                method="cancel",
+                request_id=str(uuid.uuid4()),
+                correlation_id=self.correlation_id,
+                params={"request_id": self.request_id, "reason": "preempted"},
+            )
+            ctx.bot_service.send_message(cancel_msg)
+
+        self._state = TaskState.SUSPENDED
+
+    def _resume(self, ctx: Context) -> None:
+        """Resume - reset state to trigger a fresh request"""
+        logger.info(f"[CommandTask] Resuming for {self.service}:{self.method}")
+
+        # Reset to INIT to force a new request_id and fresh message
+        self._state = TaskState.INIT
+        self.request_id = None

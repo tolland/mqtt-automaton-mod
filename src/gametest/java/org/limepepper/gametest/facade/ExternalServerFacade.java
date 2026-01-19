@@ -48,7 +48,7 @@ public class ExternalServerFacade implements TestServerFacade {
         input.pressKey(GLFW.GLFW_KEY_ENTER);
         
         // Give server time to process command
-        context.waitTicks(2);
+        // context.waitTicks(2);
     }
     
     @Override

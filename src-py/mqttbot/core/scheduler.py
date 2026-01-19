@@ -170,11 +170,7 @@ class Scheduler:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "current_thread": {
-                "thread_id": self.current_thread.thread_id,
-                "state": self.current_thread.state.value,
-                "correlation_id": self.current_thread.correlation_id,
-            } if self.current_thread else None,
+            "current_thread": self.current_thread.to_dict() if self.current_thread else None,
             "ready_threads": [t.thread_id for t in self.ready_threads],
             "suspended_stack": [t.thread_id for t in self.suspended_stack],
         }

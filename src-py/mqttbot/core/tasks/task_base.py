@@ -1,4 +1,5 @@
 import logging
+from enum import Enum
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -61,6 +62,27 @@ class TaskBase(ABC):
 
     def _exit(self, ctx, status: TaskStatus):
         pass
+
+    def to_dict(self) -> dict:
+        """Return a dictionary representation of the task state."""
+        state = {
+            "type": type(self).__name__,
+            "status": self.status.name,
+            "state": self._state.name if hasattr(self, "_state") and isinstance(self._state, Enum) else str(self._state),
+            "correlation_id": self.correlation_id,
+        }
+
+        # Add common attributes if they exist
+        if hasattr(self, "target"):
+            state["target"] = self.target
+        if hasattr(self, "request_id"):
+            state["request_id"] = self.request_id
+
+        return state
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
 
     def __rich_repr__(self):
         """Rich representation that varies based on log level."""

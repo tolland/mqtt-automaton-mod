@@ -161,98 +161,99 @@ public enum BaritoneBotBasicTest
                     {null, null, null, null, null, null, null} // Z=2
                 });
             
-            // Teleport to test location
-            testCtx.teleportPlayer(0.5F, 0, 0.5f, 0f, 0f);
-            
-            // Set gamemode to survival for realistic pathing
-            runCommand(server, "gamemode survival");
-            context.waitTick();
-            
-            // Capture starting position to calculate target coordinates
-            AtomicReference<BlockPos> startPosRef = new AtomicReference<>();
-            context.runOnClient(mc -> {
-                assert mc.player != null;
-                startPosRef.set(mc.player.blockPosition());
-            });
-            context.waitTick(); // Ensure position is captured
-            
-            BlockPos startPos = startPosRef.get();
-            if(startPos == null)
+            try(var actualTest =
+                testCtx.createActualTest().withGameMode("survival"))
             {
-                throw new RuntimeException(
-                    "Failed to capture starting position");
-            }
-            
-            // Calculate target position using relative coordinates (3 blocks
-            // east)
-            BlockPos targetPos = startPos.offset(3, 0, 0);
-            
-            // Send baritone command to path to the target location
-            String gotoCmd = String.format("#goto %d %d %d", targetPos.getX(),
-                targetPos.getY(), targetPos.getZ());
-            // sendChat(context, gotoCmd);
-            String botId = "Wurst-Bot";
-            var params = new JsonObject();
-            params.addProperty("params", gotoCmd);
-            var target = new JsonObject();
-            target.addProperty("x", targetPos.getX());
-            target.addProperty("y", targetPos.getY());
-            target.addProperty("z", targetPos.getZ());
-            params.add("target", target);
-            ServiceMessage structuredMessage =
-                new ServiceMessage("baritone", "goto",
-                    UUID.randomUUID().toString(), UUID.randomUUID().toString(),
-                    target, "mqttbot", null
+                // Capture starting position to calculate target coordinates
+                AtomicReference<BlockPos> startPosRef = new AtomicReference<>();
+                context.runOnClient(mc -> {
+                    assert mc.player != null;
+                    startPosRef.set(mc.player.blockPosition());
+                });
+                context.waitTick(); // Ensure position is captured
                 
-                );
-            context.runOnClient(mc -> {
-                EventManager.fire(new MqttMessageListener.MqttMessageEvent(
-                    botId, structuredMessage));
-            });
-            
-            // Wait for baritone bot to arrive at the target location
-            waitForLocation(context, targetPos.getX(), targetPos.getY(),
-                targetPos.getZ());
-            
-            runCommand(server,
-                "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
-            context.waitTick();
-            runCommand(server,
-                "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
-            context.waitTick();
-            runCommand(server,
-                "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
-            context.waitTick();
-            runCommand(server,
-                "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
-            context.waitTicks(60);
-            
-            context.runOnClient(mc -> {
-                EventManager.fire(new MqttMessageListener.MqttMessageEvent(
-                    botId,
-                    org.limepepper.mqttbot.util.MsgUtils.msgData("baritone",
-                        "collect",
+                BlockPos startPos = startPosRef.get();
+                if(startPos == null)
+                {
+                    throw new RuntimeException(
+                        "Failed to capture starting position");
+                }
+                
+                // Calculate target position using relative coordinates (3
+                // blocks
+                // east)
+                BlockPos targetPos = startPos.offset(3, 0, 0);
+                
+                // Send baritone command to path to the target location
+                String gotoCmd =
+                    String.format("#goto %d %d %d", targetPos.getX(),
+                        targetPos.getY(), targetPos.getZ());
+                // sendChat(context, gotoCmd);
+                String botId = "Wurst-Bot";
+                var params = new JsonObject();
+                params.addProperty("params", gotoCmd);
+                var target = new JsonObject();
+                target.addProperty("x", targetPos.getX());
+                target.addProperty("y", targetPos.getY());
+                target.addProperty("z", targetPos.getZ());
+                params.add("target", target);
+                ServiceMessage structuredMessage =
+                    new ServiceMessage("baritone", "goto",
                         UUID.randomUUID().toString(),
                         UUID.randomUUID().toString(),
-                        org.limepepper.mqttbot.util.JsonBuilder.obj(
-                            "block",
-                            "minecraft:sugar_cane", "range", 10))));
-            });
-            
-            Item item = ItemUtils.getItemFromNameOrID("minecraft:sugar_cane");
-            waitForOneItemInSlot(context, 0, item);
-            
-            context.waitFor(mc -> {
-                assert mc.player != null;
-                return MqttCore.INSTANCE
-                    .getBotState() == MqttCore.BotState.IDLE;
-            });
-            
-            context.waitTick();
-            context.takeScreenshot("baritone_test2");
-            
-            BotTest.LOGGER.info("Baritone pathing test completed successfully");
+                        target, "mqttbot", null
+                    
+                    );
+                context.runOnClient(mc -> {
+                    EventManager.fire(new MqttMessageListener.MqttMessageEvent(
+                        botId, structuredMessage));
+                });
+                
+                // Wait for baritone bot to arrive at the target location
+                waitForLocation(context, targetPos.getX(), targetPos.getY(),
+                    targetPos.getZ());
+                
+                runCommand(server,
+                    "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
+                context.waitTick();
+                runCommand(server,
+                    "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
+                context.waitTick();
+                runCommand(server,
+                    "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
+                context.waitTick();
+                runCommand(server,
+                    "loot spawn ~-3 ~ ~ loot minecraft:blocks/sugar_cane");
+                context.waitTicks(60);
+                
+                context.runOnClient(mc -> {
+                    EventManager.fire(new MqttMessageListener.MqttMessageEvent(
+                        botId,
+                        org.limepepper.mqttbot.util.MsgUtils.msgData("baritone",
+                            "collect",
+                            UUID.randomUUID().toString(),
+                            UUID.randomUUID().toString(),
+                            org.limepepper.mqttbot.util.JsonBuilder.obj(
+                                "block",
+                                "minecraft:sugar_cane", "range", 10))));
+                });
+                
+                Item item =
+                    ItemUtils.getItemFromNameOrID("minecraft:sugar_cane");
+                waitForOneItemInSlot(context, 0, item);
+                
+                context.waitFor(mc -> {
+                    assert mc.player != null;
+                    return MqttCore.INSTANCE
+                        .getBotState() == MqttCore.BotState.IDLE;
+                });
+                
+                context.waitTick();
+                context.takeScreenshot("baritone_test2");
+                
+                BotTest.LOGGER
+                    .info("Baritone pathing test completed successfully");
+            }
         }
-        // MiniTestContext automatically handles cleanup via close()
     }
 }

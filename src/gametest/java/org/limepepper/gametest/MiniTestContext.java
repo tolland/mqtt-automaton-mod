@@ -79,21 +79,11 @@ public class MiniTestContext implements AutoCloseable {
         // Ensure base platform exists
         BotTest.LOGGER.debug("Setting base platform block");
         setBlock(0, -1, 0, "minecraft:smooth_stone");
-        context.waitTick();
-        
         // Teleport player to test location
         String tpCommand = location.tp(playerName, 0, 0, 0, 0, 0);
-        BotTest.LOGGER.debug("Executing teleport: {}", tpCommand);
         server.executeCommand(tpCommand);
-        context.waitTick();
-        
         String rotateCommand = "rotate " + playerName + " 0 0";
-        BotTest.LOGGER.debug("Executing rotate: {}", rotateCommand);
         server.executeCommand(rotateCommand);
-        context.waitTick();
-        
-        // Set game rules for consistent testing
-        BotTest.LOGGER.debug("Executing: gamerule randomTickSpeed 0");
         server.executeCommand("gamerule randomTickSpeed 0");
         
         context.waitTick();

@@ -16,7 +16,7 @@ public class MiniTestLocation {
         // locate in middle of chunk
         this.baseX = 8 + (index * 16);
         // avoid any generated stuff
-        this.baseY = 74;
+        this.baseY = 65;
         this.baseZ = 8;
     }
     

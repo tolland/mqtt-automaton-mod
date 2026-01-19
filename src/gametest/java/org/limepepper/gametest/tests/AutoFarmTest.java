@@ -42,10 +42,10 @@ public enum AutoFarmTest
             testCtx.setBlockLayer(-1, blocks,
                 new String[][]{{null, "stone", null}, // Z=-2: stone under
                                                       // interactable
-                    {null, "farm", null}, // Z=-1: farmland in front
-                    {null, "stone", null}, // Z=0: farmland under player
-                                           // (center)
-                    {null, null, null}, // Z=1: empty
+                    {"stone", "farm", "stone"}, // Z=-1: farmland in front
+                    {"stone", "stone", "stone"}, // Z=0: farmland under player
+                    // (center)
+                    {"stone", "stone", "stone"}, // Z=1: empty
                     {null, null, null} // Z=2: empty
                 });
             
@@ -75,13 +75,14 @@ public enum AutoFarmTest
             waitForCropAge(context, 0, 0, -1, 0);
             debugBlock(0, 0, -1);
             context.waitTick();
-            context.takeScreenshot("farm_test5");
             runWurstCommand(context, "t AutoFarm off");
-            // input.pressKey(GLFW.GLFW_KEY_F3);
+            context.waitTick();
             input.pressKey(GLFW.GLFW_KEY_F5);
             clearChat(context);
             clearToasts(context);
-            context.waitTicks(120);
+            context.takeScreenshot("farm_test5");
+            // input.pressKey(GLFW.GLFW_KEY_F3);
+            context.waitTicks(40);
         }
         // MiniTestContext automatically handles cleanup via close()
     }

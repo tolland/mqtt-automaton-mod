@@ -12,8 +12,7 @@ import org.limepepper.gametest.utils.ExternalServerTestHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
+import static org.limepepper.gametest.BlockLists.getAllInteractiveBlocks;
 import static org.limepepper.gametest.BotTestHelper.runWurstCommand;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -123,7 +122,7 @@ public class ExternalServerGameTest implements FabricClientGameTest {
         context.waitTicks(20); // Wait 1 second
         context.takeScreenshot("mod_feature_test");
         
-        for(String block : List.of("minecraft:comparator"))
+        for(String block : getAllInteractiveBlocks())
         {
             
             AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, server, block);

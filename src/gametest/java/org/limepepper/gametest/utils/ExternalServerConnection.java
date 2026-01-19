@@ -32,7 +32,7 @@ public class ExternalServerConnection implements AutoCloseable {
     {
         return context.computeOnClient(client -> client.level);
     }
-
+    
     /**
      * Gets the name of the connected player.
      *
@@ -47,13 +47,14 @@ public class ExternalServerConnection implements AutoCloseable {
             return client.player.getName().getString();
         });
     }
-
+    
     /**
      * Creates a TestServerFacade for this connection.
      * This facade can be used with MiniTestContext and other test utilities.
      *
      * @return A facade wrapping this external server connection
-     * @throws IllegalStateException if player is not connected
+     * @throws IllegalStateException
+     *             if player is not connected
      */
     public TestServerFacade createFacade()
     {

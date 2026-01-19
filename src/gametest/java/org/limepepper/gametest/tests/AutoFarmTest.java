@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import org.limepepper.gametest.MiniTestContext;
 import org.limepepper.gametest.BotTest;
 import org.limepepper.gametest.facade.TestServerFacade;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +77,11 @@ public enum AutoFarmTest
             context.waitTick();
             context.takeScreenshot("farm_test5");
             runWurstCommand(context, "t AutoFarm off");
+            // input.pressKey(GLFW.GLFW_KEY_F3);
+            input.pressKey(GLFW.GLFW_KEY_F5);
+            clearChat(context);
+            clearToasts(context);
+            context.waitTicks(120);
         }
         // MiniTestContext automatically handles cleanup via close()
     }

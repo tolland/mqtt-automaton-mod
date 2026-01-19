@@ -88,7 +88,7 @@ public enum BotTestHelper
      */
     public static void clearNearbyItems(TestServerFacade server)
     {
-        runCommand(server, "kill @e[type=item]");
+        runCommand(server, "minecraft:kill @e[type=item]");
     }
     
     /**
@@ -99,7 +99,7 @@ public enum BotTestHelper
      */
     public static void clearNearbyItems(TestServerContext server)
     {
-        runCommand(server, "kill @e[type=item]");
+        runCommand(server, "minecraft:kill @e[type=item]");
     }
     
     public static void clearParticles(ClientGameTestContext context)
@@ -123,7 +123,7 @@ public enum BotTestHelper
     {
         TestInput input = context.getInput();
         input.pressKey(GLFW.GLFW_KEY_T);
-        input.typeChars("/clear");
+        input.typeChars("/minecraft:clear");
         input.pressKey(GLFW.GLFW_KEY_ENTER);
     }
     

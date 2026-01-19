@@ -16,7 +16,7 @@ public class MiniTestLocation {
         // locate in middle of chunk
         this.baseX = 8 + (index * 16);
         // avoid any generated stuff
-        this.baseY = 64;
+        this.baseY = 74;
         this.baseZ = 8;
     }
     
@@ -50,7 +50,8 @@ public class MiniTestLocation {
     public String tp(String playerName, float dx, float dy, float dz, float yaw,
         float pitch)
     {
-        return String.format("tp %s %.2f %.2f %.2f %.1f %.1f", playerName,
+        return String.format("minecraft:tp %s %.2f %.2f %.2f %.1f %.1f",
+            playerName,
             baseX + dx, baseY + dy, baseZ + dz, yaw, pitch);
     }
     

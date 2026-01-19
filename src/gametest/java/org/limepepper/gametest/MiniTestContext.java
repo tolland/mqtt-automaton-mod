@@ -68,34 +68,34 @@ public class MiniTestContext implements AutoCloseable {
     {
         String playerName =
             server.getPlayerName() != null ? server.getPlayerName() : "@p";
-
+        
         BotTest.LOGGER.debug("Setting up test area for player: {}", playerName);
-
+        
         // Ensure player is in creative mode (critical for external servers)
         BotTest.LOGGER.debug("Executing: gamemode creative");
         server.executeCommand("gamemode creative");
         context.waitTick();
-
+        
         // Ensure base platform exists
         BotTest.LOGGER.debug("Setting base platform block");
         setBlock(0, -1, 0, "minecraft:smooth_stone");
         context.waitTick();
-
+        
         // Teleport player to test location
         String tpCommand = location.tp(playerName, 0, 0, 0, 0, 0);
         BotTest.LOGGER.debug("Executing teleport: {}", tpCommand);
         server.executeCommand(tpCommand);
         context.waitTick();
-
+        
         String rotateCommand = "rotate " + playerName + " 0 0";
         BotTest.LOGGER.debug("Executing rotate: {}", rotateCommand);
         server.executeCommand(rotateCommand);
         context.waitTick();
-
+        
         // Set game rules for consistent testing
         BotTest.LOGGER.debug("Executing: gamerule randomTickSpeed 0");
         server.executeCommand("gamerule randomTickSpeed 0");
-
+        
         context.waitTick();
         BotTest.LOGGER.debug("Test area setup complete at ({}, {}, {})",
             location.baseX, location.baseY, location.baseZ);
@@ -125,22 +125,22 @@ public class MiniTestContext implements AutoCloseable {
         // Reset game rules
         BotTest.LOGGER.debug("Resetting game rules");
         server.executeCommand("gamerule randomTickSpeed 3");
-
+        
         // Reset gamemode
         BotTest.LOGGER.debug("Resetting gamemode to creative");
         server.executeCommand("gamemode creative");
-
+        
         // Clear client-side state
         BotTest.LOGGER.debug("Clearing inventory");
         clearInventory(context);
         context.waitTick();
-
+        
         clearChat(context);
         clearToasts(context);
-
+        
         BotTest.LOGGER.debug("Clearing nearby items with: kill @e[type=item]");
         clearNearbyItems(server);
-
+        
         // Give the world a moment to process the cleanup
         context.waitTick();
         BotTest.LOGGER.debug("Teardown complete");

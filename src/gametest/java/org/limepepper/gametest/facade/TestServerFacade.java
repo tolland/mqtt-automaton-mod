@@ -1,6 +1,5 @@
 package org.limepepper.gametest.facade;
 
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestClientWorldContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -25,11 +24,16 @@ public interface TestServerFacade {
     void executeCommand(String command);
 
     /**
-     * Gets the client world context for chunk waiting and world access.
-     *
-     * @return The client world context
+     * Waits for chunks to be downloaded from the server.
+     * Uses default timeout (1 minute).
      */
-    TestClientWorldContext getClientWorld();
+    void waitForChunksDownload();
+
+    /**
+     * Waits for chunks to be downloaded and rendered.
+     * Uses default timeout (1 minute).
+     */
+    void waitForChunksRender();
 
     /**
      * Checks if this facade is backed by an integrated server.

@@ -2,7 +2,6 @@ package org.limepepper.gametest.facade;
 
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestClientWorldContext;
 import org.jetbrains.annotations.Nullable;
 import org.limepepper.gametest.utils.ExternalServerConnection;
 import org.lwjgl.glfw.GLFW;
@@ -17,7 +16,6 @@ public class ExternalServerFacade implements TestServerFacade {
 
     private final ClientGameTestContext context;
     private final ExternalServerConnection connection;
-    private final TestClientWorldContext clientWorld;
     private final String playerName;
 
     /**
@@ -33,7 +31,6 @@ public class ExternalServerFacade implements TestServerFacade {
         this.context = context;
         this.connection = connection;
         this.playerName = playerName;
-        this.clientWorld = new ExternalServerClientWorldContext(connection);
     }
 
     @Override
@@ -50,9 +47,15 @@ public class ExternalServerFacade implements TestServerFacade {
     }
 
     @Override
-    public TestClientWorldContext getClientWorld()
+    public void waitForChunksDownload()
     {
-        return clientWorld;
+        connection.waitForChunksDownload();
+    }
+
+    @Override
+    public void waitForChunksRender()
+    {
+        connection.waitForChunksRender();
     }
 
     @Override

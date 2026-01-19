@@ -14,11 +14,14 @@ The facade pattern allows tests to work seamlessly with:
 ```java
 public interface TestServerFacade {
     void executeCommand(String command);
-    TestClientWorldContext getClientWorld();
+    void waitForChunksDownload();
+    void waitForChunksRender();
     boolean isIntegratedServer();
     String getPlayerName();
 }
 ```
+
+**Note:** This interface does NOT return `TestClientWorldContext` because that interface is marked `@ApiStatus.NonExtendable` by Fabric API. Instead, chunk waiting methods are provided directly on the facade.
 
 ### IntegratedServerFacade
 Wraps `TestSingleplayerContext` for direct server access:
@@ -51,7 +54,7 @@ public void runTest(ClientGameTestContext context) {
 
             // Or use directly
             server.executeCommand("time set noon");
-            server.getClientWorld().waitForChunksRender();
+            server.waitForChunksRender();
         }
     }
 }
@@ -74,7 +77,7 @@ public void runTest(ClientGameTestContext context) {
             testCtx.teleportPlayer(5, 0, 5, 0, 0);
 
             server.executeCommand("time set noon");
-            server.getClientWorld().waitForChunksRender();
+            server.waitForChunksRender();
         }
     }
 }
@@ -99,7 +102,7 @@ private void runPortableTest(ClientGameTestContext context, TestServerFacade ser
         });
 
         // Wait for chunks
-        server.getClientWorld().waitForChunksRender();
+        server.waitForChunksRender();
 
         // Run test logic...
         testCtx.teleportPlayer(0, 0, 0, 0, 0);

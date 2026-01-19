@@ -2,7 +2,6 @@ package org.limepepper.gametest.facade;
 
 import com.mojang.brigadier.ParseResults;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestClientWorldContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.commands.CommandSourceStack;
 import org.jetbrains.annotations.Nullable;
@@ -45,9 +44,15 @@ public class IntegratedServerFacade implements TestServerFacade {
     }
 
     @Override
-    public TestClientWorldContext getClientWorld()
+    public void waitForChunksDownload()
     {
-        return singleplayerContext.getClientWorld();
+        singleplayerContext.getClientWorld().waitForChunksDownload();
+    }
+
+    @Override
+    public void waitForChunksRender()
+    {
+        singleplayerContext.getClientWorld().waitForChunksRender();
     }
 
     @Override

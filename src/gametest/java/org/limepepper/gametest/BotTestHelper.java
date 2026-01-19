@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.CropBlock;
 import net.wurstclient.WurstClient;
+import org.limepepper.gametest.facade.TestServerFacade;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.lwjgl.glfw.GLFW;
 
@@ -24,6 +25,25 @@ public enum BotTestHelper
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(BotTestHelper.class);
     
+    /**
+     * Executes a command using the facade (works with both integrated and
+     * external servers).
+     *
+     * @param server The server facade
+     * @param command The command to execute (without leading slash)
+     */
+    public static void runCommand(TestServerFacade server, String command)
+    {
+        server.executeCommand(command);
+    }
+
+    /**
+     * Executes a command on an integrated server (legacy method).
+     * Prefer using the TestServerFacade version for new code.
+     *
+     * @param server The server context
+     * @param command The command to execute (without leading slash)
+     */
     public static void runCommand(TestServerContext server, String command)
     {
         String commandWithPlayer = "execute as @p at @s run " + command;
@@ -31,17 +51,17 @@ public enum BotTestHelper
             ParseResults<CommandSourceStack> results =
                 mc.getCommands().getDispatcher().parse(commandWithPlayer,
                     mc.createCommandSourceStack());
-            
+
             if(!results.getExceptions().isEmpty())
             {
                 StringBuilder errors =
                     new StringBuilder("Invalid command: /" + commandWithPlayer);
                 for(CommandSyntaxException e : results.getExceptions().values())
                     errors.append("\n").append(e.getMessage());
-                
+
                 throw new RuntimeException(errors.toString());
             }
-            
+
             mc.getCommands().performCommand(results, commandWithPlayer);
         });
     }
@@ -56,6 +76,21 @@ public enum BotTestHelper
         });
     }
     
+    /**
+     * Clears nearby items using the facade.
+     *
+     * @param server The server facade
+     */
+    public static void clearNearbyItems(TestServerFacade server)
+    {
+        runCommand(server, "kill @e[type=item]");
+    }
+
+    /**
+     * Clears nearby items (legacy method for TestServerContext).
+     *
+     * @param server The server context
+     */
     public static void clearNearbyItems(TestServerContext server)
     {
         runCommand(server, "kill @e[type=item]");

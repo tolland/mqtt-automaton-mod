@@ -1,7 +1,7 @@
 package org.limepepper.gametest;
 
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
+import org.limepepper.gametest.facade.TestServerFacade;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,11 +37,11 @@ public class MiniTestContext implements AutoCloseable {
     }
     
     private final ClientGameTestContext context;
-    private final TestServerContext server;
+    private final TestServerFacade server;
     private final MiniTestLocation location;
     private final List<String> placedBlocks = new ArrayList<>();
     private boolean isClosed = false;
-    
+
     /**
      * Creates a new mini test context with an isolated test area.
      * Each context automatically gets a unique test index to ensure isolation.
@@ -49,15 +49,15 @@ public class MiniTestContext implements AutoCloseable {
      * @param context
      *            the client game test context
      * @param server
-     *            the server context
+     *            the server facade (integrated or external)
      */
     public MiniTestContext(ClientGameTestContext context,
-        TestServerContext server)
+        TestServerFacade server)
     {
         this.context = context;
         this.server = server;
         this.location = new MiniTestLocation(testIndexCounter++);
-        
+
         setup();
     }
     
@@ -66,17 +66,19 @@ public class MiniTestContext implements AutoCloseable {
      */
     private void setup()
     {
-        
+
         // Ensure base platform exists
         setBlock(0, -1, 0, "minecraft:smooth_stone");
-        
+
         // Teleport player to test location
-        runCommand(server, location.tp(0, 0, 0, 0, 0));
-        runCommand(server, "rotate @p 0 0");
-        
+        String playerName =
+            server.getPlayerName() != null ? server.getPlayerName() : "@p";
+        server.executeCommand(location.tp(playerName, 0, 0, 0, 0, 0));
+        server.executeCommand("rotate " + playerName + " 0 0");
+
         // Set game rules for consistent testing
-        runCommand(server, "gamerule randomTickSpeed 0");
-        
+        server.executeCommand("gamerule randomTickSpeed 0");
+
         context.waitTick();
     }
     
@@ -97,16 +99,16 @@ public class MiniTestContext implements AutoCloseable {
         // Remove all placed blocks
         for(String coords : placedBlocks)
         {
-            runCommand(server,
+            server.executeCommand(
                 String.format("setblock %s minecraft:air replace", coords));
         }
-        
+
         // Reset game rules
-        runCommand(server, "gamerule randomTickSpeed 3");
-        
+        server.executeCommand("gamerule randomTickSpeed 3");
+
         // Reset gamemode
-        runCommand(server, "gamemode creative");
-        
+        server.executeCommand("gamemode creative");
+
         // Clear client-side state
         clearInventory(context);
         clearChat(context);
@@ -134,9 +136,9 @@ public class MiniTestContext implements AutoCloseable {
     {
         if(isClosed)
             throw new IllegalStateException("Test context is already closed");
-        
+
         String coords = location.abs(dx, dy, dz);
-        runCommand(server,
+        server.executeCommand(
             String.format("setblock %s %s replace", coords, blockId));
         placedBlocks.add(coords);
     }
@@ -269,11 +271,11 @@ public class MiniTestContext implements AutoCloseable {
     }
     
     /**
-     * Gets the server context.
+     * Gets the server facade.
      *
-     * @return the server context
+     * @return the server facade
      */
-    public TestServerContext getServer()
+    public TestServerFacade getServer()
     {
         return server;
     }
@@ -296,7 +298,9 @@ public class MiniTestContext implements AutoCloseable {
     public void teleportPlayer(float dx, float dy, float dz, float yaw,
         float pitch)
     {
-        runCommand(server, location.tp(dx, dy, dz, yaw, pitch));
+        String playerName =
+            server.getPlayerName() != null ? server.getPlayerName() : "@p";
+        server.executeCommand(location.tp(playerName, dx, dy, dz, yaw, pitch));
     }
     
 }

@@ -30,10 +30,37 @@ public class MiniTestLocation {
         return String.format("~%s ~%s ~%s", fmt(dx), fmt(dy), fmt(dz));
     }
     
+    /**
+     * Generates a teleport command with explicit player name.
+     *
+     * @param playerName The player name to teleport
+     * @param dx relative X offset
+     * @param dy relative Y offset
+     * @param dz relative Z offset
+     * @param yaw player yaw rotation
+     * @param pitch player pitch rotation
+     * @return The teleport command
+     */
+    public String tp(String playerName, float dx, float dy, float dz, float yaw,
+        float pitch)
+    {
+        return String.format("tp %s %.2f %.2f %.2f %.1f %.1f", playerName,
+            baseX + dx, baseY + dy, baseZ + dz, yaw, pitch);
+    }
+
+    /**
+     * Generates a teleport command using @p selector (for integrated servers).
+     *
+     * @param dx relative X offset
+     * @param dy relative Y offset
+     * @param dz relative Z offset
+     * @param yaw player yaw rotation
+     * @param pitch player pitch rotation
+     * @return The teleport command
+     */
     public String tp(float dx, float dy, float dz, float yaw, float pitch)
     {
-        return String.format("tp Mqtt-bot %.2f %.2f %.2f %.1f %.1f", baseX + dx,
-            baseY + dy, baseZ + dz, yaw, pitch);
+        return tp("@p", dx, dy, dz, yaw, pitch);
     }
     
     private static String fmt(int offset)

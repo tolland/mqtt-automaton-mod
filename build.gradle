@@ -130,6 +130,10 @@ fabricApi {
     }
 }
 
+tasks.named("compileTestJava") {
+    dependsOn("compileGametestJava")
+}
+
 
 loom {
     // docs: <https://docs.fabricmc.net/develop/loom/options>

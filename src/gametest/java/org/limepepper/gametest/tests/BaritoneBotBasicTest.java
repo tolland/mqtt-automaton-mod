@@ -3,12 +3,12 @@ package org.limepepper.gametest.tests;
 import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 import net.wurstclient.util.ItemUtils;
 import org.limepepper.gametest.BotTest;
 import org.limepepper.gametest.MiniTestContext;
+import org.limepepper.gametest.facade.TestServerFacade;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
@@ -27,7 +27,7 @@ public enum BaritoneBotBasicTest
     ;
     
     public static void testBaritoneIsWorking(ClientGameTestContext context,
-        TestServerContext server)
+        TestServerFacade server)
     {
         TestInput input = context.getInput();
         
@@ -109,7 +109,7 @@ public enum BaritoneBotBasicTest
     }
     
     public static void testBaritoneIsWorking2(ClientGameTestContext context,
-        TestServerContext server)
+        TestServerFacade server)
     {
         TestInput input = context.getInput();
         // TestServerContext server = spContext.getServer();
@@ -231,8 +231,12 @@ public enum BaritoneBotBasicTest
                 EventManager.fire(new MqttMessageListener.MqttMessageEvent(
                     botId,
                     org.limepepper.mqttbot.util.MsgUtils.msgData("baritone",
-                        "collect", org.limepepper.mqttbot.util.JsonBuilder.obj(
-                            "block", "minecraft:sugar_cane", "range", 10))));
+                        "collect",
+                        UUID.randomUUID().toString(),
+                        UUID.randomUUID().toString(),
+                        org.limepepper.mqttbot.util.JsonBuilder.obj(
+                            "block",
+                            "minecraft:sugar_cane", "range", 10))));
             });
             
             Item item = ItemUtils.getItemFromNameOrID("minecraft:sugar_cane");

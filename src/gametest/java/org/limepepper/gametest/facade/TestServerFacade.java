@@ -13,36 +13,38 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("UnstableApiUsage")
 public interface TestServerFacade {
-
+    
     /**
      * Executes a command on the server.
      * For integrated servers, this runs directly on the server thread.
      * For external servers, this sends the command via chat as an OP player.
      *
-     * @param command The command to execute (without leading slash)
+     * @param command
+     *            The command to execute (without leading slash)
      */
     void executeCommand(String command);
-
+    
     /**
      * Waits for chunks to be downloaded from the server.
      * Uses default timeout (1 minute).
      */
     void waitForChunksDownload();
-
+    
     /**
      * Waits for chunks to be downloaded and rendered.
      * Uses default timeout (1 minute).
      */
     void waitForChunksRender();
-
+    
     /**
      * Checks if this facade is backed by an integrated server.
-     * Useful for tests that need different behavior between integrated and external.
+     * Useful for tests that need different behavior between integrated and
+     * external.
      *
      * @return true if using integrated server, false for external server
      */
     boolean isIntegratedServer();
-
+    
     /**
      * Gets the player name that commands will execute as.
      * For integrated servers, this is typically resolved via @p.

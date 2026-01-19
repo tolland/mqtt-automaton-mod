@@ -2,9 +2,9 @@ package org.limepepper.gametest.tests;
 
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import org.limepepper.gametest.MiniTestContext;
 import org.limepepper.gametest.BotTest;
+import org.limepepper.gametest.facade.TestServerFacade;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,26 +16,8 @@ public enum AutoFarmTest
 {
     ;
     
-    public enum SupportDirection
-    {
-        NORTH(0, 1, 3),
-        SOUTH(0, 1, 1),
-        EAST(1, 1, 2),
-        WEST(-1, 1, 2),
-        ABOVE(0, 2, 2);
-        
-        final int dx, dy, dz;
-        
-        SupportDirection(int dx, int dy, int dz)
-        {
-            this.dx = dx;
-            this.dy = dy;
-            this.dz = dz;
-        }
-    }
-    
     public static void testAutoFarmPlaceAtFootLevel(
-        ClientGameTestContext context, TestServerContext server,
+        ClientGameTestContext context, TestServerFacade server,
         String interactBlock)
     {
         TestInput input = context.getInput();

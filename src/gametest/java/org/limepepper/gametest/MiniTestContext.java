@@ -41,7 +41,7 @@ public class MiniTestContext implements AutoCloseable {
     private final MiniTestLocation location;
     private final List<String> placedBlocks = new ArrayList<>();
     private boolean isClosed = false;
-
+    
     /**
      * Creates a new mini test context with an isolated test area.
      * Each context automatically gets a unique test index to ensure isolation.
@@ -57,7 +57,7 @@ public class MiniTestContext implements AutoCloseable {
         this.context = context;
         this.server = server;
         this.location = new MiniTestLocation(testIndexCounter++);
-
+        
         setup();
     }
     
@@ -66,19 +66,19 @@ public class MiniTestContext implements AutoCloseable {
      */
     private void setup()
     {
-
+        
         // Ensure base platform exists
         setBlock(0, -1, 0, "minecraft:smooth_stone");
-
+        
         // Teleport player to test location
         String playerName =
             server.getPlayerName() != null ? server.getPlayerName() : "@p";
         server.executeCommand(location.tp(playerName, 0, 0, 0, 0, 0));
         server.executeCommand("rotate " + playerName + " 0 0");
-
+        
         // Set game rules for consistent testing
         server.executeCommand("gamerule randomTickSpeed 0");
-
+        
         context.waitTick();
     }
     
@@ -102,13 +102,13 @@ public class MiniTestContext implements AutoCloseable {
             server.executeCommand(
                 String.format("setblock %s minecraft:air replace", coords));
         }
-
+        
         // Reset game rules
         server.executeCommand("gamerule randomTickSpeed 3");
-
+        
         // Reset gamemode
         server.executeCommand("gamemode creative");
-
+        
         // Clear client-side state
         clearInventory(context);
         clearChat(context);
@@ -136,7 +136,7 @@ public class MiniTestContext implements AutoCloseable {
     {
         if(isClosed)
             throw new IllegalStateException("Test context is already closed");
-
+        
         String coords = location.abs(dx, dy, dz);
         server.executeCommand(
             String.format("setblock %s %s replace", coords, blockId));

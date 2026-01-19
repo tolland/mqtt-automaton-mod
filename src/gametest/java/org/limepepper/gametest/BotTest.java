@@ -6,7 +6,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestClientWorldContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldBuilder;
 import net.minecraft.SharedConstants;
@@ -16,6 +15,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
+import org.limepepper.gametest.facade.IntegratedServerFacade;
+import org.limepepper.gametest.facade.TestServerFacade;
 import org.limepepper.gametest.tests.AutoFarmTest;
 import org.limepepper.gametest.tests.BaritoneBotBasicTest;
 import org.lwjgl.glfw.GLFW;
@@ -81,15 +82,15 @@ public class BotTest implements FabricClientGameTest {
         
         try(TestSingleplayerContext spContext = worldBuilder.create())
         {
-            TestServerContext server = spContext.getServer();
             TestClientWorldContext world = spContext.getClientWorld();
+            TestServerFacade server = new IntegratedServerFacade(spContext);
             testInWorld(context, server);
             LOGGER.info("Exiting test world");
         }
     }
     
     private void testInWorld(ClientGameTestContext context,
-        TestServerContext server)
+        TestServerFacade server)
     {
         TestInput input = context.getInput();
         

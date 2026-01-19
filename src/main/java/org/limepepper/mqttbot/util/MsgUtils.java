@@ -17,9 +17,13 @@ public enum MsgUtils
     }
     
     public static ServiceMessage msgData(String service, String method,
+        String requestId,
+        String correlationId,
         JsonObject params)
     {
         ServiceMessage msgData = new ServiceMessage();
+        msgData.setRequestId(requestId);
+        msgData.setCorrelationId(correlationId);
         msgData.setService(service);
         msgData.setMethod(method);
         msgData.setParams(params);

@@ -12,14 +12,14 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("UnstableApiUsage")
 public class IntegratedServerFacade implements TestServerFacade {
-
+    
     private final TestSingleplayerContext singleplayerContext;
-
+    
     public IntegratedServerFacade(TestSingleplayerContext singleplayerContext)
     {
         this.singleplayerContext = singleplayerContext;
     }
-
+    
     @Override
     public void executeCommand(String command)
     {
@@ -28,39 +28,39 @@ public class IntegratedServerFacade implements TestServerFacade {
             ParseResults<CommandSourceStack> results =
                 mc.getCommands().getDispatcher().parse(commandWithPlayer,
                     mc.createCommandSourceStack());
-
+            
             if(!results.getExceptions().isEmpty())
             {
                 StringBuilder errors =
                     new StringBuilder("Invalid command: /" + commandWithPlayer);
                 for(CommandSyntaxException e : results.getExceptions().values())
                     errors.append("\n").append(e.getMessage());
-
+                
                 throw new RuntimeException(errors.toString());
             }
-
+            
             mc.getCommands().performCommand(results, commandWithPlayer);
         });
     }
-
+    
     @Override
     public void waitForChunksDownload()
     {
         singleplayerContext.getClientWorld().waitForChunksDownload();
     }
-
+    
     @Override
     public void waitForChunksRender()
     {
         singleplayerContext.getClientWorld().waitForChunksRender();
     }
-
+    
     @Override
     public boolean isIntegratedServer()
     {
         return true;
     }
-
+    
     @Override
     @Nullable
     public String getPlayerName()

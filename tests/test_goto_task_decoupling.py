@@ -68,20 +68,52 @@ class TestGotoTaskDecoupling:
         assert status == TaskStatus.SUCCESS
 
     def test_goto_task_suspend_resume(self):
+        mock_bot_service = Mock()
         ctx = Context(
             message_sender=Mock(),
             blackboard=Mock(),
-            bot_service=Mock(),
+            bot_service=mock_bot_service,
             mqtt=None
         )
         
         task = GotoTask.create(x=10, y=20, z=30)
         task.request_id = "test-req-id"
         task._state = TaskState.SENT
+        task.correlation_id = "test-corr-id"
         
-        task.suspend()
+        # Trigger suspension
+        task.suspend(ctx)
         assert task._state == TaskState.SUSPENDED
         
+        # Verify cancel message was sent
+        mock_bot_service.send_message.assert_called_once()
+        msg = mock_bot_service.send_message.call_args[0][0]
+        assert isinstance(msg, ServiceMessage)
+        assert msg.method == "cancel"
+        assert msg.params["request_id"] == "test-req-id"
+        assert msg.correlation_id == "test-corr-id"
+        
+        # Resume
         task.resume(ctx)
-        assert task._state == TaskState.SENT
-        assert task.request_id == "test-req-id"
+        assert task._state == TaskState.INIT
+        assert task.request_id is None
+
+    def test_goto_task_suspend_without_request_id(self):
+        mock_bot_service = Mock()
+        ctx = Context(
+            message_sender=Mock(),
+            blackboard=Mock(),
+            bot_service=mock_bot_service,
+            mqtt=None
+        )
+        
+        task = GotoTask.create(x=10, y=20, z=30)
+        task.request_id = None
+        task._state = TaskState.INIT
+        
+        # Trigger suspension
+        task.suspend(ctx)
+        assert task._state == TaskState.SUSPENDED
+        
+        # Verify NO cancel message was sent
+        mock_bot_service.send_message.assert_not_called()

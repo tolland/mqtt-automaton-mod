@@ -100,18 +100,22 @@ class Scheduler:
         # Check preemption
         if self.ready_threads and self._should_preempt():
             await self._preempt(ctx)
+            return False
 
         # Execute current thread
         if self.current_thread:
+            current = self.current_thread
             try:
-                completed = await self.current_thread.step(ctx)
+                completed = await current.step(ctx)
                 if completed:
-                    self.current_thread.state = ThreadStatus.COMPLETED
-                    self.current_thread = None
-                    await self._resume_suspended(ctx)
+                    current.state = ThreadStatus.COMPLETED
+                    if self.current_thread == current:
+                        self.current_thread = None
+                        await self._resume_suspended(ctx)
             except Exception as e:
-                self.current_thread.state = ThreadStatus.FAILED
-                self.current_thread = None
+                current.state = ThreadStatus.FAILED
+                if self.current_thread == current:
+                    self.current_thread = None
                 raise e
         elif self.ready_threads:
             await self._start_next_thread(ctx)
@@ -130,7 +134,7 @@ class Scheduler:
         """Suspend current thread, switch to higher priority"""
         assert self.current_thread is not None
 
-        await self.current_thread.suspend()
+        await self.current_thread.suspend(ctx)
         self.suspended_stack.append(self.current_thread)
         self.current_thread = None
 

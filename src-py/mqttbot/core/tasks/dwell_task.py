@@ -67,7 +67,7 @@ class DwellTask(TaskBase):
         # Still waiting (don't log every tick to avoid spam)
         return TaskStatus.RUNNING
 
-    def _suspend(self) -> None:
+    def _suspend(self, ctx: Context) -> None:
         """Suspend - save remaining time"""
         elapsed = time.time() - self.start_time
         remaining = self.duration - elapsed

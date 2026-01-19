@@ -103,26 +103,31 @@ class GotoTask(TaskBase):
 
         return TaskStatus.FAILED
 
-    def _suspend(self) -> None:
-        """Suspend - save state for resumption"""
-        print(f"[GotoTask] Suspended at {self.target}")
+    def _suspend(self, ctx: Context) -> None:
+        """Suspend - cancel remote operation and save state"""
+        if self.request_id:
+            logger.info(f"[GotoTask] Suspending {self.target}, cancelling request {self.request_id}")
+            cancel_msg = ServiceMessage(
+                service="baritone",
+                method="cancel",
+                request_id=str(uuid.uuid4()),
+                correlation_id=self.correlation_id,
+                params={
+                    "request_id": self.request_id,
+                    "reason": "preempted"
+                }
+            )
+            ctx.bot_service.send_message(cancel_msg)
+
         self._state = TaskState.SUSPENDED
 
     def _resume(self, ctx: Context) -> None:
-        """Resume - restore state"""
-        print(f"[GotoTask] Resumed for {self.target}")
+        """Resume - reset state to trigger a fresh request"""
+        logger.info(f"[GotoTask] Resuming for {self.target}")
 
-        if self._state == TaskState.SUSPENDED:
-            # We were suspended, we might need to re-send the request if it was lost
-            # or check if it's still valid.
-            # For now, if we have a request_id and we were waiting, let's try to resume waiting.
-            if self.request_id:
-                self._state = TaskState.SENT
-            else:
-                self._state = TaskState.INIT
-        else:
-            # Start fresh if not explicitly suspended
-            self._state = TaskState.INIT
+        # Reset to INIT to force a new request_id and fresh message
+        self._state = TaskState.INIT
+        self.request_id = None
 
     def _exit(self, ctx: Context, status: TaskStatus) -> None:
         """Clean shutdown"""

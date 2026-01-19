@@ -42,13 +42,15 @@ class TaskBase(ABC):
     def _step(self, ctx) -> TaskStatus:
         pass
 
-    def suspend(self) -> None:
-        return self._suspend()
+    def suspend(self, ctx: Context) -> None:
+        self.status = TaskStatus.SUSPENDED
+        return self._suspend(ctx)
 
-    def _suspend(self) -> None:
+    def _suspend(self, ctx: Context) -> None:
         pass
 
     def resume(self, ctx) -> None:
+        self.status = TaskStatus.RUNNING
         self._resume(ctx)
 
     def _resume(self, ctx) -> None:

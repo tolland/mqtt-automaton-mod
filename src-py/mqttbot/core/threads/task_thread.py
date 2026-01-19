@@ -53,12 +53,12 @@ class TaskThread:
         self.state = ThreadStatus.RUNNING
         await self._advance_to_next_task(ctx)
 
-    async def suspend(self) -> None:
+    async def suspend(self, ctx: Context) -> None:
         """Capture suspension point"""
         self.state = ThreadStatus.SUSPENDED
 
         if self.current_task:
-            self.current_task.suspend()
+            self.current_task.suspend(ctx)
 
         if self._on_suspend:
             await self._on_suspend(self)
@@ -71,7 +71,7 @@ class TaskThread:
             await self._on_resume(self, ctx)
 
         if self.current_task and self.current_task.status == TaskStatus.SUSPENDED:
-            await self.current_task.resume(ctx)
+            self.current_task.resume(ctx)
 
         elif self.current_task and not self.current_task.status == TaskStatus.SUSPENDED:
             raise RuntimeError(f"Cannot resume task in status {self.current_task.status}")

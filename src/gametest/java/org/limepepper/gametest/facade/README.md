@@ -34,6 +34,7 @@ Wraps `ExternalServerConnection` for remote servers:
 - Commands sent via chat as OP player
 - 2-tick delay for server processing
 - Uses actual player name from connection
+- Create via `connection.createFacade()` to automatically get player name
 
 ## Usage Examples
 
@@ -65,19 +66,28 @@ public void runTest(ClientGameTestContext context) {
 @Override
 public void runTest(ClientGameTestContext context) {
     // Connect to external PaperMC server
-    try (ExternalServerConnection conn =
-            ExternalServerContext.connect(context, "docker.lan", 25565, "Mqtt-bot")) {
+    try (ExternalServerContext serverContext =
+            new ExternalServerContext.Builder(context)
+                .host("docker.lan")
+                .port(25565)
+                .build()) {
 
-        // Create facade
-        TestServerFacade server = new ExternalServerFacade(context, conn, "Mqtt-bot");
+        try (ExternalServerConnection conn = serverContext.connect()) {
+            // Wait for chunks and player to be ready
+            conn.waitForChunksDownload();
+            context.waitTicks(5);
 
-        // Use same code as integrated server!
-        try (MiniTestContext testCtx = new MiniTestContext(context, server)) {
-            testCtx.setBlock(0, 0, 0, "minecraft:stone");
-            testCtx.teleportPlayer(5, 0, 5, 0, 0);
+            // Create facade (automatically gets player name from connection)
+            TestServerFacade server = conn.createFacade();
 
-            server.executeCommand("time set noon");
-            server.waitForChunksRender();
+            // Use same code as integrated server!
+            try (MiniTestContext testCtx = new MiniTestContext(context, server)) {
+                testCtx.setBlock(0, 0, 0, "minecraft:stone");
+                testCtx.teleportPlayer(5, 0, 5, 0, 0);
+
+                server.executeCommand("time set noon");
+                server.waitForChunksRender();
+            }
         }
     }
 }
@@ -117,8 +127,9 @@ try (TestSingleplayerContext sp = worldBuilder.create()) {
 }
 
 // Or use with external server
-try (ExternalServerConnection conn = ExternalServerContext.connect(...)) {
-    runPortableTest(context, new ExternalServerFacade(context, conn, "Mqtt-bot"));
+try (ExternalServerConnection conn = serverContext.connect()) {
+    conn.waitForChunksDownload();
+    runPortableTest(context, conn.createFacade());  // Auto-gets player name!
 }
 ```
 

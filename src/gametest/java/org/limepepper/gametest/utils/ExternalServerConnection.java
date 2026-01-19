@@ -6,6 +6,8 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
+import org.limepepper.gametest.facade.ExternalServerFacade;
+import org.limepepper.gametest.facade.TestServerFacade;
 
 /**
  * Connection handle for an external server.
@@ -29,6 +31,39 @@ public class ExternalServerConnection implements AutoCloseable {
     public ClientLevel getClientLevel()
     {
         return context.computeOnClient(client -> client.level);
+    }
+
+    /**
+     * Gets the name of the connected player.
+     *
+     * @return The player name, or null if not connected
+     */
+    @Nullable
+    public String getPlayerName()
+    {
+        return context.computeOnClient(client -> {
+            if(client.player == null)
+                return null;
+            return client.player.getName().getString();
+        });
+    }
+
+    /**
+     * Creates a TestServerFacade for this connection.
+     * This facade can be used with MiniTestContext and other test utilities.
+     *
+     * @return A facade wrapping this external server connection
+     * @throws IllegalStateException if player is not connected
+     */
+    public TestServerFacade createFacade()
+    {
+        String playerName = getPlayerName();
+        if(playerName == null)
+        {
+            throw new IllegalStateException(
+                "Cannot create facade: player not connected");
+        }
+        return new ExternalServerFacade(context, this, playerName);
     }
     
     /**

@@ -4,7 +4,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import org.limepepper.gametest.facade.ExternalServerFacade;
 import org.limepepper.gametest.facade.TestServerFacade;
 import org.limepepper.gametest.tests.AutoFarmTest;
 import org.limepepper.gametest.utils.ExternalServerConnection;
@@ -21,7 +20,7 @@ import static org.limepepper.gametest.BotTestHelper.runWurstCommand;
 public class ExternalServerGameTest implements FabricClientGameTest {
     private static final Logger LOGGER =
         LoggerFactory.getLogger("external-server-test");
-    
+
     @Override
     public void runTest(ClientGameTestContext context)
     {
@@ -32,7 +31,7 @@ public class ExternalServerGameTest implements FabricClientGameTest {
         {
             throw new AssertionError("PaperMC server did not start in time");
         }
-        
+
         // Connect to the external server
         try(ExternalServerContext serverContext =
             new ExternalServerContext.Builder(context).host("docker.lan")
@@ -41,15 +40,15 @@ public class ExternalServerGameTest implements FabricClientGameTest {
                 // latency
                 .build())
         {
-            
+
             try(ExternalServerConnection connection = serverContext.connect())
             {
                 LOGGER.info("Connected to external PaperMC server!");
-                
+
                 // Wait for chunks to load
                 connection.waitForChunksDownload();
                 context.waitTicks(5);
-                
+
                 // Get the client world
                 ClientLevel clientLevel = connection.getClientLevel();
                 if(clientLevel == null)
@@ -57,18 +56,18 @@ public class ExternalServerGameTest implements FabricClientGameTest {
                     throw new AssertionError(
                         "Client level is null after connection");
                 }
-                
+
                 LOGGER.info("Client level loaded: {}",
                     clientLevel.dimension().location());
-                
+
                 // Take a screenshot
                 context.takeScreenshot("external_server_spawn");
-                
+
                 // Test with the client world
                 connection.withClientLevel(level -> {
                     LOGGER.info("Player position: {}",
                         level.players().getFirst().position());
-                    
+
                     // Test blocks around player
                     BlockPos playerPos =
                         level.players().getFirst().blockPosition();
@@ -76,44 +75,60 @@ public class ExternalServerGameTest implements FabricClientGameTest {
                         level.getBlockState(playerPos).getBlock().getName()
                             .getString());
                 });
-                
+
                 // Compute something from the world
                 int loadedChunks = connection.computeWithClientLevel(
                     level -> level.getChunkSource().getLoadedChunksCount());
                 LOGGER.info("Loaded chunks: {}", loadedChunks);
-                
+
+                // Create facade (automatically gets player name)
+                TestServerFacade server = connection.createFacade();
+                LOGGER.info("Created facade for player: {}",
+                    server.getPlayerName());
+
                 // Test your mod's functionality
-                ExternalServerFacade server = new ExternalServerFacade(
-                    context,
-                    connection,
-                    "rgerg");
                 testModFeature(context, server);
-                
+
                 LOGGER.info("All external server tests passed!");
             }
         }
     }
-    
+
     private void testModFeature(ClientGameTestContext context,
         TestServerFacade server)
     {
         LOGGER.info("Testing mod feature...");
-        
+
+        // Example: Using facade with MiniTestContext for isolated testing
+        try(MiniTestContext testCtx = new MiniTestContext(context, server))
+        {
+            LOGGER.info("Setting up test area at test location");
+
+            // Set some blocks
+            testCtx.setBlock(0, 0, 1, "minecraft:stone");
+            testCtx.setBlock(1, 0, 1, "minecraft:dirt");
+
+            // Execute server commands
+            server.executeCommand("time set noon");
+            server.executeCommand("weather clear");
+
+            context.waitTicks(5);
+            // Test automatically cleans up blocks on close
+        }
+
         runWurstCommand(context,
             "setmode WurstLogo visibility only_when_outdated");
         runWurstCommand(context, "setcheckbox HackList animations off");
-        
-        // BaritoneBotBasicTest.testBaritoneIsWorking2(context, server);
-        
+
         context.waitTicks(20); // Wait 1 second
         context.takeScreenshot("mod_feature_test");
-        
+
         for(String block : List.of("minecraft:comparator"))
         {
-            
+
             AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, server, block);
-            
+
         }
     }
-    
+
 }

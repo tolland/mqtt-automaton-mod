@@ -13,7 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.action.*;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.mqtt.MessageHandler;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
@@ -67,14 +67,14 @@ public final class BaritoneGotoHandler extends Action
     }
     
     @Override
-    public boolean canHandle(MessageData msg)
+    public boolean canHandle(ServiceMessage msg)
     {
         return "baritone".equals(msg.getService())
             && "goto".equals(msg.getMethod());
     }
     
     @Override
-    public void handle(MessageData msg)
+    public void handle(ServiceMessage msg)
     {
         LOGGER.trace("=== HANDLE GOTO START ===");
         LOGGER.trace("Message: {}", msg.toString());

@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
@@ -39,7 +39,7 @@ public final class WarpMessageHandler extends Action
     {
         if(!CORE.isEnabled())
             return;
-        MessageData data = mqttMessageEvent.messageData;
+        ServiceMessage data = mqttMessageEvent.serviceMessage;
         // LOGGER.debug("Received message in warp handler");
         
         if(!data.getService().equals("warp"))
@@ -63,7 +63,7 @@ public final class WarpMessageHandler extends Action
     /**
      * Handle teleport command
      */
-    private void handleTeleportCommand(MessageData data)
+    private void handleTeleportCommand(ServiceMessage data)
     {
         try
         {

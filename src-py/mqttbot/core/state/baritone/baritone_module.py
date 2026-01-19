@@ -1,6 +1,6 @@
 from typing import Any
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.core.state.baritone.baritone_state import (
     BaritoneState,
     HistoryStats,
@@ -14,12 +14,12 @@ class BaritoneModule(StateModule[BaritoneState]):
     def __init__(self):
         self._state = BaritoneState()
 
-    def handle_event(self, event: MessageData) -> None:
+    def handle_event(self, event: ServiceMessage) -> None:
         """
         Handle incoming baritone state messages.
         
         Args:
-            event: MessageData with service="baritone" and method="state"
+            event: ServiceMessage with service="baritone" and method="state"
         """
         if event.service == "baritone" and event.method == "state":
             response = event.response or {}

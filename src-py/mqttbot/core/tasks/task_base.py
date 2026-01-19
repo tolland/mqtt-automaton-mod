@@ -6,7 +6,7 @@ from rich.repr import rich_repr
 
 from mqttbot.core.context import Context
 from mqttbot.core.tasks.task_priority import TaskStatus
-from mqttbot.utils.tracing_tools import trace
+from mqttbot.core.tasks.task_status import TaskState
 
 
 @rich_repr
@@ -22,8 +22,8 @@ class TaskBase(ABC):
     def __init__(self):
         """Initialize task with correlation_id set to None (injected by thread on enqueue)"""
         self.correlation_id: Optional[str] = None
+        self._state: TaskState = TaskState.READY
 
-    @trace
     def enter(self, ctx):
         self._enter(ctx)
 
@@ -34,7 +34,6 @@ class TaskBase(ABC):
         """
         self._resume(ctx)
 
-    # @trace
     def step(self, ctx: Context) -> TaskStatus:
         # print(f"Stepping task: {type(self).__name__}")
         return self._step(ctx)
@@ -43,21 +42,18 @@ class TaskBase(ABC):
     def _step(self, ctx) -> TaskStatus:
         pass
 
-    @trace
     def suspend(self) -> None:
         return self._suspend()
 
     def _suspend(self) -> None:
         pass
 
-    @trace
     def resume(self, ctx) -> None:
         self._resume(ctx)
 
     def _resume(self, ctx) -> None:
         pass
 
-    @trace
     def exit(self, ctx, status: TaskStatus):
         self._exit(ctx, status)
 

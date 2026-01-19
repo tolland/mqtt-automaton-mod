@@ -1,6 +1,6 @@
 from typing import Optional
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.config.threads.thread_config import ThreadConfig
 from mqttbot.core.patterns.pattern_thread import PatternThread
 from mqttbot.core.threads.task_thread import TaskThread
@@ -13,7 +13,7 @@ class ThreadHelper:
     """Helper class for thread management."""
 
     @staticmethod
-    def _create_task_from_step(step: TaskStep, trigger_msg: MessageData) -> Optional[Task]:
+    def _create_task_from_step(step: TaskStep, trigger_msg: ServiceMessage) -> Optional[Task]:
         """Create a task from a step definition"""
 
         return TaskFactory.create(step.to_dict())

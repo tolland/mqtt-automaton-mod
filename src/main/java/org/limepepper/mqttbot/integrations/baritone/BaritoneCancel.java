@@ -7,7 +7,7 @@ import org.limepepper.mqttbot.action.BaritonePathingFeature;
 import org.limepepper.mqttbot.action.InventoryFullFeature;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.mqtt.MessageHandler;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
@@ -36,14 +36,14 @@ public final class BaritoneCancel extends Action implements MessageHandler {
     }
     
     @Override
-    public boolean canHandle(MessageData msg)
+    public boolean canHandle(ServiceMessage msg)
     {
         return "baritone".equals(msg.getService())
             && "cancel".equals(msg.getMethod());
     }
     
     @Override
-    public void handle(MessageData msg) throws Exception
+    public void handle(ServiceMessage msg) throws Exception
     {
         LOGGER.info("Received cancel request");
         
@@ -101,7 +101,7 @@ public final class BaritoneCancel extends Action implements MessageHandler {
                 activeRequest.getPhase().toString());
         }
         
-        MessageData responseData = new MessageData(Constants.SERVICE_NAME,
+        ServiceMessage responseData = new ServiceMessage(Constants.SERVICE_NAME,
             "cancel", requestId, correlationId, null, response, playerName,
             null);
         

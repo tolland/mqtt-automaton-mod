@@ -2,7 +2,7 @@ package org.limepepper.mqttbot.util;
 
 import com.google.gson.JsonObject;
 import org.limepepper.mqttbot.integrations.baritone.CorrelationIds;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 public enum MsgUtils
 {
@@ -16,10 +16,10 @@ public enum MsgUtils
             botId, method, params);
     }
     
-    public static MessageData msgData(String service, String method,
+    public static ServiceMessage msgData(String service, String method,
         JsonObject params)
     {
-        MessageData msgData = new MessageData();
+        ServiceMessage msgData = new ServiceMessage();
         msgData.setService(service);
         msgData.setMethod(method);
         msgData.setParams(params);
@@ -38,7 +38,7 @@ public enum MsgUtils
     }
     
     /**
-     * Creates a success MessageData with correlation IDs
+     * Creates a success ServiceMessage with correlation IDs
      *
      * @param ids
      *            The correlation IDs from the original request
@@ -50,9 +50,9 @@ public enum MsgUtils
      *            The event type/status
      * @param message
      *            The message content
-     * @return MessageData ready to send
+     * @return ServiceMessage ready to send
      */
-    public static MessageData ctSuccess(CorrelationIds ids, String service,
+    public static ServiceMessage ctSuccess(CorrelationIds ids, String service,
         String method, String event_type, String message)
     {
         java.util.Objects.requireNonNull(ids,
@@ -60,7 +60,7 @@ public enum MsgUtils
         JsonObject resp = new JsonObject();
         resp.addProperty("status", event_type);
         resp.addProperty("message", message);
-        return new MessageData(service, method, ids.requestId(),
+        return new ServiceMessage(service, method, ids.requestId(),
             ids.correlationId(), null, resp, "mqttbot", message);
         
     }

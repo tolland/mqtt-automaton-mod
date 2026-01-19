@@ -13,7 +13,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
         new ConcurrentLinkedQueue<>();
     
     // Data class to hold command execution tasks
-    private record CommandTask(MessageData originalData, String commandName,
+    private record CommandTask(ServiceMessage originalData, String commandName,
         List<String> args)
     {}
     
@@ -54,7 +54,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
     public void onMessageArrived(
         MqttMessageListener.MqttMessageEvent mqttMessageEvent)
     {
-        MessageData data = mqttMessageEvent.messageData;
+        ServiceMessage data = mqttMessageEvent.serviceMessage;
         LOGGER.debug("received message in wurst handler");
         
         if(!data.getService().equals("wurst"))
@@ -85,7 +85,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
     /**
      * Handle arbitrary Wurst commands with flexible parameter parsing
      */
-    private void handleArbitraryCommand(MessageData data)
+    private void handleArbitraryCommand(ServiceMessage data)
     {
         try
         {
@@ -190,7 +190,8 @@ public class WurstHandler extends Action implements MqttMessageListener {
     /**
      * Send an error reply message to the client (instance method)
      */
-    private void sendErrorReply(MessageData originalData, String errorMessage,
+    private void sendErrorReply(ServiceMessage originalData,
+        String errorMessage,
         String errorCode)
     {
         sendErrorReplyStatic(originalData, errorMessage, errorCode);
@@ -199,7 +200,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
     /**
      * Send an error reply message to the client (static method)
      */
-    private static void sendErrorReplyStatic(MessageData originalData,
+    private static void sendErrorReplyStatic(ServiceMessage originalData,
         String errorMessage, String errorCode)
     {
         try
@@ -216,7 +217,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
                     originalData.getMethod());
             }
             
-            MessageData replyData = new MessageData("wurst",
+            ServiceMessage replyData = new ServiceMessage("wurst",
                 originalData.getMethod(), originalData.getRequestId(),
                 originalData.getCorrelationId(), null, errorParams,
                 "minecraft_client", errorMessage);
@@ -233,7 +234,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
     /**
      * Send a success reply message to the client (static method)
      */
-    private static void sendSuccessReplyStatic(MessageData originalData,
+    private static void sendSuccessReplyStatic(ServiceMessage originalData,
         String successMessage)
     {
         try
@@ -249,7 +250,7 @@ public class WurstHandler extends Action implements MqttMessageListener {
                     originalData.getMethod());
             }
             
-            MessageData replyData = new MessageData("wurst",
+            ServiceMessage replyData = new ServiceMessage("wurst",
                 originalData.getMethod(), originalData.getRequestId(),
                 originalData.getCorrelationId(), null, successParams,
                 "minecraft_client", successMessage);

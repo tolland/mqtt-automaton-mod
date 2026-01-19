@@ -21,11 +21,17 @@ public class GameEventWatcher {
     public static void init()
     {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            EventManager.fire(ClientListener.ClientJoinEvent.INSTANCE);
+            String playerName = client.getUser().getName();
+            String world = client.level != null
+                ? client.level.dimension().location().toString() : "unknown";
+            EventManager
+                .fire(new ClientListener.ClientJoinEvent(playerName, world));
         });
         
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            EventManager.fire(ClientListener.ClientDisconnectEvent.INSTANCE);
+            String playerName = client.getUser().getName();
+            EventManager
+                .fire(new ClientListener.ClientDisconnectEvent(playerName));
         });
         
         ClientSendMessageEvents.CHAT.register((message -> EventManager

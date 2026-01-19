@@ -1,11 +1,10 @@
 package org.limepepper.mqttbot.actions;
 
-import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ClientListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 import java.util.UUID;
 
@@ -14,32 +13,31 @@ import java.util.UUID;
  */
 public class ClientAction extends Action implements ClientListener {
     @Override
-    public void onClientJoin()
+    public void onClientJoin(ClientJoinEvent event)
     {
         // MqttHandler.INSTANCE.publish("baritone/event/bot1", "client join");
-        // @TODO these should send actual data about the join
-        var mc = Minecraft.getInstance();
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(
-            CORE.getPlayerName(),
-            new MessageData("events",
+            event.getPlayerName(),
+            new ServiceMessage("events",
                 "player_join",
                 UUID.randomUUID().toString(),
                 null,
                 null,
                 null,
-                null),
+                event.getPlayerName(),
+                "player joined " + event.getWorld()),
             "events"));
         
     }
     
     @Override
-    public void onClientDisconnect()
+    public void onClientDisconnect(ClientDisconnectEvent event)
     {
-        // @TODO these should send actual data about the disconnect
         EventManager
-            .fire(new MqttReplyListener.MqttReplyEvent(CORE.getPlayerName(),
-                new MessageData("events", "player_disconnect",
-                    UUID.randomUUID().toString(), null, null, null, null),
+            .fire(new MqttReplyListener.MqttReplyEvent(event.getPlayerName(),
+                new ServiceMessage("events", "player_disconnect",
+                    UUID.randomUUID().toString(), null, null, null,
+                    event.getPlayerName(), "player disconnected"),
                 "events"));
     }
 }

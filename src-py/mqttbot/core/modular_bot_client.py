@@ -11,7 +11,7 @@ from rich import print
 from rich.pretty import pprint
 from rich.repr import rich_repr
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.config.threads.thread_config_parser import ThreadConfigParser
 from mqttbot.core.context import Context
 from mqttbot.core.events.event_manager import EventManager
@@ -84,6 +84,7 @@ class ModularBotClient:
                 "message_sender": self.send_mqtt_message,
                 "blackboard": self.blackboard,
                 "bot_service": None,
+                "mqtt": self.mqtt,
             }
         )
 
@@ -96,15 +97,15 @@ class ModularBotClient:
         pprint(self)
 
     def _handle_mqtt_message(self, topic: str, payload: str) -> None:
-        """Handle incoming MQTT message payload turn into MessageData
+        """Handle incoming MQTT message payload turn into ServiceMessage
         
         Args:
             topic: MQTT topic the message was received on
             payload: Message payload string
         """
         try:
-            # Parse as structured MessageData
-            message_data = MessageData.from_json(payload)
+            # Parse as structured ServiceMessage
+            message_data = ServiceMessage.from_json(payload)
             if message_data:
                 self._process_message(topic, message_data)
         except Exception as e:
@@ -117,7 +118,7 @@ class ModularBotClient:
         
         Args:
             topic: MQTT topic the message was received on
-            message_data: Parsed MessageData object
+            message_data: Parsed ServiceMessage object
         """
         # Route reply messages to bot_service for request/response tracking
         if topic.endswith("reply"):
@@ -155,7 +156,7 @@ class ModularBotClient:
             if thread:
                 self._scheduler.enqueue_thread(thread, singleton=True)
 
-    def send_mqtt_message(self, message: MessageData) -> None:
+    def send_mqtt_message(self, message: ServiceMessage) -> None:
         """Public method to send MQTT message"""
         topic = f"mqttbot/{self.settings.client_id}/command"
         self.mqtt.send(topic, message.to_json())
@@ -179,7 +180,7 @@ class ModularBotClient:
     def exit(self):
         """Exit the bot gracefully"""
         self.send_mqtt_message(
-            MessageData(
+            ServiceMessage(
                 **{
                     "service": "mqttcore",
                     "method": "exit",

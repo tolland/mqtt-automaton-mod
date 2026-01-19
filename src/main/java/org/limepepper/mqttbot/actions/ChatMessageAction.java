@@ -6,7 +6,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.limepepper.mqttbot.util.MsgUtils;
 
@@ -108,10 +108,11 @@ public class ChatMessageAction extends Action implements ChatMessageListener {
             resp.addProperty("raw_message", rawMessage);
             resp.addProperty("clean_message", cleanMessage);
             resp.addProperty("player", playerName);
-            // timestamp is provided at the MessageData level; don't duplicate
+            // timestamp is provided at the ServiceMessage level; don't
+            // duplicate
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("events", "chat_message",
+                new ServiceMessage("events", "chat_message",
                     UUID.randomUUID().toString(), null, null, resp, "mqttbot",
                     null)));
             

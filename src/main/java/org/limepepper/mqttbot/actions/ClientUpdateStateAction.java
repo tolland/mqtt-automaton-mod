@@ -24,15 +24,14 @@ public class ClientUpdateStateAction extends Action
         DevicePresence.getInstance(CORE.getPlayerName());
     
     @Override
-    public void onClientJoin()
+    public void onClientJoin(ClientJoinEvent event)
     {
         try
         {
             // Player joined world - now ready
             JsonObject additionalData = new JsonObject();
-            additionalData.addProperty("world",
-                Minecraft.getInstance().level.dimension().location()
-                    .toString());
+            additionalData.addProperty("world", event.getWorld());
+            additionalData.addProperty("player", event.getPlayerName());
             
             BetterBlockPos pos =
                 MqttCore.baritone.getPlayerContext().playerFeet();
@@ -59,7 +58,7 @@ public class ClientUpdateStateAction extends Action
     }
     
     @Override
-    public void onClientDisconnect()
+    public void onClientDisconnect(ClientDisconnectEvent event)
     {
         try
         {

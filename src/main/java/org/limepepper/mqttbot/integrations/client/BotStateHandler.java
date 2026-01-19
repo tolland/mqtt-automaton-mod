@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.integrations.client;
 
 import org.limepepper.mqttbot.action.Action;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
@@ -25,14 +25,14 @@ public final class BotStateHandler extends Action
     }
     
     @Override
-    public boolean canHandle(MessageData msg)
+    public boolean canHandle(ServiceMessage msg)
     {
         return "bot".equals(msg.getService())
             && "state".equals(msg.getMethod());
     }
     
     @Override
-    public void handle(MessageData msg) throws Exception
+    public void handle(ServiceMessage msg) throws Exception
     {
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();

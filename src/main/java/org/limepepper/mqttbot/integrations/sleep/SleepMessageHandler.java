@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 public final class SleepMessageHandler extends Action
@@ -33,12 +33,12 @@ public final class SleepMessageHandler extends Action
     @Override
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
-        MessageData data = mqttMessageEvent.messageData;
+        ServiceMessage data = mqttMessageEvent.serviceMessage;
         // LOGGER.debug("recieved message in sleep handler");
-        if(!mqttMessageEvent.messageData.getService().equals("sleep"))
+        if(!mqttMessageEvent.serviceMessage.getService().equals("sleep"))
             return;
         LOGGER.debug("message for sleep service");
-        if(mqttMessageEvent.messageData.getMethod().equals("start"))
+        if(mqttMessageEvent.serviceMessage.getMethod().equals("start"))
         {
             if(MC.player != null)
             {

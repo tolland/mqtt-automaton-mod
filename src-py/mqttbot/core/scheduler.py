@@ -1,6 +1,8 @@
 import heapq
+import json
 from collections import deque
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Any
 
 from rich.repr import rich_repr
 
@@ -8,6 +10,13 @@ from mqttbot.config.threads.thread_status import ThreadStatus
 from mqttbot.core.context import Context
 from mqttbot.core.threads.task_thread import TaskThread
 
+@dataclass
+class SchedulerState:
+    current_thread_id: Optional[int]
+    current_thread_state: Optional[str]
+    current_correlation_id: Optional[str]
+    ready_threads: list[str]
+    suspended_stack: list[str]
 
 @rich_repr
 class Scheduler:
@@ -17,6 +26,7 @@ class Scheduler:
         self.ready_threads: list[TaskThread] = []
         self.current_thread: Optional[TaskThread] = None
         self.suspended_stack: deque[TaskThread] = deque()
+        self.old_state: Optional[dict[str, Any]] = None
 
     def register_thread(self, thread: TaskThread) -> None:
         """Register a thread (typically at startup)"""
@@ -69,9 +79,9 @@ class Scheduler:
         Returns True if ready_threads, current_thread, and suspended_stack are all empty.
         """
         return (
-            len(self.ready_threads) == 0
-            and self.current_thread is None
-            and len(self.suspended_stack) == 0
+                len(self.ready_threads) == 0
+                and self.current_thread is None
+                and len(self.suspended_stack) == 0
         )
 
     async def step(self, ctx: Context) -> bool:
@@ -80,6 +90,13 @@ class Scheduler:
         Returns:
             True if all tasks are complete (scheduler is empty), False otherwise.
         """
+        # Publish state to MQTT
+        if ctx.mqtt:
+            if self.to_dict() != self.old_state:
+                self.old_state = self.to_dict()
+                topic = f"{ctx.mqtt.topic_base}/scheduler/state"
+                ctx.mqtt.send(topic, self.to_json())
+
         # Check preemption
         if self.ready_threads and self._should_preempt():
             await self._preempt(ctx)
@@ -146,3 +163,22 @@ class Scheduler:
         yield "current_thread", self.current_thread.thread_id if self.current_thread else None
         yield "ready_threads", [t.thread_id for t in self.ready_threads]
         yield "suspended_stack", [t.thread_id for t in self.suspended_stack]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "current_thread": {
+                "thread_id": self.current_thread.thread_id,
+                "state": self.current_thread.state.value,
+                "correlation_id": self.current_thread.correlation_id,
+            } if self.current_thread else None,
+            "ready_threads": [t.thread_id for t in self.ready_threads],
+            "suspended_stack": [t.thread_id for t in self.suspended_stack],
+        }
+
+    def to_json(self) -> str:
+        from mqttbot import ServiceMessage
+        return ServiceMessage(
+            service="scheduler",
+            method="state",
+            params=self.to_dict()
+        ).to_json()

@@ -12,7 +12,7 @@ import org.limepepper.gametest.MiniTestContext;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -199,11 +199,12 @@ public enum BaritoneBotBasicTest
             target.addProperty("y", targetPos.getY());
             target.addProperty("z", targetPos.getZ());
             params.add("target", target);
-            MessageData structuredMessage = new MessageData("baritone", "goto",
-                UUID.randomUUID().toString(), UUID.randomUUID().toString(),
-                target, "mqttbot", null
-            
-            );
+            ServiceMessage structuredMessage =
+                new ServiceMessage("baritone", "goto",
+                    UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                    target, "mqttbot", null
+                
+                );
             context.runOnClient(mc -> {
                 EventManager.fire(new MqttMessageListener.MqttMessageEvent(
                     botId, structuredMessage));

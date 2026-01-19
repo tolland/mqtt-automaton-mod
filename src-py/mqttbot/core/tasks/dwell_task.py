@@ -1,12 +1,3 @@
-"""DwellTask - pause/wait for a specified duration
-
-Client-side task that doesn't require any server communication.
-Used for timing-based control (e.g., allowing crops to grow, waiting for
-Baritone to stabilize, throttling farming speed).
-
-Can be used in patterns, events, or any other thread that needs timing control.
-"""
-
 import time
 from typing import Optional, Any
 
@@ -14,6 +5,9 @@ from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
+
+
+from mqttbot.core.tasks.task_status import TaskState
 
 
 @task("dwell")
@@ -26,6 +20,8 @@ class DwellTask(TaskBase):
     - Crop growth (dwell before harvesting again)
     - Speed control (delay between pathfinding operations)
     - Bot stabilization (brief pause after reaching a waypoint)
+
+    Can be used in patterns, events, or any other thread that needs timing control.
     """
 
     def __init__(
@@ -50,12 +46,14 @@ class DwellTask(TaskBase):
         self.duration = float(self.duration)
         self.reason = params.get("reason", "")
         self.start_time: float = 0.0
+        self._state = TaskState.INIT
 
     def _enter(self, ctx: Context) -> None:
         """Initialize dwell"""
         reason_str = f" ({self.reason})" if self.reason else ""
         print(f"[DwellTask] Dwelling for {self.duration}s{reason_str}")
         self.start_time = time.time()
+        self._state = TaskState.WAITING
 
     def _step(self, ctx: dict) -> TaskStatus:
         """Check if dwell time has elapsed"""
@@ -63,6 +61,7 @@ class DwellTask(TaskBase):
 
         if elapsed >= self.duration:
             print(f"[DwellTask] Dwell completed")
+            self._state = TaskState.DONE
             return TaskStatus.SUCCESS
 
         # Still waiting (don't log every tick to avoid spam)
@@ -73,15 +72,18 @@ class DwellTask(TaskBase):
         elapsed = time.time() - self.start_time
         remaining = self.duration - elapsed
         print(f"[DwellTask] Suspended with {remaining:.1f}s remaining")
+        self._state = TaskState.SUSPENDED
 
     def _resume(self, ctx: Context) -> None:
         """Resume - adjust start time to account for remaining duration"""
+        # Note: In real system, remaining_seconds would be passed via metadata or similar
+        # If not present, we use current duration as default (start fresh)
         remaining = ctx.metadata.get("remaining_seconds", self.duration)
         print(f"[DwellTask] Resumed - {remaining:.1f}s remaining")
 
         # Adjust start time so elapsed calculation gives correct result
-        # If we slept for 2s and had 3s remaining, we need elapsed to be 2s when resumed
         self.start_time = time.time() - (self.duration - remaining)
+        self._state = TaskState.WAITING
 
     def _exit(self, ctx: Context, status: TaskStatus) -> None:
         """Clean shutdown"""

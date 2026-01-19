@@ -2,7 +2,7 @@ package org.limepepper.mqttbot.events;
 
 import org.limepepper.mqttbot.event.Event;
 import org.limepepper.mqttbot.event.Listener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 import java.util.ArrayList;
 
@@ -17,12 +17,12 @@ public interface MqttMessageListener extends Listener {
     public static class MqttMessageEvent extends Event<MqttMessageListener> {
         
         public String receiver;
-        public MessageData messageData;
+        public ServiceMessage serviceMessage;
         
-        public MqttMessageEvent(String receiver, MessageData messageData)
+        public MqttMessageEvent(String receiver, ServiceMessage serviceMessage)
         {
             this.receiver = receiver;
-            this.messageData = messageData;
+            this.serviceMessage = serviceMessage;
         }
         
         @Override

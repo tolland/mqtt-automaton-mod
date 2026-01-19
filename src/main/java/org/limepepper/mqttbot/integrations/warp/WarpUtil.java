@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
@@ -204,11 +204,11 @@ public final class WarpUtil {
             }
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("warp", "teleport", requestId, // Use the
-                                                               // original
-                                                               // request ID
-                                                               // from the
-                                                               // command
+                new ServiceMessage("warp", "teleport", requestId, // Use the
+                    // original
+                    // request ID
+                    // from the
+                    // command
                     null, null, response, "mqttbot", null)));
             
         }catch(Exception e)

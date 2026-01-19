@@ -18,6 +18,24 @@ from mqttbot.core.scheduler import Scheduler
 Pytest configuration and shared fixtures.
 """
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--requires-server", action="store_true", default=False, help="run slow tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "requires_server: mark test as requiring docker server")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--requires-server"):
+        return
+    skip_slow = pytest.mark.skip(reason="need --requires-server option to run")
+    for item in items:
+        if "requires_server" in item.keywords:
+            item.add_marker(skip_slow)
+
 
 # Fixture to set XDG_STATE_HOME to a temp directory
 @pytest.fixture

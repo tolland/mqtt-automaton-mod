@@ -71,7 +71,6 @@ class MqttBotClient:
         """Handle incoming MQTT messages"""
         topic = msg.topic
         payload = msg.payload.decode("utf-8", errors="replace").strip()
-        print(f"[mqtt] < {topic}: {payload}")
 
         for cb in self.message_callbacks:
             try:

@@ -1,8 +1,8 @@
 package org.limepepper.mqttbot.mqtt;
 
 public interface MessageHandler {
-    boolean canHandle(MessageData msg);
+    boolean canHandle(ServiceMessage msg);
     
-    void handle(MessageData msg) throws Exception;
+    void handle(ServiceMessage msg) throws Exception;
     
 }

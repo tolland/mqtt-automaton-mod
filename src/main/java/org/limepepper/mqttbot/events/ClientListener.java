@@ -6,20 +6,35 @@ import org.limepepper.mqttbot.event.Listener;
 import java.util.ArrayList;
 
 public interface ClientListener extends Listener {
-    void onClientJoin();
+    void onClientJoin(ClientJoinEvent event);
     
-    void onClientDisconnect();
+    void onClientDisconnect(ClientDisconnectEvent event);
     
-    public static class ClientJoinEvent extends Event<ClientListener> {
+    class ClientJoinEvent extends Event<ClientListener> {
+        private final String playerName;
+        private final String world;
         
-        public static final ClientListener.ClientJoinEvent INSTANCE =
-            new ClientListener.ClientJoinEvent();
+        public ClientJoinEvent(String playerName, String world)
+        {
+            this.playerName = playerName;
+            this.world = world;
+        }
+        
+        public String getPlayerName()
+        {
+            return playerName;
+        }
+        
+        public String getWorld()
+        {
+            return world;
+        }
         
         @Override
         public void fire(ArrayList<ClientListener> listeners)
         {
             for(ClientListener listener : listeners)
-                listener.onClientJoin();
+                listener.onClientJoin(this);
         }
         
         @Override
@@ -30,15 +45,23 @@ public interface ClientListener extends Listener {
     }
     
     public static class ClientDisconnectEvent extends Event<ClientListener> {
+        private final String playerName;
         
-        public static final ClientListener.ClientDisconnectEvent INSTANCE =
-            new ClientListener.ClientDisconnectEvent();
+        public ClientDisconnectEvent(String playerName)
+        {
+            this.playerName = playerName;
+        }
+        
+        public String getPlayerName()
+        {
+            return playerName;
+        }
         
         @Override
         public void fire(ArrayList<ClientListener> listeners)
         {
             for(ClientListener listener : listeners)
-                listener.onClientDisconnect();
+                listener.onClientDisconnect(this);
         }
         
         @Override

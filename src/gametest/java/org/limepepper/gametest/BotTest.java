@@ -121,7 +121,6 @@ public class BotTest implements FabricClientGameTest {
         BaritoneBotBasicTest.testBaritoneIsWorking2(context, server);
     }
     
-    // because the grass texture is randomized and smooth stone isn't
     private void applyFlatPresetWithSmoothStone(WorldCreationUiState creator)
     {
         FlatLevelGeneratorSettings config = ((FlatLevelSource)creator

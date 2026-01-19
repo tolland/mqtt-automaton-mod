@@ -13,7 +13,7 @@ import org.limepepper.mqttbot.action.RequiresFeatures;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.mqtt.MessageHandler;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.limepepper.mqttbot.util.MsgUtils;
@@ -60,14 +60,14 @@ public final class BaritoneCollectHandler extends Action
     }
     
     @Override
-    public boolean canHandle(MessageData msg)
+    public boolean canHandle(ServiceMessage msg)
     {
         return "baritone".equals(msg.getService())
             && "collect".equals(msg.getMethod());
     }
     
     @Override
-    public void handle(MessageData msg)
+    public void handle(ServiceMessage msg)
     {
         requiredFeatures().forEach(CORE.features()::enable);
         

@@ -2,7 +2,7 @@ package org.limepepper.mqttbot.actions;
 
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.events.MqttMessageListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.mqtt.MessageHandler;
 
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public class MessageDispatcherAction extends Action
     {
         if(!CORE.isEnabled())
             return;
-        MessageData data = event.messageData;
+        ServiceMessage data = event.serviceMessage;
         
         for(MessageHandler handler : getHandlers())
         {

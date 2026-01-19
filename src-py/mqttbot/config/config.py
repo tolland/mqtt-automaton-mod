@@ -17,7 +17,7 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 def build_settings(
         config_path: str | Path,
         broker: Optional[str] = None,
-        port: Optional[int] = None,
+        port: Optional[str] = None,
         client_id: Optional[str] = None,
         timeout: Optional[int] = None,
         retries: Optional[int] = None,

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 /**
  * Builds and sends MQTT responses for Baritone-related actions.
@@ -70,7 +70,8 @@ class ResponseBuilder {
             CorrelationIds ids = PathingState.INSTANCE.requireCorrelationIds();
             
             String playerName = mqttCore.getPlayerName();
-            MessageData messageData = new MessageData(Constants.SERVICE_NAME,
+            ServiceMessage messageData = new ServiceMessage(
+                Constants.SERVICE_NAME,
                 method, ids.requestId(), ids.correlationId(), null, response,
                 mqttCore.getPlayerName(), null);
             

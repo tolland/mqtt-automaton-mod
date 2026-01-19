@@ -20,7 +20,7 @@ import org.jetbrains.annotations.UnknownNullability;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 public final class SleepUtil {
@@ -383,7 +383,8 @@ public final class SleepUtil {
             String ident = (identity != null) ? identity : "mqttbot";
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("sleep", "start", reqId, corrId, null, response,
+                new ServiceMessage("sleep", "start", reqId, corrId, null,
+                    response,
                     ident, null)));
             
         }catch(Exception e)

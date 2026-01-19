@@ -1,4 +1,4 @@
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.core.state.events.events_state import EventsState
 from mqttbot.core.state.state_module import StateModule
 
@@ -7,7 +7,7 @@ class EventsModule(StateModule[EventsState]):
     def __init__(self):
         self._state = EventsState()
 
-    def handle_event(self, message_data: MessageData) -> None:
+    def handle_event(self, message_data: ServiceMessage) -> None:
         print(f"EventsModule handling event: {message_data}")
         if message_data.method == "chat_message":
             self._state.message = message_data

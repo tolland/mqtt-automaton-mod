@@ -2,7 +2,7 @@ package org.limepepper.mqttbot.events;
 
 import org.limepepper.mqttbot.event.Event;
 import org.limepepper.mqttbot.event.Listener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 import java.util.ArrayList;
 
@@ -16,19 +16,19 @@ public interface MqttReplyListener extends Listener {
     class MqttReplyEvent extends Event<MqttReplyListener> {
         
         public String botId;
-        public MessageData messageData;
+        public ServiceMessage serviceMessage;
         public String topic;
         
-        public MqttReplyEvent(String botId, MessageData messageData)
+        public MqttReplyEvent(String botId, ServiceMessage serviceMessage)
         {
-            this(botId, messageData, "reply");
+            this(botId, serviceMessage, "reply");
         }
         
-        public MqttReplyEvent(String botId, MessageData messageData,
+        public MqttReplyEvent(String botId, ServiceMessage serviceMessage,
             String topic)
         {
             this.botId = botId;
-            this.messageData = messageData;
+            this.serviceMessage = serviceMessage;
             this.topic = topic;
         }
         

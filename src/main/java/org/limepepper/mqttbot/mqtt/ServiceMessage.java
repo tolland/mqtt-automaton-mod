@@ -9,7 +9,7 @@ import java.time.Instant;
 /**
  * Structured MQTT message format for inter-service communication
  */
-public class MessageData {
+public class ServiceMessage {
     private static final Gson gson = new Gson();
     
     /**
@@ -58,14 +58,14 @@ public class MessageData {
     private String timestamp;
     
     // Default constructor
-    public MessageData()
+    public ServiceMessage()
     {
         // Populate timestamp centrally so all messages created in code have it
         this.timestamp = Instant.now().toString();
     }
     
     /**
-     * MessageData is JsonObject representing an MQTT-bot mqtt message
+     * ServiceMessage is JsonObject representing an MQTT-bot mqtt message
      *
      * @param service
      *            A string identifying the target service
@@ -82,7 +82,7 @@ public class MessageData {
      * @param message
      *            A human readable message for logging/debugging
      */
-    public MessageData(String service, String method, String requestId,
+    public ServiceMessage(String service, String method, String requestId,
         String correlationId, JsonElement params, JsonElement response,
         String identity, String message)
     {
@@ -115,7 +115,7 @@ public class MessageData {
      * @param message
      *            A human readable message for logging/debugging
      */
-    public MessageData(String service, String method, String requestId,
+    public ServiceMessage(String service, String method, String requestId,
         String correlationId, JsonElement params, String identity,
         String message)
     {
@@ -130,11 +130,11 @@ public class MessageData {
      *            The JSON string to parse
      * @return MqttMessage object or null if parsing fails
      */
-    public static MessageData fromJson(String jsonString)
+    public static ServiceMessage fromJson(String jsonString)
     {
         try
         {
-            MessageData md = gson.fromJson(jsonString, MessageData.class);
+            ServiceMessage md = gson.fromJson(jsonString, ServiceMessage.class);
             if(md != null && (md.timestamp == null || md.timestamp.isEmpty()))
             {
                 md.timestamp = Instant.now().toString();

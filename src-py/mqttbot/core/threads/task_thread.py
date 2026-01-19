@@ -14,7 +14,12 @@ from mqttbot.model.tasks.task import Task
 @total_ordering
 @rich_repr
 class TaskThread:
-    """A thread of execution: manages a sequence of tasks and resumption"""
+    """
+    A thread of execution: manages a sequence of tasks that need to be completed
+    as a set. A TaskThread can be interrupted and suspended and later resumed.
+    The TaskThread implementation
+
+    """
 
     def __init__(
         self,

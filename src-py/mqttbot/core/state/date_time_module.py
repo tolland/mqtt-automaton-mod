@@ -1,4 +1,4 @@
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.core.state.date_time_state import DateTimeState
 from mqttbot.core.state.state_module import StateModule
 
@@ -7,7 +7,7 @@ class DateTimeModule(StateModule[DateTimeState]):
     def __init__(self):
         self._state = DateTimeState()
 
-    def handle_event(self, event: MessageData) -> None:
+    def handle_event(self, event: ServiceMessage) -> None:
         ...
         # if event.method == "goto":
         #     data = event.response

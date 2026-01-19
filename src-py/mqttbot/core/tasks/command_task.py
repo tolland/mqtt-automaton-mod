@@ -1,11 +1,14 @@
 from typing import Optional, Any
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult, RequestStatus
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
+
+
+from mqttbot.core.tasks.task_status import TaskState
 
 
 @task("command")
@@ -22,16 +25,16 @@ class CommandTask(TaskBase):
         self.timeout = timeout
         self.request_id: Optional[str] = None
         self.result: Optional[RequestResult] = None
-        self._state = "init"
+        self._state = TaskState.INIT
         self.service = service
         self.method = method
         self.params = params
 
     def _step(self, ctx: Context) -> TaskStatus:
-        if self._state == "init":
+        if self._state == TaskState.INIT:
             # Send warp request
             print(f"[CommandTask] Sending message")
-            message = MessageData(
+            message = ServiceMessage(
                 service=self.service,
                 method=self.method,
                 params=self.params,
@@ -40,10 +43,10 @@ class CommandTask(TaskBase):
             # Send via context
             ctx.bot_service.send_message(message)
             self.request_id = message.request_id
-            self._state = "waiting"
+            self._state = TaskState.WAITING
             return TaskStatus.RUNNING
 
-        elif self._state == "waiting":
+        elif self._state == TaskState.WAITING:
             if ctx.bot_service:
                 result = ctx.bot_service.get_result(self.request_id)
                 if result:

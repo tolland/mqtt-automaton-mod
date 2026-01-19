@@ -13,12 +13,16 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.CropBlock;
 import net.wurstclient.WurstClient;
+import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("UnstableApiUsage")
 public enum BotTestHelper
 {
     ;
+    
+    private static final MqttBotLogger LOGGER =
+        new MqttBotLogger(BotTestHelper.class);
     
     public static void runCommand(TestServerContext server, String command)
     {
@@ -107,7 +111,7 @@ public enum BotTestHelper
                 .append(entry.getValue()).append("\n");
         }
         
-        LOGGER.debug(sb);
+        LOGGER.debug(sb.toString());
     }
     
     public static void runWurstCommand(ClientGameTestContext context,

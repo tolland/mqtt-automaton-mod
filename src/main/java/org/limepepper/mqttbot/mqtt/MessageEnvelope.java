@@ -4,15 +4,15 @@ public class MessageEnvelope {
     
     private String sender;
     private String receiver;
-    private MessageData messageData;
+    private ServiceMessage serviceMessage;
     private String timestamp; // ISO 8601 format
     
     public MessageEnvelope(String sender, String receiver,
-        MessageData messageData, String timestamp)
+        ServiceMessage serviceMessage, String timestamp)
     {
         this.sender = sender;
         this.receiver = receiver;
-        this.messageData = messageData;
+        this.serviceMessage = serviceMessage;
         this.timestamp = timestamp;
     }
     
@@ -37,13 +37,13 @@ public class MessageEnvelope {
         this.receiver = receiver;
     }
     
-    public MessageData getMessageData()
+    public ServiceMessage getServiceMessage()
     {
-        return messageData;
+        return serviceMessage;
     }
     
-    public void setMessageData(MessageData messageData)
+    public void setServiceMessage(ServiceMessage serviceMessage)
     {
-        this.messageData = messageData;
+        this.serviceMessage = serviceMessage;
     }
 }

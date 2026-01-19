@@ -7,7 +7,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
@@ -30,12 +30,12 @@ public final class SendCommandHandler extends Action
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
         
-        MessageData data = mqttMessageEvent.messageData;
+        ServiceMessage data = mqttMessageEvent.serviceMessage;
         LOGGER.debug("received message in commands handler");
-        if(!mqttMessageEvent.messageData.getService().equals("commands"))
+        if(!mqttMessageEvent.serviceMessage.getService().equals("commands"))
             return;
         LOGGER.debug("message for commands service");
-        switch(mqttMessageEvent.messageData.getMethod())
+        switch(mqttMessageEvent.serviceMessage.getMethod())
         {
             case "chatMessage":
             {
@@ -92,10 +92,11 @@ public final class SendCommandHandler extends Action
                     successParams.addProperty("status", "success");
                     successParams.addProperty("message", "message sent");
                     
-                    MessageData replyData = new MessageData("wurst",
-                        mqttMessageEvent.messageData.getMethod(),
-                        mqttMessageEvent.messageData.getRequestId(),
-                        mqttMessageEvent.messageData.getCorrelationId(), null,
+                    ServiceMessage replyData = new ServiceMessage("wurst",
+                        mqttMessageEvent.serviceMessage.getMethod(),
+                        mqttMessageEvent.serviceMessage.getRequestId(),
+                        mqttMessageEvent.serviceMessage.getCorrelationId(),
+                        null,
                         successParams, "minecraft_client",
                         "mqttbot_client_" + botId);
                     EventManager.fire(

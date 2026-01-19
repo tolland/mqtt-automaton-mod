@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.integrations.baritone;
 
 import org.jetbrains.annotations.NotNull;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 import java.util.Objects;
 
@@ -67,9 +67,9 @@ public record CorrelationIds(@NotNull String requestId,
      * @throws IllegalArgumentException
      *             if IDs are empty/blank
      */
-    public static CorrelationIds fromMessage(@NotNull MessageData msg)
+    public static CorrelationIds fromMessage(@NotNull ServiceMessage msg)
     {
-        Objects.requireNonNull(msg, "MessageData cannot be null");
+        Objects.requireNonNull(msg, "ServiceMessage cannot be null");
         return new CorrelationIds(msg.getRequestId(), msg.getCorrelationId());
     }
 }

@@ -3,7 +3,7 @@ from typing import Optional, Any
 
 from rich import inspect
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.model.patterns.step import TaskStep
 
@@ -71,7 +71,7 @@ class EventManager:
         """Look up handler config for a service:method pair"""
         return self.handlers.get((service, method))
 
-    async def handle_message(self, message_data: MessageData) -> Optional[TaskThread]:
+    async def handle_message(self, message_data: ServiceMessage) -> Optional[TaskThread]:
         for pattern, callbacks in self.handlers.items():
             for callback in callbacks:
                 if pattern[0] == message_data.service and pattern[1] == message_data.method:

@@ -3,7 +3,7 @@
 __app_name__ = "mqttbot"
 __version__ = "0.1.0"
 
-from mqttbot.model.messaging.message_data import MessageData
+from mqttbot.model.messaging.service_message import ServiceMessage
 from mqttbot.model.settings.settings import Settings
 
-__all__ = ["MessageData", "Settings", "__version__"]
+__all__ = ["ServiceMessage", "Settings", "__version__"]

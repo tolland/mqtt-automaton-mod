@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 /**
@@ -39,14 +39,14 @@ public final class BaritoneStateHandler extends Action
     }
     
     @Override
-    public boolean canHandle(MessageData msg)
+    public boolean canHandle(ServiceMessage msg)
     {
         return "baritone".equals(msg.getService())
             && "state".equals(msg.getMethod());
     }
     
     @Override
-    public void handle(MessageData msg) throws Exception
+    public void handle(ServiceMessage msg) throws Exception
     {
         String playerName = CORE.getPlayerName();
         String requestId = msg.getRequestId();
@@ -80,7 +80,7 @@ public final class BaritoneStateHandler extends Action
         }
         
         // Send response
-        MessageData messageData = new MessageData(Constants.SERVICE_NAME,
+        ServiceMessage messageData = new ServiceMessage(Constants.SERVICE_NAME,
             "state", requestId, correlationId, null, response, playerName,
             null);
         

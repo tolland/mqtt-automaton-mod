@@ -161,15 +161,15 @@ public class MqttClientInternal extends Action
      * broker
      *
      * @param event
-     *            event containing reply data in {@link MessageData} format
+     *            event containing reply data in {@link ServiceMessage} format
      */
     @Override
     public void onReplyArrived(MqttReplyEvent event)
     {
         LOGGER.debug("Handling MqttReplyEvent for bot: {}",
             event.botId);
-        LOGGER.debugMqtt("Reply data: {}", event.messageData.toJson());
-        var msg = event.messageData;
+        LOGGER.debugMqtt("Reply data: {}", event.serviceMessage.toJson());
+        var msg = event.serviceMessage;
         var botId = event.botId;
         var topic = String.format("mqttbot/%s/%s", botId, event.topic);
         publish(topic, msg.toJson());
@@ -195,7 +195,7 @@ public class MqttClientInternal extends Action
         LOGGER.debugMqtt("Raw message for bot {}: {}", botId, rawMessage);
         
         // Try to parse as structured JSON message first
-        MessageData structuredMessage = MessageData.fromJson(rawMessage);
+        ServiceMessage structuredMessage = ServiceMessage.fromJson(rawMessage);
         
         if(structuredMessage != null && structuredMessage.isValid())
         {

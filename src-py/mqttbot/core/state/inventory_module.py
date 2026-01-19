@@ -1,4 +1,4 @@
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.core.state.inventory_state import InventoryState
 from mqttbot.core.state.state_module import StateModule
 from mqttbot.model.bot.inventory.inventory_item import InventoryItem
@@ -8,7 +8,7 @@ class InventoryModule(StateModule[InventoryState]):
     def __init__(self):
         self._state = InventoryState()
 
-    def handle_event(self, event: MessageData) -> None:
+    def handle_event(self, event: ServiceMessage) -> None:
 
         if event.method == "inventory_open":
             self._state.open = True

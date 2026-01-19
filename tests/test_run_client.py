@@ -7,7 +7,7 @@ from mqttbot.core.modular_bot_client import ModularBotClient
 
 # pytestmark = pytest.mark.skip(reason="Requires minecraft client running")
 
-@pytest.mark.requires_client
+@pytest.mark.requires_server
 def test_mqtt_connection(minecraft_client):
     """This test runs only when client is active."""
     settings = build_settings(
@@ -25,7 +25,7 @@ def test_mqtt_connection(minecraft_client):
     time.sleep(30)
     client.run()
 
-@pytest.mark.requires_client
+@pytest.mark.requires_server
 def test_another_feature(minecraft_client):
     """Uses the client fixture."""
     pass

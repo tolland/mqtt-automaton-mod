@@ -6,7 +6,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.InventoryListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.Map;
@@ -68,7 +68,8 @@ public class InventoryAction extends Action implements InventoryListener {
             responseData.addProperty("fullSlots", fullSlots);
             responseData.addProperty("totalSlots", emptySlots + fullSlots);
             responseData.addProperty("player", playerName);
-            // timestamp is set at the MessageData level; avoid duplicating it
+            // timestamp is set at the ServiceMessage level; avoid duplicating
+            // it
             // here
             
             // Add primary item information
@@ -87,7 +88,7 @@ public class InventoryAction extends Action implements InventoryListener {
             responseData.add("itemCounts", itemCountsJson);
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("inventory", eventType,
+                new ServiceMessage("inventory", eventType,
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
             
@@ -120,10 +121,11 @@ public class InventoryAction extends Action implements InventoryListener {
             responseData.addProperty("totalCount", totalCount);
             responseData.addProperty("delta", newCount - oldCount);
             responseData.addProperty("player", playerName);
-            // timestamp is provided at the MessageData level; don't duplicate
+            // timestamp is provided at the ServiceMessage level; don't
+            // duplicate
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("inventory", "item_count_change",
+                new ServiceMessage("inventory", "item_count_change",
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
             

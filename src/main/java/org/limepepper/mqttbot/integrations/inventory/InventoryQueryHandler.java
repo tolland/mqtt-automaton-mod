@@ -10,7 +10,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.MqttMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.HashMap;
@@ -36,7 +36,7 @@ public final class InventoryQueryHandler extends Action
     @Override
     public void onMessageArrived(MqttMessageEvent mqttMessageEvent)
     {
-        MessageData data = mqttMessageEvent.messageData;
+        ServiceMessage data = mqttMessageEvent.serviceMessage;
         
         if(!data.getService().equals("inventory"))
         {
@@ -71,7 +71,7 @@ public final class InventoryQueryHandler extends Action
     /**
      * Return full inventory state
      */
-    private void handleQueryInventory(MessageData data)
+    private void handleQueryInventory(ServiceMessage data)
     {
         if(MC.player == null)
         {
@@ -120,7 +120,7 @@ public final class InventoryQueryHandler extends Action
     /**
      * Return count of a specific item
      */
-    private void handleGetItemCount(MessageData data)
+    private void handleGetItemCount(ServiceMessage data)
     {
         if(MC.player == null)
         {
@@ -167,7 +167,7 @@ public final class InventoryQueryHandler extends Action
     /**
      * Check if inventory has space
      */
-    private void handleCheckCapacity(MessageData data)
+    private void handleCheckCapacity(ServiceMessage data)
     {
         if(MC.player == null)
         {
@@ -196,18 +196,19 @@ public final class InventoryQueryHandler extends Action
         sendResponse(data, responseData);
     }
     
-    private void sendResponse(MessageData originalData, JsonObject responseData)
+    private void sendResponse(ServiceMessage originalData,
+        JsonObject responseData)
     {
         String playerName = MC.getUser().getName();
         
         // Preserve the original requestId - don't create a new one!
         EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-            new MessageData("inventory", originalData.getMethod(),
+            new ServiceMessage("inventory", originalData.getMethod(),
                 originalData.getRequestId(), originalData.getCorrelationId(),
                 null, responseData, "mqttbot", null)));
     }
     
-    private void sendErrorResponse(MessageData originalData, String error)
+    private void sendErrorResponse(ServiceMessage originalData, String error)
     {
         JsonObject responseData = new JsonObject();
         responseData.addProperty("error", error);

@@ -1,13 +1,13 @@
 from typing import Optional, Any
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult
 from mqttbot.core.state.events.events_state import EventsState
-from mqttbot.core.tasks.goto_task import GotoTaskState
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
+from mqttbot.core.tasks.task_status import TaskState
 
 
 @task("commandtochat")
@@ -22,7 +22,7 @@ class CommandToChatTask(TaskBase):
         self.timeout = timeout
         self.request_id: Optional[str] = None
         self.result: Optional[RequestResult] = None
-        self._state = GotoTaskState.INIT
+        self._state = TaskState.INIT
         self.service = service
         self.method = method
         self.params = params
@@ -34,7 +34,7 @@ class CommandToChatTask(TaskBase):
 
         ctx.blackboard.subscribe("events", self._handler)
 
-        self._state = GotoTaskState.INIT
+        self._state = TaskState.INIT
 
     def _handler(self, event_state: EventsState):
         print(f"[CommandToChatTask] Event received: {event_state}")
@@ -47,10 +47,10 @@ class CommandToChatTask(TaskBase):
                     self.found = True
 
     def _step(self, ctx: Context) -> TaskStatus:
-        if self._state == GotoTaskState.INIT:
+        if self._state == TaskState.INIT:
             # Send warp request
             print(f"[CommandToChatTask] stepping and sending message")
-            message = MessageData(
+            message = ServiceMessage(
                 service=self.service,
                 method=self.method,
                 params=self.params,
@@ -60,10 +60,10 @@ class CommandToChatTask(TaskBase):
             # track requestId
             ctx.message_sender(message)
             self.request_id = message.request_id
-            self._state = GotoTaskState.WAITING
+            self._state = TaskState.WAITING
             return TaskStatus.RUNNING
 
-        elif self._state == GotoTaskState.WAITING:
+        elif self._state == TaskState.WAITING:
             if self.found:
                 return TaskStatus.SUCCESS
 
@@ -71,9 +71,9 @@ class CommandToChatTask(TaskBase):
 
         return TaskStatus.FAILED
 
-    def _exit(self, ctx: Any, status: Any) -> None:
+    def _exit(self, ctx: Any, status: TaskStatus) -> None:
         print(f"[CommandToChatTask] exiting ")
 
         ctx.blackboard.unsubscribe("events", self._handler)
 
-        self._state = GotoTaskState.DONE
+        self._state = TaskState.DONE

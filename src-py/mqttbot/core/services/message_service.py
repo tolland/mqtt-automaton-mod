@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from mqttbot import MessageData
+from mqttbot import ServiceMessage
 from mqttbot.core.context import Context
 
 
@@ -31,7 +31,7 @@ class MessageService:
     Base service for handling MQTT message requests with response tracking.
 
     This service provides a common pattern for:
-    - Sending a MessageData request
+    - Sending a ServiceMessage request
     - Waiting for either status == "success" or status == "failure"
     - Tracking pending requests and their results
     """
@@ -49,7 +49,7 @@ class MessageService:
         self.pending_requests: dict[str, RequestResult | None] = {}
         self._lock = threading.Lock()
 
-    def send_message(self, message_data: MessageData) -> str:
+    def send_message(self, message_data: ServiceMessage) -> str:
         """
         Send a message and return the request_id immediately (non-blocking).
 
@@ -91,7 +91,7 @@ class MessageService:
                 self.pending_requests.pop(request_id)
             return result
 
-    def handle_response(self, message_data: MessageData) -> None:
+    def handle_response(self, message_data: ServiceMessage) -> None:
         """
         Called when MQTT response arrives. Handles status == "success" or status == "failure".
 

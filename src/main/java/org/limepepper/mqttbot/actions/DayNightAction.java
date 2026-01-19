@@ -6,7 +6,7 @@ import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.DayNightListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 import java.util.UUID;
 
@@ -39,7 +39,7 @@ public class DayNightAction extends Action implements DayNightListener {
             responseData.addProperty("player", playerName);
             
             EventManager.fire(new MqttReplyListener.MqttReplyEvent(playerName,
-                new MessageData("day_night", eventType,
+                new ServiceMessage("day_night", eventType,
                     UUID.randomUUID().toString(), null, null, responseData,
                     "mqttbot", null)));
             

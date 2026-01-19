@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.integrations.baritone;
 
 import org.jetbrains.annotations.NotNull;
-import org.limepepper.mqttbot.mqtt.MessageData;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
 /**
  * Tracks correlation information (requestId, correlationId, identity)
@@ -13,7 +13,7 @@ public enum CorrelationTracker
     private String requestId;
     private String correlationId;
     
-    void setFrom(@NotNull MessageData data)
+    void setFrom(@NotNull ServiceMessage data)
     {
         this.requestId = data.getRequestId();
         this.correlationId = data.getCorrelationId();

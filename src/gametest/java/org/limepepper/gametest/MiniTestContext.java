@@ -66,19 +66,21 @@ public class MiniTestContext implements AutoCloseable {
      */
     private void setup()
     {
-        
+        // Ensure player is in creative mode (critical for external servers)
+        server.executeCommand("gamemode creative");
+
         // Ensure base platform exists
         setBlock(0, -1, 0, "minecraft:smooth_stone");
-        
+
         // Teleport player to test location
         String playerName =
             server.getPlayerName() != null ? server.getPlayerName() : "@p";
         server.executeCommand(location.tp(playerName, 0, 0, 0, 0, 0));
         server.executeCommand("rotate " + playerName + " 0 0");
-        
+
         // Set game rules for consistent testing
         server.executeCommand("gamerule randomTickSpeed 0");
-        
+
         context.waitTick();
     }
     

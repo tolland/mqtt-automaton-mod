@@ -1,4 +1,5 @@
 import net.fabricmc.loom.task.DownloadTask
+import net.fabricmc.loom.task.FabricModJsonV1Task
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 
 plugins {
@@ -134,9 +135,18 @@ tasks.named("compileTestJava") {
     dependsOn("compileGametestJava")
 }
 
+tasks.register("generateModJson", FabricModJsonV1Task) {
+    outputFile = file("fabric.mod2.json")
+
+    json {
+        modId = "examplemod"
+        version = "1.0.0"
+    }
+}
 
 loom {
     // docs: <https://docs.fabricmc.net/develop/loom/options>
+    // fabricModJsonPath = file("src/custom/resources/fabric.mod.json")
     accessWidenerPath = file("src/main/resources/mqttbot.accesswidener")
 
     // splitEnvironmentSourceSets() # currently breaking gametests
@@ -148,6 +158,7 @@ loom {
         }
     }
     runs {
+
         client {
             programArgs(
                     "--username", mcUsername as String,
@@ -157,7 +168,19 @@ loom {
             // environmentVariable("example", "true")
             // runDir = "run"
         }
+        clientWithMods {
+            inherit client
+        }
+        clientWithMods2 {
+            inherit client
+        }
         clientGameTest {
+            source sourceSets.gametest
+            vmArgs.add("-Dfabric.client.gametest")
+            vmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
+        }
+        clientGameTest2 {
+            inherit clientGameTest
             source sourceSets.gametest
             vmArgs.add("-Dfabric.client.gametest")
             vmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")

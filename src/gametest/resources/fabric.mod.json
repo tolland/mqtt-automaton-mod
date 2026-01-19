@@ -7,7 +7,7 @@
   "environment": "client",
   "entrypoints": {
     "fabric-client-gametest": [
-      "org.limepepper.gametest.BotTest"
+      "org.limepepper.gametest.ExternalServerGameTest"
     ]
   },
   "mixins": [

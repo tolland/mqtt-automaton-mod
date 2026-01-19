@@ -28,8 +28,10 @@ public class ExternalServerFacade implements TestServerFacade {
      * @param playerName
      *            The name of the player/bot on the server
      */
-    public ExternalServerFacade(ClientGameTestContext context,
-        ExternalServerConnection connection, String playerName)
+    public ExternalServerFacade(
+        ClientGameTestContext context,
+        ExternalServerConnection connection,
+        String playerName)
     {
         this.context = context;
         this.connection = connection;

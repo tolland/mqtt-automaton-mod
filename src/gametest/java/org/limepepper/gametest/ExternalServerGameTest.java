@@ -4,11 +4,16 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import org.limepepper.gametest.facade.ExternalServerFacade;
+import org.limepepper.gametest.facade.TestServerFacade;
+import org.limepepper.gametest.tests.AutoFarmTest;
 import org.limepepper.gametest.utils.ExternalServerConnection;
 import org.limepepper.gametest.utils.ExternalServerContext;
 import org.limepepper.gametest.utils.ExternalServerTestHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 import static org.limepepper.gametest.BotTestHelper.runWurstCommand;
 
@@ -78,7 +83,11 @@ public class ExternalServerGameTest implements FabricClientGameTest {
                 LOGGER.info("Loaded chunks: {}", loadedChunks);
                 
                 // Test your mod's functionality
-                testModFeature(context, connection);
+                ExternalServerFacade server = new ExternalServerFacade(
+                    context,
+                    connection,
+                    "rgerg");
+                testModFeature(context, server);
                 
                 LOGGER.info("All external server tests passed!");
             }
@@ -86,15 +95,9 @@ public class ExternalServerGameTest implements FabricClientGameTest {
     }
     
     private void testModFeature(ClientGameTestContext context,
-        ExternalServerConnection connection)
+        TestServerFacade server)
     {
         LOGGER.info("Testing mod feature...");
-        
-        connection.withClientLevel(level -> {
-            // Your mod testing logic here
-            // Example: Check custom blocks, entities, etc.
-            LOGGER.info("Level time: {}", level.getDayTime());
-        });
         
         runWurstCommand(context,
             "setmode WurstLogo visibility only_when_outdated");
@@ -104,6 +107,13 @@ public class ExternalServerGameTest implements FabricClientGameTest {
         
         context.waitTicks(20); // Wait 1 second
         context.takeScreenshot("mod_feature_test");
+        
+        for(String block : List.of("minecraft:comparator"))
+        {
+            
+            AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, server, block);
+            
+        }
     }
     
 }

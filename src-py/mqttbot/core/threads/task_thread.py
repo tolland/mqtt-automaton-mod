@@ -153,3 +153,5 @@ class TaskThread:
         yield "uninterruptible", self.uninterruptible
         yield "current_task", type(self.current_task).__name__ if self.current_task else None
         yield "task_queue_len", len(self.task_queue)
+        yield "on_suspend", self._on_suspend
+        yield "on_resume", self._on_resume

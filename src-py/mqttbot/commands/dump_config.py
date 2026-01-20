@@ -4,6 +4,7 @@ import typer
 from rich import print as rprint, inspect
 from rich.console import Console
 from rich.panel import Panel
+from rich.pretty import pprint
 
 from mqttbot.core.modular_bot_client import ModularBotClient
 
@@ -41,7 +42,7 @@ def dump_config(
         )
 
         for thread in client.threads:
-            inspect(thread)
+            pprint(thread)
 
         return 0
 

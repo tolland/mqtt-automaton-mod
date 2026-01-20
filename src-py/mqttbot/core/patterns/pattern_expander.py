@@ -1,6 +1,6 @@
 from typing import Optional, List, Tuple
 
-from mqttbot.model.patterns.pattern import PatternStep, Coords, CoordAxis
+from mqttbot.model.patterns.pattern import PatternStep
 from mqttbot.model.patterns.step import StepBase, TaskStep
 
 """Pattern expansion - converts relative coordinates to absolute"""

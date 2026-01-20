@@ -6,8 +6,6 @@ from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
-
-
 from mqttbot.core.tasks.task_status import TaskState
 
 

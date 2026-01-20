@@ -4,8 +4,6 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from rich import inspect
-
 
 @dataclass
 class ServiceMessage:

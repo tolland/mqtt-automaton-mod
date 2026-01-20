@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Any, Iterator
+from typing import Any, Iterator
 
 
 class StepBase(ABC):

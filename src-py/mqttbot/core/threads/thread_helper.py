@@ -5,8 +5,8 @@ from mqttbot.config.threads.thread_config import ThreadConfig
 from mqttbot.core.patterns.pattern_thread import PatternThread
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.model.patterns.patterns_config import PatternsConfig
-from mqttbot.model.tasks.task import Task, TaskFactory
 from mqttbot.model.patterns.step import TaskStep
+from mqttbot.model.tasks.task import Task, TaskFactory
 
 
 class ThreadHelper:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import field
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 from typing import Literal
 
 import rich

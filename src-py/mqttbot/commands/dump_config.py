@@ -1,7 +1,7 @@
 import sys
 
 import typer
-from rich import print as rprint
+from rich import print as rprint, inspect
 from rich.console import Console
 from rich.panel import Panel
 
@@ -39,6 +39,9 @@ def dump_config(
                 border_style="green",
             )
         )
+
+        for thread in client.threads:
+            inspect(thread)
 
         return 0
 

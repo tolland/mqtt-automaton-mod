@@ -1,20 +1,17 @@
-import asyncio
-import atexit
-import signal
 import sys
 
 import typer
 from rich import print as rprint
+from rich.console import Console
 from rich.panel import Panel
 
-from mqttbot.config.config import build_settings
+from mqttbot.core.modular_bot_client import ModularBotClient
 
+app = typer.Typer(name="config", no_args_is_help=True)
 
-app = typer.Typer(name="dump_config", no_args_is_help=True)
-
-@app.command()
+@app.command("dump")
 def dump_config(
-
+        ctx: typer.Context,
 ):
     """
     Parse and display the bot configuration without running the bot.
@@ -22,31 +19,10 @@ def dump_config(
     This command loads the configuration file, parses threads and patterns,
     and displays the parsed configuration in a readable format.
     """
+    console = Console()
     try:
-        # Build settings from config and CLI args
-        settings = build_settings(
-            config_path=config,
-            broker=broker,
-            port=port,
-            client_id=client_id,
-            timeout=timeout,
-            retries=retries,
-            retry_delay=retry_delay,
-            log_level=log_level,
-        )
-
-        # Display startup info
-        rprint(
-            Panel.fit(
-                f"[bold cyan]MQTT Bot Config Dump[/bold cyan]\n"
-                f"Config: [yellow]{config}[/yellow]\n"
-                f"Broker: [green]{settings.broker}:{settings.port}[/green]\n"
-                f"Client ID: [blue]{settings.client_id}[/blue]\n",
-                title="📋 Config Parser",
-                border_style="cyan",
-            )
-        )
-
+        config = ctx.obj["config"]
+        settings = ctx.obj["settings"]
         # Create client (loads config and initializes components)
         client = ModularBotClient(settings, str(config))
 

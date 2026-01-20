@@ -4,11 +4,8 @@ import signal
 import sys
 
 import typer
-from rich import print as rprint
-from rich.panel import Panel
 from rich.console import Console
 
-from mqttbot.config.config import build_settings
 from mqttbot.core.modular_bot_client import ModularBotClient
 
 app = typer.Typer(name="run")

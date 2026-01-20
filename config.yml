@@ -13,4 +13,4 @@ mqtt:
 bot:
   # Enable/disable specific features
   debug_events: false
-  debug_mqtt: falset
+  debug_mqtt: false

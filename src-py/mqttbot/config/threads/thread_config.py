@@ -19,6 +19,7 @@ class ThreadConfig:
     services: dict[str, ServiceConfig] = field(default_factory=dict)
     on_suspend_tasks: list[dict[str, Any]] = field(default_factory=list)
     on_resume_tasks: list[dict[str, Any]] = field(default_factory=list)
+    on_cancel_tasks: list[dict[str, Any]] = field(default_factory=list)
     on_waypoint_start_tasks: list[dict[str, Any]] = field(default_factory=list)
     on_waypoint_end_tasks: list[dict[str, Any]] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -32,5 +33,6 @@ class ThreadConfig:
         yield "services", list(self.services.keys())
         yield "on_suspend_tasks", self.on_suspend_tasks
         yield "on_resume_tasks", self.on_resume_tasks
+        yield "on_cancel_tasks", self.on_cancel_tasks
         if self.metadata:
             yield "metadata", self.metadata

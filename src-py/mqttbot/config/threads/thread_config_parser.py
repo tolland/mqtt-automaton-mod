@@ -61,6 +61,7 @@ class ThreadConfigParser:
                 services=services,
                 on_suspend_tasks=thread_data.get("on_suspend", []),
                 on_resume_tasks=thread_data.get("on_resume", []),
+                on_cancel_tasks=thread_data.get("on_cancel", []),
                 on_waypoint_end_tasks=thread_data.get("on_waypoint_end", []),
                 on_waypoint_start_tasks=thread_data.get("on_waypoint_start", []),
                 metadata=thread_data.get("metadata", {}),

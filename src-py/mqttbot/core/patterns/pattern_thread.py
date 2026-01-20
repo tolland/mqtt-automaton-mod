@@ -1,4 +1,5 @@
-from typing import Optional, Callable, Awaitable, Any, Generator
+from collections.abc import Awaitable, Callable, Generator
+from typing import Any
 
 from rich.tree import Tree
 
@@ -8,7 +9,7 @@ from mqttbot.core.tasks.goto_task import GotoTask
 from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.model.patterns.patterns_config import PatternsConfig
-from mqttbot.model.tasks.task import TaskFactory, Task, TaskCompiler
+from mqttbot.model.tasks.task import Task, TaskCompiler, TaskFactory
 
 """PatternThread - expands waypoints and patterns into deterministic task sequences"""
 
@@ -32,11 +33,12 @@ class PatternThread(TaskThread):
         priority: TaskPriority,
         waypoints: list[dict[str, Any]],
         patterns: PatternsConfig | dict,
-        on_suspend: Optional[Callable[["TaskThread"], Awaitable[None]]] = None,
-        on_resume: Optional[Callable[["TaskThread", Context], Awaitable[None]]] = None,
+        on_suspend: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
+        on_resume: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
+        on_cancel: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
     ) -> None:
         """Initialize a pattern-based thread"""
-        super().__init__(thread_id, priority, on_suspend, on_resume)
+        super().__init__(thread_id, priority, on_suspend, on_resume, on_cancel)
 
         self.waypoints = waypoints
         self.patterns_config = patterns
@@ -97,7 +99,7 @@ class PatternThread(TaskThread):
         so we can safely rebuild and skip without any global state.
         """
 
-        print(f"[PatternThread] Resuming - rebuilding task sequence")
+        print("[PatternThread] Resuming - rebuilding task sequence")
 
         # # Rebuild the entire sequence (deterministic, same as startup)
         # self.build_task_sequence()

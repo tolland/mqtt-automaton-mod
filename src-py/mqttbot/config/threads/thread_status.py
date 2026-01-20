@@ -7,3 +7,4 @@ class ThreadStatus(Enum):
     COMPLETED = auto()
     FAILED = auto()
     SUSPENDED = auto()
+    CANCELLED = auto()

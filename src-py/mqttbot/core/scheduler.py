@@ -167,6 +167,30 @@ class Scheduler:
         await thread.resume(ctx)
         self.current_thread = thread
 
+    async def shutdown(self, ctx: Context) -> None:
+        """Gracefully shutdown scheduler - cancel all threads and execute on_cancel tasks"""
+        print("[scheduler] Shutting down - cancelling all threads")
+
+        # Cancel current thread
+        if self.current_thread:
+            print(f"[scheduler] Cancelling current thread: {self.current_thread.thread_id}")
+            await self.current_thread.cancel(ctx)
+            self.current_thread = None
+
+        # Cancel all ready threads
+        while self.ready_threads:
+            thread = heapq.heappop(self.ready_threads)
+            print(f"[scheduler] Cancelling ready thread: {thread.thread_id}")
+            await thread.cancel(ctx)
+
+        # Cancel all suspended threads
+        while self.suspended_stack:
+            thread = self.suspended_stack.pop()
+            print(f"[scheduler] Cancelling suspended thread: {thread.thread_id}")
+            await thread.cancel(ctx)
+
+        print("[scheduler] Shutdown complete")
+
     def __rich_repr__(self):
         yield "current_thread", self.current_thread.thread_id if self.current_thread else None
         yield "ready_threads", [t.thread_id for t in self.ready_threads]

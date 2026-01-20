@@ -57,6 +57,21 @@ class ThreadHelper:
                 inspect(task_spec)
                 raise
 
+        # Parse cancel tasks into TaskStep objects
+        cancel_steps = []
+        for task_spec in config.on_cancel_tasks:
+            try:
+                step = TaskStep(
+                    type=task_spec.get("type", "command"),
+                    service=task_spec["service"],
+                    method=task_spec["method"],
+                    params=task_spec.get("params", {}),
+                )
+                cancel_steps.append(step)
+            except Exception:
+                inspect(task_spec)
+                raise
+
         async def on_suspend(thread: TaskThread, ctx: Context) -> None:
             """Execute suspend tasks"""
             for step in suspend_steps:
@@ -89,6 +104,22 @@ class ThreadHelper:
 
                 print(f"[thread] {config.thread_id} resume task {step.service}.{step.method}: {status.name}")
 
+        async def on_cancel(thread: TaskThread, ctx: Context) -> None:
+            """Execute cancel tasks"""
+            for step in cancel_steps:
+                task = TaskFactory.create(step.to_dict())
+                task.correlation_id = thread.correlation_id
+                task.enter(ctx)
+
+                # Execute task until completion
+                while True:
+                    status = task.step(ctx)
+                    if status in (TaskStatus.SUCCESS, TaskStatus.FAILED):
+                        task.exit(ctx, status)
+                        break
+
+                print(f"[thread] {config.thread_id} cancel task {step.service}.{step.method}: {status.name}")
+
         thread = PatternThread(
             thread_id=config.thread_id,
             priority=config.priority,
@@ -96,6 +127,7 @@ class ThreadHelper:
             patterns=patterns,
             on_suspend=on_suspend,
             on_resume=on_resume,
+            on_cancel=on_cancel,
         )
 
         thread.build_task_sequence()

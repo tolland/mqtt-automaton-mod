@@ -4,7 +4,7 @@ import threading
 import time
 import uuid
 from asyncio import Queue
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from rich import print
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 def _load_config(config_path: str) -> dict[str, Any]:
     """Load configuration from YAML file"""
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
@@ -56,8 +56,9 @@ class ModularBotClient:
         self.settings = settings
         self.config_path = config_path
         self.config = _load_config(config_path)
-        self._event_queue: Optional[Queue] = None
+        self._event_queue: Queue | None = None
         self.running = False
+        self._shutdown_requested = False
         self.event_manager = EventManager(self.config.get("event_handlers", {}))
 
         # State
@@ -165,12 +166,12 @@ class ModularBotClient:
         """Connect to MQTT broker"""
         self.mqtt.connect()
 
-        logger.debug(f"[bot] Waiting for mod to come online...")
+        logger.debug("[bot] Waiting for mod to come online...")
         available = await self.mqtt.device_monitor.wait_for_available(timeout=30.0)
         if not available:
             raise TimeoutError("Mod did not come online")
 
-        logger.debug(f"[bot] Waiting for mod to come ready...")
+        logger.debug("[bot] Waiting for mod to come ready...")
         ready = await self.mqtt.device_monitor.wait_for_ready(timeout=30.0)
         if not ready:
             raise TimeoutError("Mod did not become ready")
@@ -179,6 +180,8 @@ class ModularBotClient:
 
     def exit(self):
         """Exit the bot gracefully"""
+        print("[bot] Exit requested - will shutdown gracefully")
+        self._shutdown_requested = True
         self.send_mqtt_message(
             ServiceMessage(
                 **{
@@ -190,17 +193,15 @@ class ModularBotClient:
                 }
             )
         )
-        # self._scheduler.stop()
-        self.stop()
 
     def stop(self) -> None:
         """Stop the bot"""
-        print(f"[bot] Stopping modular bot client")
+        print("[bot] Stopping modular bot client")
 
         self.running = False
         self.mqtt.disconnect()
 
-        print(f"[bot] Bot stopped")
+        print("[bot] Bot stopped")
 
     def get_status(self) -> dict[str, Any]:
         """Get current bot status"""
@@ -212,7 +213,7 @@ class ModularBotClient:
 
     def configure(self) -> None:
         """Start the bot by initializing threads from config"""
-        print(f"[bot] Starting modular bot client")
+        print("[bot] Starting modular bot client")
 
         self.patterns_configs = PatternsConfigParser.from_yaml(self.config)
         print(f"[bot] Loaded {len(self.patterns_configs)} patterns configuration(s)")
@@ -240,7 +241,7 @@ class ModularBotClient:
             print(f"[bot] Registered thread: {thread_config.thread_id}")
 
         self.running = True
-        print(f"[bot] Bot started successfully")
+        print("[bot] Bot started successfully")
 
     async def run(self) -> int:
         """Run the bot (main execution loop)"""
@@ -253,6 +254,14 @@ class ModularBotClient:
             self.start()
 
             while self.running:
+                # Check for shutdown request
+                if self._shutdown_requested:
+                    print("[bot] Processing shutdown request")
+                    await self._scheduler.shutdown(self.ctx)
+                    self.running = False
+                    self.stop()
+                    break
+
                 await self._process_event_queue()
 
                 await asyncio.sleep(0.1)
@@ -260,7 +269,7 @@ class ModularBotClient:
                 all_complete = await self._scheduler.step(self.ctx)
 
                 if all_complete:
-                    print(f"[bot] All tasks completed, exiting")
+                    print("[bot] All tasks completed, exiting")
                     self.running = False
                     break
 
@@ -272,7 +281,7 @@ class ModularBotClient:
             return 0
 
         except KeyboardInterrupt:
-            print(f"\n[bot] Interrupted by user")
+            print("\n[bot] Interrupted by user")
             return 130
         except Exception as e:
             print(f"[bot] Error: {e}")

@@ -27,6 +27,7 @@ class TaskThread:
         priority: TaskPriority,
         on_suspend: Callable[["TaskThread", "Context"], Awaitable[None]] | None = None,
         on_resume: Callable[["TaskThread", "Context"], Awaitable[None]] | None = None,
+        on_cancel: Callable[["TaskThread", "Context"], Awaitable[None]] | None = None,
         uninterruptible: bool = False,
     ) -> None:
         self.thread_id = thread_id
@@ -44,6 +45,7 @@ class TaskThread:
         # Injected callbacks
         self._on_suspend = on_suspend
         self._on_resume = on_resume
+        self._on_cancel = on_cancel
 
     def enqueue_task(self, task: Task) -> None:
         """Add task to this thread's queue and inject correlation_id"""
@@ -79,6 +81,22 @@ class TaskThread:
             raise RuntimeError(f"Cannot resume task in status {self.current_task.status}")
         else:
             await self._advance_to_next_task(ctx)
+
+    async def cancel(self, ctx: Context) -> None:
+        """Cancel this thread - execute cleanup tasks and mark as cancelled"""
+        self.state = ThreadStatus.CANCELLED
+
+        # Cancel current task if any
+        if self.current_task:
+            self.current_task.suspend(ctx)
+
+        # Execute on_cancel tasks
+        if self._on_cancel:
+            await self._on_cancel(self, ctx)
+
+        # Clear remaining tasks - thread is dead after cancellation
+        self.task_queue.clear()
+        self.current_task = None
 
     def to_dict(self) -> dict:
         """Return a dictionary representation of the thread state."""

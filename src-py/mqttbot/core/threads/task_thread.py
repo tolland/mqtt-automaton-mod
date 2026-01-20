@@ -80,6 +80,21 @@ class TaskThread:
         else:
             await self._advance_to_next_task(ctx)
 
+    def to_dict(self) -> dict:
+        """Return a dictionary representation of the thread state."""
+        return {
+            "thread_id": self.thread_id,
+            "state": self.state.name,
+            "priority": self.priority.name,
+            "correlation_id": self.correlation_id,
+            "current_task": self.current_task.to_dict() if self.current_task and hasattr(self.current_task, "to_dict") else str(self.current_task),
+            "task_queue_len": len(self.task_queue),
+        }
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
     async def step(self, ctx: Context) -> bool:
         """Execute one step. Return True if thread completed"""
         if not self.current_task:

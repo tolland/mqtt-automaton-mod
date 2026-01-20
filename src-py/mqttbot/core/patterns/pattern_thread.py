@@ -99,10 +99,10 @@ class PatternThread(TaskThread):
                     self.enqueue_task(task)
                 wp_pos = compiler.current_pos
 
-    async def suspend(self) -> None:
+    async def suspend(self, ctx: Context) -> None:
         """Suspend - save waypoint and task index for resumption"""
         print(f"[PatternThread] Suspending at task index {self.current_task_index}")
-        await super().suspend()
+        await super().suspend(ctx)
         if self.current_task:
             self.task_queue.appendleft(self.current_task)
             self.current_task.status = TaskStatus.READY
@@ -129,6 +129,15 @@ class PatternThread(TaskThread):
         self.current_task_index = 0
 
         await super().resume(ctx)
+
+    def to_dict(self) -> dict:
+        """Specific override for PatternThread state."""
+        state = super().to_dict()
+        state.update({
+            "current_task_index": self.current_task_index,
+            "waypoints_count": len(self.waypoints),
+        })
+        return state
 
     async def step(self, ctx) -> bool:
         """Execute one step of the pattern sequence"""

@@ -63,7 +63,8 @@ public class MiniTestContext implements AutoCloseable {
     }
     
     /**
-     * Sets up the test area: ensures creative mode and prepares base environment.
+     * Sets up the test area: ensures creative mode and prepares base
+     * environment.
      * Does NOT teleport the player - use ActualTest for that.
      */
     private void setup()
@@ -82,11 +83,11 @@ public class MiniTestContext implements AutoCloseable {
         BotTest.LOGGER.debug("Setting base platform block");
         setBlock(0, -1, 0, "minecraft:smooth_stone");
         context.waitTick();
-
+        
         // Set game rules for consistent testing
         BotTest.LOGGER.debug("Executing: gamerule randomTickSpeed 0");
         server.executeCommand("gamerule randomTickSpeed 0");
-
+        
         context.waitTick();
         BotTest.LOGGER.debug("Test area setup complete at ({}, {}, {})",
             location.baseX, location.baseY, location.baseZ);
@@ -136,13 +137,15 @@ public class MiniTestContext implements AutoCloseable {
         context.waitTick();
         BotTest.LOGGER.debug("Teardown complete");
     }
-
+    
     /**
      * Creates an ActualTest context that teleports the player to the test
      * location, optionally changes game mode, and restores state on close.
      * <p>
-     * Use this pattern for tests that need to teleport the player and potentially
+     * Use this pattern for tests that need to teleport the player and
+     * potentially
      * change game modes:
+     *
      * <pre>{@code
      * try (MiniTestContext testCtx = new MiniTestContext(context, server)) {
      *     // Setup: place blocks in creative mode
@@ -162,7 +165,7 @@ public class MiniTestContext implements AutoCloseable {
     {
         return new ActualTest();
     }
-
+    
     /**
      * Inner context that handles player teleportation and game mode changes.
      * Automatically saves player position, teleports to test location, and
@@ -173,7 +176,7 @@ public class MiniTestContext implements AutoCloseable {
         private final float savedYaw;
         private final float savedPitch;
         private boolean closed = false;
-
+        
         private ActualTest()
         {
             // Save current player position and rotation
@@ -182,7 +185,7 @@ public class MiniTestContext implements AutoCloseable {
                     return null;
                 return client.player.blockPosition();
             });
-
+            
             // Save rotation
             float[] rotation = context.computeOnClient(client -> {
                 if(client.player == null)
@@ -192,11 +195,11 @@ public class MiniTestContext implements AutoCloseable {
             });
             savedYaw = rotation[0];
             savedPitch = rotation[1];
-
+            
             BotTest.LOGGER.debug(
                 "ActualTest: Saved player position at {} (yaw={}, pitch={})",
                 savedPosition, savedYaw, savedPitch);
-
+            
             // Teleport player to test location
             String playerName = server.getPlayerName() != null
                 ? server.getPlayerName()
@@ -206,40 +209,46 @@ public class MiniTestContext implements AutoCloseable {
                 tpCommand);
             server.executeCommand(tpCommand);
             context.waitTick();
-
+            
             String rotateCommand = "rotate " + playerName + " 0 0";
             BotTest.LOGGER.debug("ActualTest: Rotating player: {}",
                 rotateCommand);
             server.executeCommand(rotateCommand);
             context.waitTick();
         }
-
+        
         /**
          * Sets the game mode for this test. Use fluent API style.
          *
-         * @param gameMode The game mode (creative, survival, adventure, spectator)
+         * @param gameMode
+         *            The game mode (creative, survival, adventure, spectator)
          * @return this ActualTest for method chaining
          */
         public ActualTest withGameMode(String gameMode)
         {
             if(closed)
                 throw new IllegalStateException("ActualTest is already closed");
-
+            
             BotTest.LOGGER.debug("ActualTest: Setting game mode to {}",
                 gameMode);
             server.executeCommand("gamemode " + gameMode);
             context.waitTick();
             return this;
         }
-
+        
         /**
          * Teleports the player to a specific offset within the test area.
          *
-         * @param dx relative X offset
-         * @param dy relative Y offset
-         * @param dz relative Z offset
-         * @param yaw player yaw
-         * @param pitch player pitch
+         * @param dx
+         *            relative X offset
+         * @param dy
+         *            relative Y offset
+         * @param dz
+         *            relative Z offset
+         * @param yaw
+         *            player yaw
+         * @param pitch
+         *            player pitch
          * @return this ActualTest for method chaining
          */
         public ActualTest withPosition(float dx, float dy, float dz, float yaw,
@@ -247,7 +256,7 @@ public class MiniTestContext implements AutoCloseable {
         {
             if(closed)
                 throw new IllegalStateException("ActualTest is already closed");
-
+            
             String playerName = server.getPlayerName() != null
                 ? server.getPlayerName()
                 : "@p";
@@ -256,40 +265,41 @@ public class MiniTestContext implements AutoCloseable {
             context.waitTick();
             return this;
         }
-
+        
         @Override
         public void close()
         {
             if(closed)
                 return;
-
+            
             closed = true;
-
+            
             BotTest.LOGGER.debug("ActualTest: Restoring state");
-
+            
             // Restore creative mode
             server.executeCommand("gamemode creative");
             context.waitTick();
-
+            
             // Teleport back to saved position
             if(savedPosition != null)
             {
                 String playerName = server.getPlayerName() != null
                     ? server.getPlayerName()
                     : "@p";
-                String tpCommand = String.format("tp %s %d %d %d %.1f %.1f",
-                    playerName, savedPosition.getX(), savedPosition.getY(),
-                    savedPosition.getZ(), savedYaw, savedPitch);
+                String tpCommand =
+                    String.format("minecraft:tp %s %d %d %d %.1f %.1f",
+                        playerName, savedPosition.getX(), savedPosition.getY(),
+                        savedPosition.getZ(), savedYaw, savedPitch);
                 BotTest.LOGGER.debug("ActualTest: Restoring position: {}",
                     tpCommand);
                 server.executeCommand(tpCommand);
                 context.waitTick();
             }
-
+            
             BotTest.LOGGER.debug("ActualTest: State restored");
         }
     }
-
+    
     /**
      * Places a block at the given relative coordinates from the test location.
      * The block will be automatically cleaned up during teardown.

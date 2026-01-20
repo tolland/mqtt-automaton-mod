@@ -58,11 +58,26 @@ repositories {
         url = 'https://babbaj.github.io/maven/'
     }
     maven {
+        name = 'enginehub-repo'
+        url = 'https://maven.enginehub.org/repo/'
+    }
+    maven {
         name = 'tolland-wurst'
         url = uri("https://maven.pkg.github.com/tolland/Wurst7")
         credentials {
             username = System.getenv("GITHUB_ACTOR")
             password = System.getenv("GITHUB_TOKEN")
+        }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
         }
     }
 //    ivy {
@@ -96,6 +111,10 @@ dependencies {
     }
     implementation "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
     implementation "io.moquette:moquette-broker:0.17"
+
+//    implementation group: 'org.enginehub.worldeditcui-protocol', name: 'worldeditcui-protocol-fabric-mc1.21.8', version: '4.0.1'
+//    modImplementation "maven.modrinth:worldedit:${worldedit_version}"
+//    modImplementation "maven.modrinth:worldedit-cui:${worldedit_cui_version}"
     compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
 
     testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"

@@ -6,13 +6,14 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import org.limepepper.gametest.facade.TestServerFacade;
 import org.limepepper.gametest.tests.AutoFarmTest;
+import org.limepepper.gametest.tests.BaritoneBotBasicTest;
 import org.limepepper.gametest.utils.ExternalServerConnection;
 import org.limepepper.gametest.utils.ExternalServerContext;
 import org.limepepper.gametest.utils.ExternalServerTestHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.limepepper.gametest.BlockLists.getAllInteractiveBlocks;
+import static org.limepepper.gametest.BlockLists.getInteractiveBlocks;
 import static org.limepepper.gametest.BotTestHelper.runWurstCommand;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -122,12 +123,14 @@ public class ExternalServerGameTest implements FabricClientGameTest {
         context.waitTicks(20); // Wait 1 second
         context.takeScreenshot("mod_feature_test");
         
-        for(String block : getAllInteractiveBlocks())
+        for(String block : getInteractiveBlocks())
         {
             
             AutoFarmTest.testAutoFarmPlaceAtFootLevel(context, server, block);
             
         }
+        BaritoneBotBasicTest.testBaritoneIsWorking(context, server);
+        BaritoneBotBasicTest.testBaritoneIsWorking2(context, server);
     }
     
 }

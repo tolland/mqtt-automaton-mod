@@ -2,8 +2,8 @@ package org.limepepper.gametest.tests;
 
 import net.fabricmc.fabric.api.client.gametest.v1.TestInput;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import org.limepepper.gametest.MiniTestContext;
 import org.limepepper.gametest.BotTest;
+import org.limepepper.gametest.MiniTestContext;
 import org.limepepper.gametest.facade.TestServerFacade;
 import org.lwjgl.glfw.GLFW;
 
@@ -41,7 +41,7 @@ public enum AutoFarmTest
             // Original: Z=-2 (stone), Z=-1 (farmland), Z=0 (farmland)
             testCtx.setBlockLayer(-1, blocks,
                 new String[][]{{null, "stone", null}, // Z=-2: stone under
-                                                      // interactable
+                    // interactable
                     {"stone", "farm", "stone"}, // Z=-1: farmland in front
                     {"stone", "stone", "stone"}, // Z=0: farmland under player
                     // (center)
@@ -54,35 +54,39 @@ public enum AutoFarmTest
             // Original: Z=-2 (interactable), Z=-1 (carrot), Z=0 (player)
             testCtx.setBlockLayer(0, blocks,
                 new String[][]{{null, "interact", null}, // Z=-2: interactable
-                                                         // block
+                    // block
                     {null, "carrot", null}, // Z=-1: crop
                     {null, "player", null}, // Z=0: player position (center)
                     {null, null, null}, // Z=1: empty
                     {null, null, null} // Z=2: empty
                 });
             
-            // Teleport to test location with specific rotation
-            testCtx.teleportPlayer(0.3F, 0, 0.4f, -175.8f, 33.5f);
+            try(var actualTest =
+                testCtx.createActualTest().withGameMode("survival"))
+            {
+                // Player is now at test location in survival mode
+                // In case the farmed block doesn't go into inventory
+                server.executeCommand(
+                    String.format("minecraft:give %s minecraft:carrot 1",
+                        server.getPlayerName()));
+                server.executeCommand("/sphere minecraft:stone 10");
+                waitForCropAge(context, 0, 0, -1, 7);
+                
+                runWurstCommand(context, "t AutoFarm on");
+                context.waitTick();
+                waitForCropAge(context, 0, 0, -1, 0);
+                debugBlock(0, 0, -1);
+                context.waitTick();
+                runWurstCommand(context, "t AutoFarm off");
+                context.waitTick();
+                input.pressKey(GLFW.GLFW_KEY_F5);
+                clearChat(context);
+                clearToasts(context);
+                context.takeScreenshot("farm_test5");
+                // input.pressKey(GLFW.GLFW_KEY_F3);
+                context.waitTicks(40);
+            }
             
-            // In case the farmed block doesn't go into inventory
-            runWurstCommand(context, "give carrot");
-            
-            runCommand(server, "gamemode survival");
-            waitForCropAge(context, 0, 0, -1, 7);
-            
-            runWurstCommand(context, "t AutoFarm on");
-            context.waitTick();
-            waitForCropAge(context, 0, 0, -1, 0);
-            debugBlock(0, 0, -1);
-            context.waitTick();
-            runWurstCommand(context, "t AutoFarm off");
-            context.waitTick();
-            input.pressKey(GLFW.GLFW_KEY_F5);
-            clearChat(context);
-            clearToasts(context);
-            context.takeScreenshot("farm_test5");
-            // input.pressKey(GLFW.GLFW_KEY_F3);
-            context.waitTicks(40);
         }
         // MiniTestContext automatically handles cleanup via close()
     }

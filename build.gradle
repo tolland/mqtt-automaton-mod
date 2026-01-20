@@ -2,6 +2,8 @@ import net.fabricmc.loom.task.DownloadTask
 import net.fabricmc.loom.task.FabricModJsonV1Task
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 
+import java.util.concurrent.TimeUnit
+
 plugins {
     id "net.fabricmc.fabric-loom-remap" version "${loom_version}"
     id "com.diffplug.spotless" version "8.1.0"
@@ -17,6 +19,41 @@ def ENV = System.getenv()
 def mcUsername =
         System.getenv("MQTTBOT_USERNAME")
                 ?: project.findProperty("bot_username")
+
+
+def loadPropertiesFile = { String path ->
+    def f = rootProject.file(path)
+    if (!f.exists()) return null
+
+    def p = new Properties()
+    f.withInputStream { p.load(it) }
+    p
+}
+
+def _localSecrets = null
+
+def getSecret = { String envName,
+                  String gradleProp = null,
+                  String fileName = ".local-secrets.properties" ->
+
+    def value =
+            System.getenv(envName)
+                    ?: (gradleProp ? project.findProperty(gradleProp) : null)
+                    ?: (
+                    _localSecrets
+                            ?: (_localSecrets = loadPropertiesFile(fileName))
+            )?.getProperty(envName)
+
+    if (value == null) {
+        throw new GradleException(
+                "Missing secret '$envName'. " +
+                        "Set env var, -P${gradleProp ?: envName}, or $fileName"
+        )
+    }
+
+    value
+}
+
 
 base {
     archivesName = project.archives_base_name
@@ -61,12 +98,34 @@ repositories {
         name = 'enginehub-repo'
         url = 'https://maven.enginehub.org/repo/'
     }
-    maven {
-        name = 'tolland-wurst'
-        url = uri("https://maven.pkg.github.com/tolland/Wurst7")
-        credentials {
-            username = System.getenv("GITHUB_ACTOR")
-            password = System.getenv("GITHUB_TOKEN")
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'tolland-baritone'
+                url = uri("https://maven.pkg.github.com/tolland/baritone")
+                credentials {
+                    username = getSecret("GITHUB_ACTOR")
+                    password = getSecret("GITHUB_TOKEN")
+                }
+            }
+        }
+        filter {
+            includeGroup "baritone"
+        }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'tolland-wurst'
+                url = uri("https://maven.pkg.github.com/tolland/Wurst7")
+                credentials {
+                    username = getSecret("GITHUB_ACTOR")
+                    password = getSecret("GITHUB_TOKEN")
+                }
+            }
+        }
+        filter {
+            includeGroup "net.wurstclient"
         }
     }
     exclusiveContent {
@@ -104,7 +163,7 @@ dependencies {
 
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
     implementation 'org.yaml:snakeyaml:2.0'
-    modImplementation "cabaletta:baritone-api-fabric:${project.baritone_version}"
+    modImplementation "baritone:baritone-fabric:${project.baritone_version}"
     modImplementation "net.wurstclient:wurst-client:${project.wurst_version}"
     modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {
         exclude(group: "net.fabricmc.fabric-api")
@@ -212,8 +271,6 @@ tasks.register("download", DownloadTask) {
     output = file("out.txt")
 }
 
-import java.util.concurrent.TimeUnit
-
 tasks.register('runClientWithTests') {
     group = 'fabric'
     description = 'Run client with pytest tests'
@@ -302,6 +359,12 @@ tasks.register("runProductionClientGameTest", ClientProductionRunTask) {
     // Defaults to true only on Linux and when the "CI" environment variable is set.
     // XVFB must be installed, on Debian-based systems you can install it with: `apt install xvfb`
     useXVFB = true
+}
+
+tasks.register("printUsername") {
+    doLast {
+        println getSecret("GITHUB_ACTOR")
+    }
 }
 
 tasks.register("printGametestClasspath") {

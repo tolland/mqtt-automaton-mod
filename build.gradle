@@ -79,7 +79,6 @@ repositories {
         name = 'ParchmentMC'
         url = 'https://maven.parchmentmc.org'
     }
-    flatDir { dirs 'libs' }
 
 //    ivy {
 //        url = "https://github.com/cabaletta/baritone/releases/download"

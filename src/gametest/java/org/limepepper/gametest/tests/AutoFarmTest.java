@@ -69,7 +69,7 @@ public enum AutoFarmTest
                 server.executeCommand(
                     String.format("minecraft:give %s minecraft:carrot 1",
                         server.getPlayerName()));
-                server.executeCommand("/sphere minecraft:stone 10");
+                // server.executeCommand("/hsphere minecraft:stone 10");
                 waitForCropAge(context, 0, 0, -1, 7);
                 
                 runWurstCommand(context, "t AutoFarm on");

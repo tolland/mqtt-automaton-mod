@@ -11,8 +11,8 @@ class Inventory:
     item_id: str
     name: str
     quantity: int
-    location: Optional[str] = None
-    description: Optional[str] = None
+    location: str | None = None
+    description: str | None = None
 
     def to_json(self) -> str:
         """Convert to JSON string matching Java Inventory format."""

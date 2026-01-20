@@ -1,7 +1,7 @@
 import logging
 import time
 import uuid
-from typing import Optional, Any
+from typing import Any
 
 from mqttbot import ServiceMessage
 from mqttbot.config.service_config import ServiceConfig
@@ -23,7 +23,7 @@ class GotoTask(TaskBase):
         service: str = None,
         method: str = None,
         params: dict[str, Any] = None,
-        service_config: Optional[ServiceConfig] = None,
+        service_config: ServiceConfig | None = None,
     ):
         super().__init__()
         # inspect(params)
@@ -32,7 +32,7 @@ class GotoTask(TaskBase):
         z = params["target"]["z"]
         self.target = (x, y, z)
         self.service_config = service_config
-        self.request_id: Optional[str] = None
+        self.request_id: str | None = None
         self.result = None
         self._state = TaskState.INIT
         self._timeout = 60.0
@@ -40,7 +40,7 @@ class GotoTask(TaskBase):
 
     @classmethod
     def create(
-        cls, x: int, y: int, z: int, service_config: Optional[ServiceConfig] = None
+        cls, x: int, y: int, z: int, service_config: ServiceConfig | None = None
     ) -> "GotoTask":
         """Factory method to create a GotoTask"""
         params: dict[str, Any] = {"target": {"x": x, "y": y, "z": z}}

@@ -1,4 +1,5 @@
-from typing import Protocol, Generator
+from collections.abc import Generator
+from typing import Protocol
 
 from rich import inspect
 

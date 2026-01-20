@@ -1,7 +1,6 @@
 import threading
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from mqttbot import ServiceMessage
 from mqttbot.core.context import Context
@@ -67,7 +66,7 @@ class MessageService:
 
         return request_id
 
-    def get_result(self, request_id: str) -> Optional[RequestResult]:
+    def get_result(self, request_id: str) -> RequestResult | None:
         """
         Check if response arrived (non-blocking).
 

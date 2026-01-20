@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any
 
 from mqttbot import ServiceMessage
 from mqttbot.config.tasks.task_decorator import task
@@ -20,8 +20,8 @@ class CommandToChatTask(TaskBase):
     def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):
         super().__init__()
         self.timeout = timeout
-        self.request_id: Optional[str] = None
-        self.result: Optional[RequestResult] = None
+        self.request_id: str | None = None
+        self.result: RequestResult | None = None
         self._state = TaskState.INIT
         self.service = service
         self.method = method
@@ -30,7 +30,7 @@ class CommandToChatTask(TaskBase):
 
     def _enter(self, ctx: Context) -> None:
         """Initialize the task"""
-        print(f"[CommandToChatTask] Starting ")
+        print("[CommandToChatTask] Starting ")
 
         ctx.blackboard.subscribe("events", self._handler)
 
@@ -43,13 +43,13 @@ class CommandToChatTask(TaskBase):
                 clean_message = event_state.message.response["clean_message"]
                 print(f"[CommandToChatTask] Clean message: {clean_message}")
                 if "[Wurst] All items sold successfully" in clean_message:
-                    print(f"[CommandToChatTask] Detected successful sell message.")
+                    print("[CommandToChatTask] Detected successful sell message.")
                     self.found = True
 
     def _step(self, ctx: Context) -> TaskStatus:
         if self._state == TaskState.INIT:
             # Send warp request
-            print(f"[CommandToChatTask] stepping and sending message")
+            print("[CommandToChatTask] stepping and sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,
@@ -72,7 +72,7 @@ class CommandToChatTask(TaskBase):
         return TaskStatus.FAILED
 
     def _exit(self, ctx: Any, status: TaskStatus) -> None:
-        print(f"[CommandToChatTask] exiting ")
+        print("[CommandToChatTask] exiting ")
 
         ctx.blackboard.unsubscribe("events", self._handler)
 

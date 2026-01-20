@@ -1,7 +1,7 @@
 """Configuration loading and management."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -16,13 +16,13 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 
 def build_settings(
         config_path: str | Path,
-        broker: Optional[str] = None,
-        port: Optional[str] = None,
-        client_id: Optional[str] = None,
-        timeout: Optional[int] = None,
-        retries: Optional[int] = None,
-        retry_delay: Optional[int] = None,
-        log_level: Optional[str] = None,
+        broker: str | None = None,
+        port: str | None = None,
+        client_id: str | None = None,
+        timeout: int | None = None,
+        retries: int | None = None,
+        retry_delay: int | None = None,
+        log_level: str | None = None,
 ) -> Settings:
     """
     Build Settings object from configuration file and CLI arguments.

@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Callable, Optional, List
+from collections.abc import Callable
 
 from paho.mqtt import client as mqtt
 
@@ -28,9 +28,9 @@ class MqttBotClient:
         """
         self.device_monitor: DevicePresenceMonitor | None = None
         self.settings: Settings = settings
-        self.message_callbacks: List[Callable[[str, str], None]] = []
+        self.message_callbacks: list[Callable[[str, str], None]] = []
         self._mqtt_connected = False
-        self._client: Optional[mqtt.Client] = None
+        self._client: mqtt.Client | None = None
 
         # Store topic information from Settings
         self.topic_base = settings.topic_base
@@ -99,7 +99,7 @@ class MqttBotClient:
         if not self._mqtt_connected:
             raise Exception(f"Failed to connect to MQTT broker within {timeout} seconds")
 
-        print(f"[mqtt] Connection established successfully")
+        print("[mqtt] Connection established successfully")
 
     def disconnect(self) -> None:
         """Disconnect from MQTT broker"""

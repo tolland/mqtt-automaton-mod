@@ -1,7 +1,7 @@
 import typer
 
 from mqttbot.callbacks import get_callback
-from mqttbot.commands import run, dump_config
+from mqttbot.commands import dump_config, run
 
 """Command-line interface for MQTT bot."""
 

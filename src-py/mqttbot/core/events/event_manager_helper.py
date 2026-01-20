@@ -1,4 +1,3 @@
-from typing import Optional
 
 from mqttbot import ServiceMessage
 from mqttbot.core.events.event_manager import EventHandlerConfig
@@ -15,7 +14,7 @@ class EventManagerHelper:
     @staticmethod
     async def _build_thread_from_config(
         thread_id: str, handler_config: EventHandlerConfig, trigger_msg: ServiceMessage
-    ) -> Optional[TaskThread]:
+    ) -> TaskThread | None:
         """Build a TaskThread from event handler config"""
 
         thread = TaskThread(thread_id, TaskPriority.HIGH)

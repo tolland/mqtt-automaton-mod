@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Any
 
 from rich import inspect
 
@@ -67,11 +67,11 @@ class EventManager:
                     f"[config] Registered event handler: {service_name}:{method_name} ({len(steps)} steps)"
                 )
 
-    def get_handler_config(self, service: str, method: str) -> Optional[EventHandlerConfig]:
+    def get_handler_config(self, service: str, method: str) -> EventHandlerConfig | None:
         """Look up handler config for a service:method pair"""
         return self.handlers.get((service, method))
 
-    async def handle_message(self, message_data: ServiceMessage) -> Optional[TaskThread]:
+    async def handle_message(self, message_data: ServiceMessage) -> TaskThread | None:
         for pattern, callbacks in self.handlers.items():
             for callback in callbacks:
                 if pattern[0] == message_data.service and pattern[1] == message_data.method:

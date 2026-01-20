@@ -20,10 +20,11 @@ import asyncio
 import json
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,11 @@ class DeviceConfig:
     manufacturer: str
     sw_version: str
     services: list[str]
-    capabilities: Dict[str, Any]
-    topics: Dict[str, str]
+    capabilities: dict[str, Any]
+    topics: dict[str, str]
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "DeviceConfig":
+    def from_json(cls, data: dict[str, Any]) -> "DeviceConfig":
         """Parse from MQTT config message"""
         device = data.get("device", {})
         identifiers = device.get("identifiers", [])
@@ -73,11 +74,11 @@ class ReadinessState:
     state: str
     can_accept_tasks: bool
     reason: str
-    additional_data: Dict[str, Any]
+    additional_data: dict[str, Any]
     timestamp: datetime
 
     @classmethod
-    def from_json(cls, data: Dict[str, Any]) -> "ReadinessState":
+    def from_json(cls, data: dict[str, Any]) -> "ReadinessState":
         """Parse from MQTT readiness message"""
         return cls(
             ready=data.get("ready", False),
@@ -99,13 +100,13 @@ class HeartbeatMonitor:
             timeout: Seconds without heartbeat before considering device dead
         """
         self._timeout = timeout
-        self._last_heartbeat: Optional[float] = None
-        self._last_sequence: Optional[int] = None
+        self._last_heartbeat: float | None = None
+        self._last_sequence: int | None = None
         self._is_alive = False
         self._callbacks: list[Callable[[bool], None]] = []
-        self._monitor_task: Optional[asyncio.Task] = None
+        self._monitor_task: asyncio.Task | None = None
 
-    def on_heartbeat(self, data: Dict[str, Any]):
+    def on_heartbeat(self, data: dict[str, Any]):
         """Called when heartbeat message received"""
         self._last_heartbeat = time.time()
         self._last_sequence = data.get("sequence")
@@ -188,8 +189,8 @@ class DevicePresenceMonitor:
 
         # State
         self._availability: AvailabilityState = AvailabilityState.UNKNOWN
-        self._config: Optional[DeviceConfig] = None
-        self._readiness: Optional[ReadinessState] = None
+        self._config: DeviceConfig | None = None
+        self._readiness: ReadinessState | None = None
         self._heartbeat_monitor = HeartbeatMonitor(timeout=1.5)
 
         # Events
@@ -383,7 +384,7 @@ class DevicePresenceMonitor:
         logger.error(f"[{self.device_id}] Timeout waiting for online state after {timeout}s (current state: {self._availability.value})")
         return False
 
-    async def wait_for_config(self, timeout: float = 30.0) -> Optional[DeviceConfig]:
+    async def wait_for_config(self, timeout: float = 30.0) -> DeviceConfig | None:
         """
         Wait for device config to be received.
 
@@ -457,12 +458,12 @@ class DevicePresenceMonitor:
         return self._availability
 
     @property
-    def config(self) -> Optional[DeviceConfig]:
+    def config(self) -> DeviceConfig | None:
         """Current device config"""
         return self._config
 
     @property
-    def readiness(self) -> Optional[ReadinessState]:
+    def readiness(self) -> ReadinessState | None:
         """Current readiness state"""
         return self._readiness
 

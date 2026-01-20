@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, Optional
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -7,10 +7,10 @@ class PatternStepConfig:
     name: str
     enabled: bool = True
     retries: int = 0
-    timeout: Optional[float] = None
-    params: Dict[str, Any] = field(default_factory=dict)
+    timeout: float | None = None
+    params: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Placeholder: return a dict representation. Customize serialization if needed."""
         return asdict(self)
 

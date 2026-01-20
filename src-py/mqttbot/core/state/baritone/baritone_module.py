@@ -21,7 +21,7 @@ class BaritoneModule(StateModule[BaritoneState]):
         """
         if event.service == "baritone" and event.method == "state":
             response = event.response or {}
-            
+
             # Parse current state
             current_state_data = response.get("currentState", {})
             current_state = PathingStateInfo(
@@ -29,7 +29,7 @@ class BaritoneModule(StateModule[BaritoneState]):
                 has_active_request=current_state_data.get("hasActiveRequest", False),
                 phase=current_state_data.get("phase", "IDLE"),
             )
-            
+
             # Parse history stats
             history_stats_data = response.get("historyStats", {})
             history_stats = HistoryStats(
@@ -40,7 +40,7 @@ class BaritoneModule(StateModule[BaritoneState]):
                 cancelled=history_stats_data.get("cancelled", 0),
                 avg_duration_seconds=history_stats_data.get("avgDurationSeconds", 0.0),
             )
-            
+
             # Parse request history
             request_history_data = response.get("requestHistory", [])
             request_history = []
@@ -63,10 +63,10 @@ class BaritoneModule(StateModule[BaritoneState]):
                     timeline=req_data.get("timeline", []),
                 )
                 request_history.append(req)
-            
+
             # Parse current request timeline (if active)
             current_request_timeline = response.get("currentRequestTimeline", [])
-            
+
             # Update state
             self._state = BaritoneState(
                 state_type=response.get("stateType", "baritoneState"),

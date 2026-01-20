@@ -4,9 +4,8 @@ import signal
 import sys
 
 import typer
-from rich.console import Console
-
 from mqttbot.core.modular_bot_client import ModularBotClient
+from rich.console import Console
 
 app = typer.Typer(name="run")
 
@@ -14,7 +13,7 @@ app = typer.Typer(name="run")
 @app.callback()
 def run_callback(ctx: typer.Context):
     # inspect(ctx.obj, title="inspecting ctx.obj in voices callback")
-    typer.echo(f"in the query callback")
+    typer.echo("in the query callback")
 
 
 @app.command("")

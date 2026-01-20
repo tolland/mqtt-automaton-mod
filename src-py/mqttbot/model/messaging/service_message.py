@@ -12,12 +12,12 @@ class ServiceMessage:
     service: str
     method: str
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    correlation_id: Optional[str] = None
+    correlation_id: str | None = None
     params: dict[str, Any] = field(default_factory=dict)
     response: dict[str, Any] = field(default_factory=dict)
     identity: str = "python_client"
-    message: Optional[str] = None
-    timestamp: Optional[str] = None
+    message: str | None = None
+    timestamp: str | None = None
 
     def to_json(self) -> str:
         """Convert to JSON string matching Java ServiceMessage format."""
@@ -38,7 +38,7 @@ class ServiceMessage:
     @staticmethod
     def _patch_request_id(data) -> str:
         """Ensure request_id is set."""
-        print(f"[ServiceMessage] Patching request_id as missing")
+        print("[ServiceMessage] Patching request_id as missing")
         return str(uuid.uuid4())
 
     @classmethod

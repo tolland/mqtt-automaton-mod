@@ -1,7 +1,6 @@
-from dataclasses import dataclass
-from dataclasses import field
-from typing import Any, Iterator
-from typing import Literal
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from typing import Any, Literal
 
 import rich
 from rich.repr import rich_repr

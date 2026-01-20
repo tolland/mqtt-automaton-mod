@@ -1,5 +1,6 @@
 import copy
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 
 from mqttbot.core.state.state_module import StateModule
 

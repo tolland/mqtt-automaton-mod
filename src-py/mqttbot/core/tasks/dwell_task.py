@@ -58,7 +58,7 @@ class DwellTask(TaskBase):
         elapsed = time.time() - self.start_time
 
         if elapsed >= self.duration:
-            print(f"[DwellTask] Dwell completed")
+            print("[DwellTask] Dwell completed")
             self._state = TaskState.DONE
             return TaskStatus.SUCCESS
 

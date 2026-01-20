@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -25,19 +24,19 @@ class HistoryStats:
 class PathingRequest:
     """A single pathing request from history"""
     request_id: str = ""
-    correlation_id: Optional[str] = None
-    target_x: Optional[int] = None
-    target_y: Optional[int] = None
-    target_z: Optional[int] = None
+    correlation_id: str | None = None
+    target_x: int | None = None
+    target_y: int | None = None
+    target_z: int | None = None
     phase: str = "IDLE"
-    start_time: Optional[str] = None
+    start_time: str | None = None
     elapsed_seconds: float = 0.0
-    completion_time: Optional[str] = None
+    completion_time: str | None = None
     duration_seconds: float = 0.0
-    failure_reason: Optional[str] = None
-    last_x: Optional[int] = None
-    last_y: Optional[int] = None
-    last_z: Optional[int] = None
+    failure_reason: str | None = None
+    last_x: int | None = None
+    last_y: int | None = None
+    last_z: int | None = None
     timeline: list[str] = field(default_factory=list)
 
 
@@ -45,7 +44,7 @@ class PathingRequest:
 class BaritoneState:
     """Complete baritone state including current state, history, and statistics"""
     state_type: str = "baritoneState"
-    current_state: Optional[PathingStateInfo] = None
+    current_state: PathingStateInfo | None = None
     request_history: list[PathingRequest] = field(default_factory=list)
-    history_stats: Optional[HistoryStats] = None
+    history_stats: HistoryStats | None = None
     current_request_timeline: list[str] = field(default_factory=list)

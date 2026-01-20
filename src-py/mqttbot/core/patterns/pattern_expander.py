@@ -1,4 +1,3 @@
-from typing import Optional, List, Tuple
 
 from mqttbot.model.patterns.pattern import PatternStep
 from mqttbot.model.patterns.step import StepBase, TaskStep
@@ -21,7 +20,7 @@ class PatternExpander:
         return int(token)
 
     @staticmethod
-    def parse_pattern_step(step_def: str | dict) -> Optional[StepBase]:
+    def parse_pattern_step(step_def: str | dict) -> StepBase | None:
         """Parse a pattern step definition into either relative coords or a concrete task step"""
         if isinstance(step_def, dict):
             # Support dwell shorthands either at top level or inside params
@@ -49,7 +48,7 @@ class PatternExpander:
         raise ValueError(f"Invalid pattern step definition: {step_def}")
 
     @staticmethod
-    def expand_pattern(pattern: List[str | dict], anchor: Tuple[float, float, float]):
+    def expand_pattern(pattern: list[str | dict], anchor: tuple[float, float, float]):
         """Expand a raw pattern list (strings and dicts) into tuples of ('goto', (x,y,z)) or ('dwell', seconds)"""
         result = []
         cx, cy, cz = anchor

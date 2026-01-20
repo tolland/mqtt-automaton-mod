@@ -1,6 +1,5 @@
 """Rich representation for PatternThread - visual task sequence"""
 
-from typing import Optional
 
 from rich.console import Console
 from rich.tree import Tree
@@ -8,7 +7,7 @@ from rich.tree import Tree
 from mqttbot.core.patterns.pattern_thread import PatternThread
 
 
-def render_pattern_thread(thread: PatternThread, console: Optional[Console] = None) -> None:
+def render_pattern_thread(thread: PatternThread, console: Console | None = None) -> None:
     """
     Render PatternThread task sequence as a rich tree.
 

@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any
 
 from mqttbot import ServiceMessage
 from mqttbot.config.tasks.task_decorator import task
@@ -20,8 +20,8 @@ class OneShotTask(TaskBase):
     def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):
         super().__init__()
         self.timeout = timeout
-        self.request_id: Optional[str] = None
-        self.result: Optional[RequestResult] = None
+        self.request_id: str | None = None
+        self.result: RequestResult | None = None
         self._state = TaskState.INIT
         self.service = service
         self.method = method
@@ -30,7 +30,7 @@ class OneShotTask(TaskBase):
     def _step(self, ctx: Context) -> TaskStatus:
         if self._state == TaskState.INIT:
             # Send warp request
-            print(f"[OneShotTask] Sending message")
+            print("[OneShotTask] Sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,

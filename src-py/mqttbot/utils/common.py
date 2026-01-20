@@ -1,6 +1,5 @@
 from typing import Any
 
-
 # @staticmethod
 # def _parse_dwell(period_str: str) -> float:
 #     """Parse dwell period like '4s', '500ms'"""

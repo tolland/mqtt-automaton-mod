@@ -1,7 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional
 
 from rich.repr import rich_repr
 
@@ -22,7 +21,7 @@ class TaskBase(ABC):
 
     def __init__(self):
         """Initialize task with correlation_id set to None (injected by thread on enqueue)"""
-        self.correlation_id: Optional[str] = None
+        self.correlation_id: str | None = None
         self._state: TaskState = TaskState.READY
 
     def enter(self, ctx):

@@ -10,7 +10,7 @@ def dump_baritone_state(state):
         print(f"Has Active Request: {state.current_state.has_active_request}")
 
     if state.history_stats:
-        print(f"\nHistory Stats:")
+        print("\nHistory Stats:")
         print(f"  Total Requests: {state.history_stats.total_requests}")
         print(f"  Successful: {state.history_stats.successful}")
         print(f"  Failed: {state.history_stats.failed}")

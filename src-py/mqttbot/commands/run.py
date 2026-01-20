@@ -16,7 +16,7 @@ def run_callback(ctx: typer.Context):
     typer.echo("in the query callback")
 
 
-@app.command("")
+@app.command("run-command")
 def run_command(
         ctx: typer.Context,
 ):

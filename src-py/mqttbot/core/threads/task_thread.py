@@ -1,7 +1,7 @@
 import uuid
 from collections import deque
+from collections.abc import Awaitable, Callable
 from functools import total_ordering
-from typing import Callable, Awaitable, Optional
 
 from rich.repr import rich_repr
 
@@ -25,18 +25,20 @@ class TaskThread:
         self,
         thread_id: str,
         priority: TaskPriority,
-        on_suspend: Optional[Callable[["TaskThread"], Awaitable[None]]] = None,
-        on_resume: Optional[Callable[["TaskThread", "Context"], Awaitable[None]]] = None,
+        on_suspend: Callable[["TaskThread"], Awaitable[None]] | None = None,
+        on_resume: Callable[["TaskThread", "Context"], Awaitable[None]] | None = None,
+        uninterruptible: bool = False,
     ) -> None:
         self.thread_id = thread_id
         self.priority = priority
         self.state = ThreadStatus.READY
+        self.uninterruptible = uninterruptible
 
         # Generate unique correlation_id for this thread execution instance
         # Format: thread_id-uuid allows tracking all messages from this thread instance
         self.correlation_id = f"{thread_id}-{uuid.uuid4()}"
 
-        self.current_task: Optional[Task] = None
+        self.current_task: Task | None = None
         self.task_queue: deque[Task] = deque()
 
         # Injected callbacks
@@ -115,5 +117,6 @@ class TaskThread:
         yield "correlation_id", self.correlation_id
         yield "priority", self.priority.name
         yield "state", self.state.value
+        yield "uninterruptible", self.uninterruptible
         yield "current_task", type(self.current_task).__name__ if self.current_task else None
         yield "task_queue_len", len(self.task_queue)

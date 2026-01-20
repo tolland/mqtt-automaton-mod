@@ -195,3 +195,72 @@ class TestSchedulerEdgeCases:
         assert scheduler.current_thread is None
         assert len(scheduler.suspended_stack) == 0
         assert scheduler._thread_id_exists("any") is False
+
+
+class TestSchedulerUninterruptible:
+    """Test uninterruptible thread behavior"""
+
+    def test_normal_thread_can_be_preempted(self, scheduler):
+        """Test that normal threads can be preempted by higher priority"""
+        # Start with a normal priority thread running
+        normal_thread = TaskThread("farming", TaskPriority.NORMAL)
+        scheduler.current_thread = normal_thread
+
+        # Enqueue a high priority thread
+        high_thread = TaskThread("combat", TaskPriority.HIGH)
+        scheduler.enqueue_thread(high_thread)
+
+        # Should preempt (HIGH < NORMAL in priority value)
+        assert scheduler._should_preempt() is True
+
+    def test_uninterruptible_thread_cannot_be_preempted(self, scheduler):
+        """Test that uninterruptible threads CANNOT be preempted"""
+        # Start with an uninterruptible cleanup thread running
+        cleanup_thread = TaskThread(
+            "cleanup",
+            TaskPriority.NORMAL,
+            uninterruptible=True
+        )
+        scheduler.current_thread = cleanup_thread
+
+        # Try to preempt with even higher priority
+        critical_thread = TaskThread("panic", TaskPriority.CRITICAL)
+        scheduler.enqueue_thread(critical_thread)
+
+        # Should NOT preempt - cleanup must finish
+        assert scheduler._should_preempt() is False
+
+    def test_uninterruptible_flag_in_thread_repr(self):
+        """Test that uninterruptible flag shows in thread repr"""
+        thread = TaskThread(
+            "test",
+            TaskPriority.NORMAL,
+            uninterruptible=True
+        )
+
+        assert thread.uninterruptible is True
+
+    def test_uninterruptible_defaults_to_false(self):
+        """Test that uninterruptible defaults to False"""
+        thread = TaskThread("test", TaskPriority.NORMAL)
+
+        assert thread.uninterruptible is False
+
+    def test_priority_still_applies_when_not_uninterruptible(self, scheduler):
+        """Test that priority-based preemption still works normally"""
+        # Normal interruptible thread
+        normal_thread = TaskThread("farming", TaskPriority.NORMAL)
+        scheduler.current_thread = normal_thread
+
+        # Higher priority should preempt
+        high_thread = TaskThread("event", TaskPriority.HIGH)
+        scheduler.enqueue_thread(high_thread)
+
+        assert scheduler._should_preempt() is True
+
+        # Lower priority should NOT preempt
+        scheduler.ready_threads.clear()
+        low_thread = TaskThread("background", TaskPriority.LOW)
+        scheduler.enqueue_thread(low_thread)
+
+        assert scheduler._should_preempt() is False

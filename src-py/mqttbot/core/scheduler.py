@@ -1,8 +1,7 @@
 import heapq
-import json
 from collections import deque
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Any
 
 from rich.repr import rich_repr
 
@@ -10,11 +9,12 @@ from mqttbot.config.threads.thread_status import ThreadStatus
 from mqttbot.core.context import Context
 from mqttbot.core.threads.task_thread import TaskThread
 
+
 @dataclass
 class SchedulerState:
-    current_thread_id: Optional[int]
-    current_thread_state: Optional[str]
-    current_correlation_id: Optional[str]
+    current_thread_id: int | None
+    current_thread_state: str | None
+    current_correlation_id: str | None
     ready_threads: list[str]
     suspended_stack: list[str]
 
@@ -24,9 +24,9 @@ class Scheduler:
 
     def __init__(self) -> None:
         self.ready_threads: list[TaskThread] = []
-        self.current_thread: Optional[TaskThread] = None
+        self.current_thread: TaskThread | None = None
         self.suspended_stack: deque[TaskThread] = deque()
-        self.old_state: Optional[dict[str, Any]] = None
+        self.old_state: dict[str, Any] | None = None
 
     def register_thread(self, thread: TaskThread) -> None:
         """Register a thread (typically at startup)"""
@@ -125,6 +125,10 @@ class Scheduler:
 
     def _should_preempt(self) -> bool:
         if not self.current_thread or not self.ready_threads:
+            return False
+
+        # Cannot preempt uninterruptible threads
+        if self.current_thread.uninterruptible:
             return False
 
         next_priority = self.ready_threads[0].priority.value

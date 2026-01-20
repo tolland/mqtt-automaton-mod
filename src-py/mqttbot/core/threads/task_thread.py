@@ -25,7 +25,7 @@ class TaskThread:
         self,
         thread_id: str,
         priority: TaskPriority,
-        on_suspend: Callable[["TaskThread"], Awaitable[None]] | None = None,
+        on_suspend: Callable[["TaskThread", "Context"], Awaitable[None]] | None = None,
         on_resume: Callable[["TaskThread", "Context"], Awaitable[None]] | None = None,
         uninterruptible: bool = False,
     ) -> None:
@@ -63,7 +63,7 @@ class TaskThread:
             self.current_task.suspend(ctx)
 
         if self._on_suspend:
-            await self._on_suspend(self)
+            await self._on_suspend(self, ctx)
 
     async def resume(self, ctx: Context) -> None:
         """Resume from suspension, potentially with different task strategy"""

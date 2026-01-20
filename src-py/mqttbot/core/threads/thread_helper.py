@@ -1,19 +1,22 @@
-from typing import Optional
+
+from rich import inspect
 
 from mqttbot import ServiceMessage
 from mqttbot.config.threads.thread_config import ThreadConfig
+from mqttbot.core.context import Context
 from mqttbot.core.patterns.pattern_thread import PatternThread
+from mqttbot.core.tasks.task_priority import TaskStatus
 from mqttbot.core.threads.task_thread import TaskThread
 from mqttbot.model.patterns.patterns_config import PatternsConfig
-from mqttbot.model.tasks.task import Task, TaskFactory
 from mqttbot.model.patterns.step import TaskStep
+from mqttbot.model.tasks.task import Task, TaskFactory
 
 
 class ThreadHelper:
     """Helper class for thread management."""
 
     @staticmethod
-    def _create_task_from_step(step: TaskStep, trigger_msg: ServiceMessage) -> Optional[Task]:
+    def _create_task_from_step(step: TaskStep, trigger_msg: ServiceMessage) -> Task | None:
         """Create a task from a step definition"""
 
         return TaskFactory.create(step.to_dict())
@@ -24,23 +27,67 @@ class ThreadHelper:
     ) -> TaskThread:
         """Create a TaskThread from a ThreadConfig"""
 
-        async def on_suspend(thread: TaskThread) -> None:
-            # Execute suspend tasks
-            for task_spec in config.on_suspend_tasks:
-                service = task_spec.get("service")
-                method = task_spec.get("method")
-                params = task_spec.get("params", {})
-                print(f"[thread] {config.thread_id} suspending: {service}.{method}")
-                # TODO: Route to appropriate service
+        # Parse suspend tasks into TaskStep objects
+        suspend_steps = []
+        for task_spec in config.on_suspend_tasks:
+            try:
+                step = TaskStep(
+                    type=task_spec.get("type", "command"),
+                    service=task_spec["service"],
+                    method=task_spec["method"],
+                    params=task_spec.get("params", {}),
+                )
+                suspend_steps.append(step)
+            except Exception:
+                inspect(task_spec)
+                raise
 
-        async def on_resume(thread: TaskThread, ctx) -> None:
-            # Execute resume tasks
-            for task_spec in config.on_resume_tasks:
-                service = task_spec.get("service")
-                method = task_spec.get("method")
-                params = task_spec.get("params", {})
-                print(f"[thread] {config.thread_id} resuming: {service}.{method}")
-                # TODO: Route to appropriate service
+        # Parse resume tasks into TaskStep objects
+        resume_steps = []
+        for task_spec in config.on_resume_tasks:
+            try:
+                step = TaskStep(
+                    type=task_spec.get("type", "command"),
+                    service=task_spec["service"],
+                    method=task_spec["method"],
+                    params=task_spec.get("params", {}),
+                )
+                resume_steps.append(step)
+            except Exception:
+                inspect(task_spec)
+                raise
+
+        async def on_suspend(thread: TaskThread, ctx: Context) -> None:
+            """Execute suspend tasks"""
+            for step in suspend_steps:
+                task = TaskFactory.create(step.to_dict())
+                task.correlation_id = thread.correlation_id
+                task.enter(ctx)
+
+                # Execute task until completion
+                while True:
+                    status = task.step(ctx)
+                    if status in (TaskStatus.SUCCESS, TaskStatus.FAILED):
+                        task.exit(ctx, status)
+                        break
+
+                print(f"[thread] {config.thread_id} suspend task {step.service}.{step.method}: {status.name}")
+
+        async def on_resume(thread: TaskThread, ctx: Context) -> None:
+            """Execute resume tasks"""
+            for step in resume_steps:
+                task = TaskFactory.create(step.to_dict())
+                task.correlation_id = thread.correlation_id
+                task.enter(ctx)
+
+                # Execute task until completion
+                while True:
+                    status = task.step(ctx)
+                    if status in (TaskStatus.SUCCESS, TaskStatus.FAILED):
+                        task.exit(ctx, status)
+                        break
+
+                print(f"[thread] {config.thread_id} resume task {step.service}.{step.method}: {status.name}")
 
         thread = PatternThread(
             thread_id=config.thread_id,

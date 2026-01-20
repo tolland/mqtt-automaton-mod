@@ -6,10 +6,12 @@ import sys
 import typer
 from rich import print as rprint
 from rich.panel import Panel
+from rich.console import Console
 
 from mqttbot.config.config import build_settings
+from mqttbot.core.modular_bot_client import ModularBotClient
 
-app = typer.Typer(name="run", no_args_is_help=True)
+app = typer.Typer(name="run")
 
 
 @app.callback()
@@ -18,9 +20,9 @@ def run_callback(ctx: typer.Context):
     typer.echo(f"in the query callback")
 
 
-@app.command()
+@app.command("")
 def run_command(
-
+        ctx: typer.Context,
 ):
     """
     Run the MQTT bot with the specified configuration.
@@ -28,34 +30,12 @@ def run_command(
     The configuration file should contain waypoints, patterns, and service definitions.
     See the documentation for YAML format details.
     """
+    console = Console()
 
-    sys.exit(1)
     try:
-        # Build settings from config and CLI args
-        # Note: waypoints and patterns are now parsed by ModularBotClient from config
-        settings = build_settings(
-            config_path=config,
-            broker=broker,
-            port=port,
-            client_id=client_id,
-            timeout=timeout,
-            retries=retries,
-            retry_delay=retry_delay,
-            log_level=log_level,
-        )
 
-        # Display startup info
-        rprint(
-            Panel.fit(
-                f"[bold cyan]MQTT Bot Starting[/bold cyan]\n"
-                f"Config: [yellow]{config}[/yellow]\n"
-                f"Broker: [green]{settings.broker}:{settings.port}[/green]\n"
-                f"Client ID: [blue]{settings.client_id}[/blue]\n",
-                title="🤖 mqttbot",
-                border_style="cyan",
-            )
-        )
-
+        config = ctx.obj["config"]
+        settings = ctx.obj["settings"]
         # Create and run modular bot client
         client = ModularBotClient(settings, str(config))
 

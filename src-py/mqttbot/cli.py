@@ -1,7 +1,7 @@
 import typer
 
 from mqttbot.callbacks import get_callback
-from mqttbot.commands import run
+from mqttbot.commands import run, dump_config
 
 """Command-line interface for MQTT bot."""
 
@@ -16,6 +16,7 @@ def create_app() -> typer.Typer:
     )
     app.callback()(callback)
     app.add_typer(run.app)
+    app.add_typer(dump_config.app)
     return app
 
 

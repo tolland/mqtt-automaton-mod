@@ -1,19 +1,15 @@
-import asyncio
-import atexit
-import signal
 import sys
 from pathlib import Path
 
 import typer
-from rich.console import Console
 from rich import print as rprint
+from rich.console import Console
 from rich.panel import Panel
 
 from mqttbot import (
     __app_name__,
 )
 from mqttbot.config.config import build_settings
-from mqttbot.core.modular_bot_client import ModularBotClient
 
 
 def _version_callback(value: bool) -> None:
@@ -27,6 +23,7 @@ def _version_callback(value: bool) -> None:
 def get_callback():
     # noinspection PyUnusedLocal
     def callback(
+            ctx: typer.Context,
             config: Path = typer.Argument(
                 ...,
                 help="Path to config/waypoints YAML file",
@@ -110,19 +107,11 @@ def get_callback():
                 )
             )
 
-            # Create and run modular bot client
-            client = ModularBotClient(settings, str(config))
+            if not ctx.obj:
+                ctx.obj = {}
+            ctx.obj["config"] = config
+            ctx.obj["settings"] = settings
 
-            def cleanup(message: str = ""):
-                # print(f"cleaning up requests_debugger: {message}")
-                client.exit()
-
-            atexit.register(cleanup, "atexit")
-            signal.signal(signal.SIGINT, lambda signum, frame: cleanup("sigint"))
-            signal.signal(signal.SIGTERM, lambda signum, frame: cleanup("sigterm"))
-
-            rc = asyncio.run(client.run())
-            sys.exit(rc)
         except ValueError as e:
             console.print(f"[red]❌ Configuration error: {e}[/red]")
             sys.exit(2)

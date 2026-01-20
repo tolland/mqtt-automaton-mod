@@ -1,7 +1,9 @@
+import logging
 import time
-from enum import Enum
+import uuid
 from typing import Optional, Any
 
+from mqttbot import ServiceMessage
 from mqttbot.config.service_config import ServiceConfig
 from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
@@ -9,10 +11,6 @@ from mqttbot.core.services.message_service import RequestStatus
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
 from mqttbot.core.tasks.task_status import TaskState
-from mqttbot import ServiceMessage
-import uuid
-import time
-import logging
 
 logger = logging.getLogger(__name__)
 

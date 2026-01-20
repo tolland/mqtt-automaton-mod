@@ -1,6 +1,6 @@
 import logging
-from enum import Enum
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Optional
 
 from rich.repr import rich_repr

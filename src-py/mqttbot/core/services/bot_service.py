@@ -1,7 +1,3 @@
-import uuid
-from typing import Optional
-
-from mqttbot import ServiceMessage
 from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import MessageService
 

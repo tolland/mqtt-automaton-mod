@@ -1,5 +1,3 @@
-from typing import Any
-
 from mqttbot import ServiceMessage
 from mqttbot.core.state.baritone.baritone_state import (
     BaritoneState,

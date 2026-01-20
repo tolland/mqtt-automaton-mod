@@ -1,12 +1,10 @@
 import time
-from typing import Optional, Any
+from typing import Any
 
 from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context
 from mqttbot.core.tasks.task_base import TaskBase
 from mqttbot.core.tasks.task_priority import TaskStatus
-
-
 from mqttbot.core.tasks.task_status import TaskState
 
 

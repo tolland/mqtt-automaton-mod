@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Any, Optional
+from typing import Callable, Optional
 
 from mqttbot import ServiceMessage
 

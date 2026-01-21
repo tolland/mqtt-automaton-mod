@@ -2,21 +2,20 @@ import net.fabricmc.loom.task.DownloadTask
 import net.fabricmc.loom.task.FabricModJsonV1Task
 import net.fabricmc.loom.task.prod.ClientProductionRunTask
 
+import java.util.concurrent.TimeUnit
+
 plugins {
+    id "org.jetbrains.kotlin.jvm" version "2.1.0"
     id "net.fabricmc.fabric-loom-remap" version "${loom_version}"
     id "com.diffplug.spotless" version "8.1.0"
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id("org.jetbrains.gradle.plugin.idea-ext") version "1.3"
 }
 
+apply from: "${rootDir}/gradle/secrets.gradle"
+
 version = project.mod_version
 group = project.maven_group
-
-def ENV = System.getenv()
-
-def mcUsername =
-        System.getenv("MQTTBOT_USERNAME")
-                ?: project.findProperty("bot_username")
 
 base {
     archivesName = project.archives_base_name
@@ -42,7 +41,6 @@ repositories {
         name = 'ParchmentMC'
         url = 'https://maven.parchmentmc.org'
     }
-    flatDir { dirs 'libs' }
 
 //    ivy {
 //        url = "https://github.com/cabaletta/baritone/releases/download"
@@ -61,12 +59,49 @@ repositories {
         name = 'enginehub-repo'
         url = 'https://maven.enginehub.org/repo/'
     }
-    maven {
-        name = 'tolland-wurst'
-        url = uri("https://maven.pkg.github.com/tolland/Wurst7")
-        credentials {
-            username = System.getenv("GITHUB_ACTOR")
-            password = System.getenv("GITHUB_TOKEN")
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'tolland-baritone'
+                url = uri("https://maven.pkg.github.com/tolland/baritone")
+                credentials {
+                    username = getSecret("GITHUB_ACTOR")
+                    password = getSecret("GITHUB_TOKEN")
+                }
+            }
+        }
+        filter {
+            includeGroup "baritone"
+        }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'tolland-wurst'
+                url = uri("https://maven.pkg.github.com/tolland/Wurst7")
+                credentials {
+                    username = getSecret("GITHUB_ACTOR")
+                    password = getSecret("GITHUB_TOKEN")
+                }
+            }
+        }
+        filter {
+            includeGroup "net.wurstclient"
+        }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'tolland-worldtools'
+                url = uri("https://maven.pkg.github.com/tolland/WorldTools")
+                credentials {
+                    username = getSecret("GITHUB_ACTOR")
+                    password = getSecret("GITHUB_TOKEN")
+                }
+            }
+        }
+        filter {
+            includeGroup "worldtools"
         }
     }
     exclusiveContent {
@@ -99,29 +134,37 @@ dependencies {
         parchment("org.parchmentmc.data:parchment-1.21.8:2025.09.14@zip")
     }
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:${paho_client_version}"
     implementation 'org.yaml:snakeyaml:2.0'
-    modImplementation "cabaletta:baritone-api-fabric:${project.baritone_version}"
+
+    modImplementation "baritone:baritone-fabric:${project.baritone_version}"
     modImplementation "net.wurstclient:wurst-client:${project.wurst_version}"
+
+    modImplementation "worldtools:worldtools-fabric:${project.worldtools_version}"
     modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_api_version}") {
         exclude(group: "net.fabricmc.fabric-api")
     }
     implementation "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
     implementation "io.moquette:moquette-broker:0.17"
 
-//    implementation group: 'org.enginehub.worldeditcui-protocol', name: 'worldeditcui-protocol-fabric-mc1.21.8', version: '4.0.1'
-//    modImplementation "maven.modrinth:worldedit:${worldedit_version}"
+    modImplementation "maven.modrinth:fabric-language-kotlin:${kotlin_language_plugin_version}"
+    modImplementation "maven.modrinth:modmenu:${mod_menu_version}"
+    modImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
 //    modImplementation "maven.modrinth:worldedit-cui:${worldedit_cui_version}"
     compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
+    modImplementation 'org.jetbrains.kotlin:kotlin-reflect:2.1.21'
 
-    testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 
     testImplementation "org.mockito:mockito-core:${project.mockito_version}"
-// optional for JUnit 5 integration if you plan to use MockitoExtension
-//    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    // optional for JUnit 5 integration if you plan to use MockitoExtension
+    // testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+
+    // WorldEdit related dependencies
+    // implementation group: 'org.enginehub.worldeditcui-protocol', name: 'worldeditcui-protocol-fabric-mc1.21.8', version: '4.0.1'
+    // modImplementation "maven.modrinth:worldedit:${worldedit_version}"
 
     // fabric-loom needs to depend on namedElements as the normal outpus
     // are mapped to intermediary names
@@ -212,8 +255,6 @@ tasks.register("download", DownloadTask) {
     output = file("out.txt")
 }
 
-import java.util.concurrent.TimeUnit
-
 tasks.register('runClientWithTests') {
     group = 'fabric'
     description = 'Run client with pytest tests'
@@ -302,6 +343,12 @@ tasks.register("runProductionClientGameTest", ClientProductionRunTask) {
     // Defaults to true only on Linux and when the "CI" environment variable is set.
     // XVFB must be installed, on Debian-based systems you can install it with: `apt install xvfb`
     useXVFB = true
+}
+
+tasks.register("printUsername") {
+    doLast {
+        println getSecret("GITHUB_ACTOR")
+    }
 }
 
 tasks.register("printGametestClasspath") {

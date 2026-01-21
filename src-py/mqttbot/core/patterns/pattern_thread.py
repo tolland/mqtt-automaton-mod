@@ -111,22 +111,9 @@ class PatternThread(TaskThread):
             self.current_task = None
 
     async def resume(self, ctx: Context) -> None:
-        """Resume - rebuild task sequence and skip to where we were
-
-        This is the key property: patterns are fully deterministic from config,
-        so we can safely rebuild and skip without any global state.
+        """Resume - resume this thread from suspension point
         """
-
         print("[PatternThread] Resuming - rebuilding task sequence")
-
-        # # Rebuild the entire sequence (deterministic, same as startup)
-        # self.build_task_sequence()
-        #
-        # # Skip to the task we were on
-        # print(f"[PatternThread] Skipping {task_index} tasks to resume")
-        # for _ in range(task_index):
-        #     if self.task_queue:
-        #         self.task_queue.popleft()
 
         self.current_task_index = 0
 

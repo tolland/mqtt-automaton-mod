@@ -155,3 +155,4 @@ class TaskThread:
         yield "task_queue_len", len(self.task_queue)
         yield "on_suspend", self._on_suspend
         yield "on_resume", self._on_resume
+        yield "on_cancel", self._on_cancel

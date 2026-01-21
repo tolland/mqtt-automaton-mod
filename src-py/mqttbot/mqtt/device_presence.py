@@ -1,3 +1,14 @@
+import asyncio
+import json
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from loguru import logger
+
 """
 MQTT Device Presence Library
 
@@ -15,18 +26,6 @@ Usage:
     monitor.on_availability_change(lambda available: print(f"Available: {available}"))
     monitor.on_readiness_change(lambda ready: print(f"Ready: {ready}"))
 """
-
-import asyncio
-import json
-import time
-from collections.abc import Callable
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
-from typing import Any
-
-from loguru import logger
-
 
 class AvailabilityState(Enum):
     """Device availability (liveness)"""

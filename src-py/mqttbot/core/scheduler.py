@@ -3,6 +3,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any
 
+from loguru import logger
 from rich.repr import rich_repr
 
 from mqttbot.config.threads.thread_status import ThreadStatus
@@ -46,11 +47,11 @@ class Scheduler:
         if singleton:
             # Check if a thread with this ID already exists
             if self._thread_id_exists(thread.thread_id):
-                print(f"[scheduler] Thread {thread.thread_id} already active, skipping")
+                logger.debug(f"Thread {thread.thread_id} already active, skipping")
                 return False
 
         heapq.heappush(self.ready_threads, thread)
-        print(f"[scheduler] Enqueued thread: {thread.thread_id}")
+        logger.debug(f"Enqueued thread: {thread.thread_id}")
         return True
 
     def _thread_id_exists(self, thread_id: str) -> bool:
@@ -169,27 +170,27 @@ class Scheduler:
 
     async def shutdown(self, ctx: Context) -> None:
         """Gracefully shutdown scheduler - cancel all threads and execute on_cancel tasks"""
-        print("[scheduler] Shutting down - cancelling all threads")
+        logger.info("Shutting down - cancelling all threads")
 
         # Cancel current thread
         if self.current_thread:
-            print(f"[scheduler] Cancelling current thread: {self.current_thread.thread_id}")
+            logger.info(f"Cancelling current thread: {self.current_thread.thread_id}")
             await self.current_thread.cancel(ctx)
             self.current_thread = None
 
         # Cancel all ready threads
         while self.ready_threads:
             thread = heapq.heappop(self.ready_threads)
-            print(f"[scheduler] Cancelling ready thread: {thread.thread_id}")
+            logger.debug(f"Cancelling ready thread: {thread.thread_id}")
             await thread.cancel(ctx)
 
         # Cancel all suspended threads
         while self.suspended_stack:
             thread = self.suspended_stack.pop()
-            print(f"[scheduler] Cancelling suspended thread: {thread.thread_id}")
+            logger.debug(f"Cancelling suspended thread: {thread.thread_id}")
             await thread.cancel(ctx)
 
-        print("[scheduler] Shutdown complete")
+        logger.info("Shutdown complete")
 
     def __rich_repr__(self):
         yield "current_thread", self.current_thread.thread_id if self.current_thread else None

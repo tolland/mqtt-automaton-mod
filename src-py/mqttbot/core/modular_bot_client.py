@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import threading
 import time
 import uuid
@@ -7,6 +6,7 @@ from asyncio import Queue
 from typing import Any
 
 import yaml
+from loguru import logger
 from rich import print
 from rich.pretty import pprint
 from rich.repr import rich_repr
@@ -31,8 +31,6 @@ from mqttbot.mqtt.mqtt_client import MqttBotClient
 """
 Modular bot client using the new behavior-based architecture
 """
-
-logger = logging.getLogger(__name__)
 
 
 def _load_config(config_path: str) -> dict[str, Any]:
@@ -94,8 +92,8 @@ class ModularBotClient:
 
         self._scheduler = Scheduler()
 
-        # Print initialization summary
-        pprint(self)
+        # Log initialization summary
+        logger.debug(f"ModularBotClient initialized: broker={settings.broker}:{settings.port}, client_id={settings.client_id}")
 
     def _handle_mqtt_message(self, topic: str, payload: str) -> None:
         """Handle incoming MQTT message payload turn into ServiceMessage
@@ -110,7 +108,7 @@ class ModularBotClient:
             if message_data:
                 self._process_message(topic, message_data)
         except Exception as e:
-            print(f"[mqtt] Error processing message: {e}")
+            logger.error(f"Error processing MQTT message: {e}")
             raise
 
     def _process_message(self, topic: str, message_data):
@@ -138,8 +136,8 @@ class ModularBotClient:
                 try:
                     self._event_queue.put_nowait(message_data)
                 except asyncio.QueueFull:
-                    print(
-                        f"[mqtt] Event queue full, dropping {message_data.service}:{message_data.method}"
+                    logger.warning(
+                        f"Event queue full, dropping {message_data.service}:{message_data.method}"
                     )
                     raise ValueError("Event queue full")
 
@@ -176,11 +174,11 @@ class ModularBotClient:
         if not ready:
             raise TimeoutError("Mod did not become ready")
 
-        print(f"[bot] Mod is ready! State: {self.mqtt.device_monitor.readiness.state}")
+        logger.info(f"Mod is ready! State: {self.mqtt.device_monitor.readiness.state}")
 
     def exit(self):
         """Exit the bot gracefully"""
-        print("[bot] Exit requested - will shutdown gracefully")
+        logger.info("Exit requested - will shutdown gracefully")
         self._shutdown_requested = True
         self.send_mqtt_message(
             ServiceMessage(
@@ -196,12 +194,12 @@ class ModularBotClient:
 
     def stop(self) -> None:
         """Stop the bot"""
-        print("[bot] Stopping modular bot client")
+        logger.info("Stopping modular bot client")
 
         self.running = False
         self.mqtt.disconnect()
 
-        print("[bot] Bot stopped")
+        logger.info("Bot stopped")
 
     def get_status(self) -> dict[str, Any]:
         """Get current bot status"""
@@ -213,19 +211,18 @@ class ModularBotClient:
 
     def configure(self) -> None:
         """Start the bot by initializing threads from config"""
-        print("[bot] Starting modular bot client")
+        logger.info("Starting modular bot client")
 
         self.patterns_configs = PatternsConfigParser.from_yaml(self.config)
-        print(f"[bot] Loaded {len(self.patterns_configs)} patterns configuration(s)")
-        # pprint(self.patterns_configs)
+        logger.info(f"Loaded {len(self.patterns_configs)} patterns configuration(s)")
 
         # Parse thread configurations
         self.thread_configs = ThreadConfigParser.from_yaml(self.config)
-        print(f"[bot] Loaded {len(self.thread_configs)} thread configuration(s)")
+        logger.info(f"Loaded {len(self.thread_configs)} thread configuration(s)")
 
-        # Print thread configurations
+        # Log thread configurations
         for thread_config in self.thread_configs:
-            pprint(thread_config)
+            logger.debug(f"Thread config: {thread_config.thread_id} (priority={thread_config.priority.name})")
 
         self.threads = []
         for thread_config in self.thread_configs:
@@ -238,10 +235,10 @@ class ModularBotClient:
         """Start the bot by registering threads with the scheduler"""
         for thread_config, thread in zip(self.thread_configs, self.threads):
             self._scheduler.register_thread(thread)
-            print(f"[bot] Registered thread: {thread_config.thread_id}")
+            logger.debug(f"Registered thread: {thread_config.thread_id}")
 
         self.running = True
-        print("[bot] Bot started successfully")
+        logger.info("Bot started successfully")
 
     async def run(self) -> int:
         """Run the bot (main execution loop)"""
@@ -256,7 +253,7 @@ class ModularBotClient:
             while self.running:
                 # Check for shutdown request
                 if self._shutdown_requested:
-                    print("[bot] Processing shutdown request")
+                    logger.info("Processing shutdown request")
                     await self._scheduler.shutdown(self.ctx)
                     self.running = False
                     self.stop()
@@ -269,22 +266,22 @@ class ModularBotClient:
                 all_complete = await self._scheduler.step(self.ctx)
 
                 if all_complete:
-                    print("[bot] All tasks completed, exiting")
+                    logger.info("All tasks completed, exiting")
                     self.running = False
                     break
 
-                # Print status periodically
+                # Log status periodically
                 if int(time.time()) % 30 == 0:
                     status = self.get_status()
-                    print(f"[bot] Status: {status}")
+                    logger.debug(f"Status: {status}")
 
             return 0
 
         except KeyboardInterrupt:
-            print("\n[bot] Interrupted by user")
+            logger.info("Interrupted by user")
             return 130
         except Exception as e:
-            print(f"[bot] Error: {e}")
+            logger.error(f"Bot error: {e}")
             raise
         finally:
             self.stop()

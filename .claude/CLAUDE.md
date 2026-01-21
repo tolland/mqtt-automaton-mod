@@ -6,6 +6,7 @@
 
 1. Always run `./gradlew spotlessCheck build` before creating any commit
 2. If spotless fails, run `./gradlew spotlessApply` to auto-fix, then verify with spotlessCheck again
+3.
 
 ### Spotless Workflow
 

@@ -1,12 +1,12 @@
 import sys
 
 import typer
-from mqttbot.core.modular_bot_client import ModularBotClient
-from rich import inspect
 from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
 from rich.pretty import pprint
+
+from mqttbot.core.modular_bot_client import ModularBotClient
 
 app = typer.Typer(name="config", no_args_is_help=True)
 

@@ -54,6 +54,7 @@ line-length = 100
 target-version = ['py310']
 
 [tool.ruff]
+src = ["src-py"]
 line-length = 100
 target-version = "py310"
 
@@ -71,6 +72,8 @@ ignore = [
     "E501", # line too long (handled by black)
     "B008", # do not perform function calls in argument defaults
 ]
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.pytest.ini_options]
 pythonpath = ["src-py"]

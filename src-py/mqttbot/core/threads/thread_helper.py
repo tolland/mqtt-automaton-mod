@@ -24,7 +24,8 @@ class ThreadHelper:
 
     @staticmethod
     def _create_thread_from_thread_config(
-        config: ThreadConfig, patterns: PatternsConfig
+            config: ThreadConfig,
+            patterns: PatternsConfig
     ) -> TaskThread:
         """Create a TaskThread from a ThreadConfig"""
 

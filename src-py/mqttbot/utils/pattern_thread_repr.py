@@ -1,10 +1,11 @@
-"""Rich representation for PatternThread - visual task sequence"""
-
-
 from rich.console import Console
 from rich.tree import Tree
 
 from mqttbot.core.patterns.pattern_thread import PatternThread
+from mqttbot.core.tasks.dwell_task import DwellTask
+from mqttbot.core.tasks.goto_task import GotoTask
+
+"""Rich representation for PatternThread - visual task sequence"""
 
 
 def render_pattern_thread(thread: PatternThread, console: Console | None = None) -> None:
@@ -108,31 +109,3 @@ def format_task_sequence_summary(thread: PatternThread) -> str:
             lines.append(f"  {i:2d}. {type(task).__name__}")
 
     return "\n".join(lines)
-
-
-# Example usage in ModularBotClient:
-"""
-def _create_thread_from_config(self, config: ThreadConfig) -> TaskThread:
-    '''Create a PatternThread from config and display it'''
-    
-    patterns = self.threads_config.get("patterns", {})
-    waypoint_dicts = [...]
-    
-    thread = PatternThread(
-        thread_id=config.thread_id,
-        priority=config.priority,
-        waypoints=waypoint_dicts,
-        patterns=patterns,
-    )
-    
-    thread.build_task_sequence()
-    
-    # Display the task sequence
-    from rich.console import Console
-    console = Console()
-    console.print()
-    render_pattern_thread(thread, console)
-    console.print()
-    
-    return thread
-"""

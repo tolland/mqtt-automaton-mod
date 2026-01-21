@@ -1,3 +1,14 @@
+import asyncio
+import json
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from loguru import logger
+
 """
 MQTT Device Presence Library
 
@@ -15,18 +26,6 @@ Usage:
     monitor.on_availability_change(lambda available: print(f"Available: {available}"))
     monitor.on_readiness_change(lambda ready: print(f"Ready: {ready}"))
 """
-
-import asyncio
-import json
-import time
-from collections.abc import Callable
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
-from typing import Any
-
-from loguru import logger
-
 
 class AvailabilityState(Enum):
     """Device availability (liveness)"""
@@ -264,7 +263,8 @@ class DevicePresenceMonitor:
             data = json.loads(msg.payload.decode('utf-8'))
             self._config = DeviceConfig.from_json(data)
 
-            logger.info(f"[{self.device_id}] Config received: {len(self._config.services)} services, v{self._config.sw_version}")
+            logger.info(
+                f"[{self.device_id}] Config received: {len(self._config.services)} services, v{self._config.sw_version}")
             self._config_event.set()
             self._notify_config_callbacks()
         except Exception as e:
@@ -281,7 +281,7 @@ class DevicePresenceMonitor:
             # Log if changed
             if old_readiness is None or old_readiness.state != self._readiness.state:
                 logger.info(f"[{self.device_id}] Readiness: {self._readiness.state} "
-                          f"(can_accept_tasks={self._readiness.can_accept_tasks}, reason={self._readiness.reason})")
+                            f"(can_accept_tasks={self._readiness.can_accept_tasks}, reason={self._readiness.reason})")
 
             self._readiness_event.set()
             self._notify_readiness_callbacks()
@@ -374,13 +374,15 @@ class DevicePresenceMonitor:
                     return True
                 else:
                     # Got OFFLINE or UNKNOWN - clear event and keep waiting
-                    logger.debug(f"[{self.device_id}] Got availability: {self._availability.value}, continuing to wait...")
+                    logger.debug(
+                        f"[{self.device_id}] Got availability: {self._availability.value}, continuing to wait...")
                     self._availability_event.clear()
 
             except asyncio.TimeoutError:
                 break
 
-        logger.error(f"[{self.device_id}] Timeout waiting for online state after {timeout}s (current state: {self._availability.value})")
+        logger.error(
+            f"[{self.device_id}] Timeout waiting for online state after {timeout}s (current state: {self._availability.value})")
         return False
 
     async def wait_for_config(self, timeout: float = 30.0) -> DeviceConfig | None:

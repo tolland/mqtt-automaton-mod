@@ -4,8 +4,9 @@ import signal
 import sys
 
 import typer
-from mqttbot.core.modular_bot_client import ModularBotClient
 from rich.console import Console
+
+from mqttbot.core.modular_bot_client import ModularBotClient
 
 app = typer.Typer(name="run")
 

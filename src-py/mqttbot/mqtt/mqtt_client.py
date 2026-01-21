@@ -22,7 +22,7 @@ class MqttBotClient:
             settings: Settings,
     ):
         """Initialize MQTT client
-    
+
         Args:
             settings: Settings object containing MQTT configuration
             message_callbacks: Optional list of callback functions to handle incoming messages (topic, payload)

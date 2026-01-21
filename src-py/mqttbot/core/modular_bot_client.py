@@ -7,8 +7,6 @@ from typing import Any
 
 import yaml
 from loguru import logger
-from rich import print
-from rich.pretty import pprint
 from rich.repr import rich_repr
 
 from mqttbot import ServiceMessage

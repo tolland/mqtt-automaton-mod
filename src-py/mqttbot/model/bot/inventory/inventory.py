@@ -1,8 +1,8 @@
-from loguru import logger
 import json
-import sys
 from dataclasses import dataclass
 from typing import Optional
+
+from loguru import logger
 
 
 @dataclass

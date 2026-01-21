@@ -27,8 +27,8 @@ class TestPatternThreadConstruction:
         assert thread.thread_id == "test_thread"
         assert thread.priority == TaskPriority.NORMAL
         assert len(thread.waypoints) == len(sample_waypoints)
-        # patterns should be normalized into a PatternsConfig-like object
-        assert len(thread.patterns) >= 0
+        # patterns should be a PatternsConfig object
+        assert thread.patterns_config is not None
 
     def test_build_task_sequence(self, sample_waypoints, sample_patterns):
         """Test that task sequence is built correctly"""
@@ -55,11 +55,11 @@ class TestPatternThreadExpansion:
 
     def test_simple_pattern_expansion(self):
         """Test expanding a simple pattern (provide new shape expected by parser)"""
-        patterns = {
+        patterns = PatternsConfigParser.from_yaml({
             "patterns": {
                 "simple": {"steps": ["~ ~ ~-5", "~ ~ ~-5"]}
             }
-        }
+        })
         waypoints = [
             {"x": 100, "y": 64, "z": 100, "patterns": ["simple"]},
         ]
@@ -87,7 +87,7 @@ class TestPatternThreadExpansion:
 
     def test_pattern_with_dwell(self):
         """Test that dwell steps are expanded correctly"""
-        patterns = {
+        patterns = PatternsConfigParser.from_yaml({
             "patterns": {
                 "with_dwell": {
                     "steps": [
@@ -97,7 +97,7 @@ class TestPatternThreadExpansion:
                     ]
                 }
             }
-        }
+        })
         waypoints = [
             {"x": 100, "y": 64, "z": 100, "patterns": ["with_dwell"]},
         ]
@@ -145,7 +145,9 @@ class TestPatternThreadExpansion:
 
     def test_unknown_pattern_skipped(self):
         """Test that unknown patterns are skipped gracefully"""
-        patterns = {"patterns": {"known": {"steps": ["~ ~ ~-5"]}}}
+        patterns = PatternsConfigParser.from_yaml({
+            "patterns": {"known": {"steps": ["~ ~ ~-5"]}}
+        })
         waypoints = [
             {"x": 100, "y": 64, "z": 100, "patterns": ["unknown", "known"]},
         ]
@@ -188,7 +190,7 @@ class TestPatternThreadSuspensionResumption:
             thread_id="test1",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=PatternsConfigParser.from_yaml(sample_patterns),
+            patterns=sample_patterns,
         )
         thread1.build_task_sequence()
         seq1 = [(t.target if isinstance(t, GotoTask) else t.duration) for t in thread1.task_queue]
@@ -197,7 +199,7 @@ class TestPatternThreadSuspensionResumption:
             thread_id="test2",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=PatternsConfigParser.from_yaml(sample_patterns),
+            patterns=sample_patterns,
         )
         thread2.build_task_sequence()
         seq2 = [(t.target if isinstance(t, GotoTask) else t.duration) for t in thread2.task_queue]
@@ -215,7 +217,7 @@ class TestPatternThreadNoPatterns:
         waypoints = [
             {"x": 100, "y": 64, "z": 100, "patterns": []},
         ]
-        patterns = {}
+        patterns = PatternsConfigParser.from_yaml({})
 
         thread = PatternThread(
             thread_id="test",
@@ -236,7 +238,7 @@ class TestPatternThreadNoPatterns:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=[],
-            patterns={},
+            patterns=PatternsConfigParser.from_yaml({}),
         )
         thread.build_task_sequence()
 

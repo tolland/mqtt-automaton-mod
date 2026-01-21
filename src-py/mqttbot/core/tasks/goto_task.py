@@ -1,8 +1,9 @@
-from loguru import logger
 import logging
 import time
 import uuid
 from typing import Any
+
+from loguru import logger
 
 from mqttbot import ServiceMessage
 from mqttbot.config.service_config import ServiceConfig

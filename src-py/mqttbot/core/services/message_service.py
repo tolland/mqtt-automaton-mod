@@ -1,7 +1,8 @@
-from loguru import logger
 import threading
 from dataclasses import dataclass
 from enum import Enum
+
+from loguru import logger
 
 from mqttbot import ServiceMessage
 from mqttbot.core.context import Context

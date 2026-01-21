@@ -1,4 +1,3 @@
-import sys
 import time
 from collections.abc import Callable
 
@@ -58,7 +57,7 @@ class MqttBotClient:
         # Subscribe to device presence topics
         self.device_monitor.subscribe()
 
-        logger.info(f"Connected to MQTT broker, subscribing to topics")
+        logger.info("Connected to MQTT broker, subscribing to topics")
         self._client.subscribe(f"{self.topic_base}/reply", qos=0)
         self._client.subscribe(f"{self.topic_base}/events", qos=0)
         self._mqtt_connected = True

@@ -1,7 +1,8 @@
-from loguru import logger
 import logging
 import uuid
 from typing import Any
+
+from loguru import logger
 
 from mqttbot import ServiceMessage
 from mqttbot.config.tasks.task_decorator import task

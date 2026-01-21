@@ -114,6 +114,25 @@ files = [
 ]
 
 [[package]]
+name = "loguru"
+version = "0.7.2"
+description = "Python logging made (stupidly) simple"
+optional = false
+python-versions = ">=3.5"
+groups = ["main"]
+files = [
+    {file = "loguru-0.7.2-py3-none-any.whl", hash = "sha256:003d71e3d3ed35f0f8984898359d65b79e5b21943f78af86aa5491210429b8eb"},
+    {file = "loguru-0.7.2.tar.gz", hash = "sha256:e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac"},
+]
+
+[package.dependencies]
+colorama = {version = ">=0.3.4", markers = "sys_platform == \"win32\""}
+win32-setctime = {version = ">=1.0.0", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+dev = ["Sphinx (==7.2.5) ; python_version >= \"3.9\"", "colorama (==0.4.5) ; python_version < \"3.8\"", "colorama (==0.4.6) ; python_version >= \"3.8\"", "exceptiongroup (==1.1.3) ; python_version >= \"3.7\" and python_version < \"3.11\"", "freezegun (==1.1.0) ; python_version < \"3.8\"", "freezegun (==1.2.2) ; python_version >= \"3.8\"", "mypy (==v0.910) ; python_version < \"3.6\"", "mypy (==v0.971) ; python_version == \"3.6\"", "mypy (==v1.4.1) ; python_version == \"3.7\"", "mypy (==v1.5.1) ; python_version >= \"3.8\"", "pre-commit (==3.4.0) ; python_version >= \"3.8\"", "pytest (==6.1.2) ; python_version < \"3.8\"", "pytest (==7.4.0) ; python_version >= \"3.8\"", "pytest-cov (==2.12.1) ; python_version < \"3.8\"", "pytest-cov (==4.1.0) ; python_version >= \"3.8\"", "pytest-mypy-plugins (==1.9.3) ; python_version >= \"3.6\" and python_version < \"3.8\"", "pytest-mypy-plugins (==3.0.0) ; python_version >= \"3.8\"", "sphinx-autobuild (==2021.3.14) ; python_version >= \"3.9\"", "sphinx-rtd-theme (==1.3.0) ; python_version >= \"3.9\"", "tox (==3.27.1) ; python_version < \"3.8\"", "tox (==4.11.0) ; python_version >= \"3.8\""]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
@@ -570,10 +589,26 @@ files = [
     {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
 ]
 
+[[package]]
+name = "win32-setctime"
+version = "1.2.0"
+description = "A small Python utility to set file creation time on Windows"
+optional = false
+python-versions = ">=3.5"
+groups = ["main"]
+markers = "sys_platform == \"win32\""
+files = [
+    {file = "win32_setctime-1.2.0-py3-none-any.whl", hash = "sha256:95d644c4e708aba81dc3704a116d8cbc974d70b3bdb8be1d150e36be6e9d1390"},
+    {file = "win32_setctime-1.2.0.tar.gz", hash = "sha256:ae1fdf948f5640aae05c511ade119313fb6a30d7eabe25fef9764dca5873c4c0"},
+]
+
+[package.extras]
+dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
+
 [extras]
 dev = ["black", "pytest", "ruff"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "2523fc82c80272343dfb9cc48ca186030f784be6ce8f7052f5912a573573e7ef"
+content-hash = "7b67a0001e8edd388d2911bc28c71cec535daacbc9451d022ad32cab63d68738"

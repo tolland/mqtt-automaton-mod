@@ -10,6 +10,7 @@ from mqttbot import (
     __app_name__,
 )
 from mqttbot.config.config import build_settings
+from mqttbot.logging_config import configure_logging
 
 
 def _version_callback(value: bool) -> None:
@@ -93,6 +94,15 @@ def get_callback():
                 retries=retries,
                 retry_delay=retry_delay,
                 log_level=log_level,
+            )
+
+            # Configure logging with settings
+            configure_logging(
+                console_level=settings.log_level,
+                file_level=settings.log_file_level,
+                log_dir=settings.log_dir,
+                mqtt_file_enabled=settings.log_mqtt_to_file,
+                package_levels=settings.log_package_levels,
             )
 
             # Display startup info

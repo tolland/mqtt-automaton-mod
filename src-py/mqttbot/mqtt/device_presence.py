@@ -18,7 +18,6 @@ Usage:
 
 import asyncio
 import json
-import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -26,7 +25,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class AvailabilityState(Enum):
@@ -218,7 +217,7 @@ class DevicePresenceMonitor:
 
         for topic, qos in topics:
             self.mqtt_client.subscribe(topic, qos=qos)
-            print(f"Subscribed to {topic} (QoS {qos})")
+            logger.debug(f"Subscribed to {topic} (QoS {qos})")
 
         # Register message callback
         self.mqtt_client.message_callback_add(self.availability_topic, self._on_availability_message)
@@ -244,7 +243,7 @@ class DevicePresenceMonitor:
 
     def _on_availability_message(self, client, userdata, msg):
         """Handle availability (online/offline) message"""
-        print(f"Received availability message: {msg.payload}")
+        logger.debug(f"Received availability message: {msg.payload}")
         try:
             data = json.loads(msg.payload.decode('utf-8'))
             state_str = data.get("state", "unknown")
@@ -273,7 +272,7 @@ class DevicePresenceMonitor:
 
     def _on_readiness_message(self, client, userdata, msg):
         """Handle readiness state message"""
-        print(f"Received readiness message: {msg.payload}")
+        logger.debug(f"Received readiness message: {msg.payload}")
         try:
             data = json.loads(msg.payload.decode('utf-8'))
             old_readiness = self._readiness

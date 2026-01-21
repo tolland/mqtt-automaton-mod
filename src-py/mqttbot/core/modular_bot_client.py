@@ -231,7 +231,7 @@ class ModularBotClient:
 
     def start(self) -> None:
         """Start the bot by registering threads with the scheduler"""
-        for thread_config, thread in zip(self.thread_configs, self.threads):
+        for thread_config, thread in zip(self.thread_configs, self.threads, strict=False):
             self._scheduler.register_thread(thread)
             logger.debug(f"Registered thread: {thread_config.thread_id}")
 

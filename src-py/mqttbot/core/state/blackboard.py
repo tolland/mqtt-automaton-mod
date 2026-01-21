@@ -1,7 +1,8 @@
-from loguru import logger
 import copy
 from collections.abc import Callable
 from typing import Any
+
+from loguru import logger
 
 from mqttbot.core.state.state_module import StateModule
 

@@ -1,6 +1,7 @@
-from loguru import logger
 import time
 from typing import Any
+
+from loguru import logger
 
 from mqttbot.config.tasks.task_decorator import task
 from mqttbot.core.context import Context

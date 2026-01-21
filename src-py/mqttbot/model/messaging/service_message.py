@@ -1,9 +1,9 @@
-from loguru import logger
 import json
-import sys
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+from loguru import logger
 
 
 @dataclass

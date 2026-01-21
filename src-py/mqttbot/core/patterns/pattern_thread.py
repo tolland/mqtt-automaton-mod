@@ -5,7 +5,6 @@ from loguru import logger
 from rich.tree import Tree
 
 from mqttbot.core.context import Context
-from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
 from mqttbot.core.tasks.dwell_task import DwellTask
 from mqttbot.core.tasks.goto_task import GotoTask
 from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
@@ -34,34 +33,26 @@ class PatternThread(TaskThread):
         thread_id: str,
         priority: TaskPriority,
         waypoints: list[dict[str, Any]],
-        patterns: PatternsConfig | dict,
+        patterns: PatternsConfig,
         on_suspend: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
         on_resume: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
         on_cancel: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
     ) -> None:
-        """Initialize a pattern-based thread"""
+        """Initialize a pattern-based thread
+
+        Args:
+            thread_id: Unique identifier for this thread
+            priority: Thread priority level
+            waypoints: List of waypoint dictionaries with x, y, z, patterns
+            patterns: PatternsConfig object containing pattern definitions
+            on_suspend: Optional callback when thread is suspended
+            on_resume: Optional callback when thread is resumed
+            on_cancel: Optional callback when thread is cancelled
+        """
         super().__init__(thread_id, priority, on_suspend, on_resume, on_cancel)
 
         self.waypoints = waypoints
-
-        # Normalize patterns input: accept raw dicts (as tests provide) or a
-        # PatternsConfig instance produced by PatternsConfigParser
-        if isinstance(patterns, PatternsConfig):
-            self.patterns_config = patterns
-        else:
-            # If tests passed a dict in the old shape, parse into PatternsConfig
-            # PatternsConfigParser expects the top-level YAML shape
-            # Support both shapes: either {'patterns': {...}} or {'name': [...]} directly
-            if isinstance(patterns, dict) and "patterns" not in patterns:
-                patterns_input = {"patterns": patterns}
-            else:
-                patterns_input = patterns if isinstance(patterns, dict) else {}
-            self.patterns_config = PatternsConfigParser.from_yaml(patterns_input)
-
-        # Backwards-compatible convenience attribute used by older code/tests
-        # that expect a dictionary-like or iterable of patterns.
-        self.patterns = self.patterns_config
-
+        self.patterns_config = patterns
         self.current_task_index = 0
 
     def expand_pattern(self, name: str, start_pos: tuple) -> Generator[Task, None, None]:

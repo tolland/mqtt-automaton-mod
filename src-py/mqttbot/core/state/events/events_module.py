@@ -1,4 +1,5 @@
 from loguru import logger
+
 from mqttbot import ServiceMessage
 from mqttbot.core.state.events.events_state import EventsState
 from mqttbot.core.state.state_module import StateModule

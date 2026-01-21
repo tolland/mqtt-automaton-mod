@@ -98,9 +98,11 @@ def scheduler():
 
 
 @pytest.fixture
-def sample_patterns() -> dict[str, Any]:
+def sample_patterns():
     """Sample pattern definitions for testing"""
-    return {
+    from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
+
+    return PatternsConfigParser.from_yaml({
         "patterns": {
             "row_01": {
                 "steps": [
@@ -120,7 +122,7 @@ def sample_patterns() -> dict[str, Any]:
                     "~ ~ ~10",
                 ]},
         }
-    }
+    })
 
 
 @pytest.fixture

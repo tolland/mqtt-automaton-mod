@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any
 
+from loguru import logger
 from rich import inspect
 
 from mqttbot import ServiceMessage
@@ -63,8 +64,8 @@ class EventManager:
 
                 key = (service_name, method_name)
                 self.handlers[key] = EventHandlerConfig(enabled=True, steps=steps)
-                print(
-                    f"[config] Registered event handler: {service_name}:{method_name} ({len(steps)} steps)"
+                logger.info(
+                    f"Registered event handler: {service_name}:{method_name} ({len(steps)} steps)"
                 )
 
     def get_handler_config(self, service: str, method: str) -> EventHandlerConfig | None:
@@ -78,5 +79,5 @@ class EventManager:
                     result = await callback(message_data)
                     if result:
                         return result
-        print(f"[event_manager] No handler found for {message_data.service}:{message_data.method}")
+        logger.debug(f"No handler found for {message_data.service}:{message_data.method}")
         return None

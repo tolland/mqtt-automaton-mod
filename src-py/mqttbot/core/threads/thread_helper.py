@@ -1,4 +1,5 @@
 
+from loguru import logger
 from rich import inspect
 
 from mqttbot import ServiceMessage
@@ -86,7 +87,7 @@ class ThreadHelper:
                         task.exit(ctx, status)
                         break
 
-                print(f"[thread] {config.thread_id} suspend task {step.service}.{step.method}: {status.name}")
+                logger.debug(f"[{config.thread_id}] Suspend task {step.service}.{step.method}: {status.name}")
 
         async def on_resume(thread: TaskThread, ctx: Context) -> None:
             """Execute resume tasks"""
@@ -102,7 +103,7 @@ class ThreadHelper:
                         task.exit(ctx, status)
                         break
 
-                print(f"[thread] {config.thread_id} resume task {step.service}.{step.method}: {status.name}")
+                logger.debug(f"[{config.thread_id}] Resume task {step.service}.{step.method}: {status.name}")
 
         async def on_cancel(thread: TaskThread, ctx: Context) -> None:
             """Execute cancel tasks"""
@@ -118,7 +119,7 @@ class ThreadHelper:
                         task.exit(ctx, status)
                         break
 
-                print(f"[thread] {config.thread_id} cancel task {step.service}.{step.method}: {status.name}")
+                logger.debug(f"[{config.thread_id}] Cancel task {step.service}.{step.method}: {status.name}")
 
         thread = PatternThread(
             thread_id=config.thread_id,

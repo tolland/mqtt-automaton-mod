@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable, Generator
 from typing import Any
 
+from loguru import logger
 from rich.tree import Tree
 
 from mqttbot.core.context import Context
@@ -103,7 +104,7 @@ class PatternThread(TaskThread):
 
     async def suspend(self, ctx: Context) -> None:
         """Suspend - save waypoint and task index for resumption"""
-        print(f"[PatternThread] Suspending at task index {self.current_task_index}")
+        logger.debug(f"[{self.thread_id}] Suspending at task index {self.current_task_index}")
         await super().suspend(ctx)
         if self.current_task:
             self.task_queue.appendleft(self.current_task)
@@ -113,7 +114,7 @@ class PatternThread(TaskThread):
     async def resume(self, ctx: Context) -> None:
         """Resume - resume this thread from suspension point
         """
-        print("[PatternThread] Resuming - rebuilding task sequence")
+        logger.debug(f"[{self.thread_id}] Resuming")
 
         self.current_task_index = 0
 

@@ -1,3 +1,4 @@
+from loguru import logger
 import threading
 from dataclasses import dataclass
 from enum import Enum
@@ -100,14 +101,14 @@ class MessageService:
         service_name = message_data.service
 
         if not request_id:
-            print(f"[{service_name}] No request_id in response: {message_data}")
+            logger.warning(f"No request_id in response: {message_data}")
             raise ValueError("Response message missing request_id")
 
-        print(f"pending_requests: {self.pending_requests.keys()}")
+        logger.debug(f"pending_requests: {list(self.pending_requests.keys())}")
 
         with self._lock:
             if request_id not in self.pending_requests:
-                print(f"[{service_name}] Unknown request_id: {request_id}")
+                logger.debug(f"Unknown request_id: {request_id}")
                 return
 
             response = message_data.response or {}
@@ -117,13 +118,13 @@ class MessageService:
                 self.pending_requests[request_id] = RequestResult(
                     request_id=request_id, status=RequestStatus.SUCCESS, response=response
                 )
-                print(f"[{service_name}] Request {request_id} succeeded")
+                logger.debug(f"Request {request_id} succeeded")
 
             elif status == "failure":
                 error = response.get("reason", status)
                 self.pending_requests[request_id] = RequestResult(
                     request_id=request_id, status=RequestStatus.FAILED, error=error
                 )
-                print(f"[{service_name}] Request {request_id} failed: {error}")
+                logger.warning(f"Request {request_id} failed: {error}")
             else:
-                print(f"[{service_name}] Request {request_id} unknown status: {status}")
+                logger.warning(f"Request {request_id} unknown status: {status}")

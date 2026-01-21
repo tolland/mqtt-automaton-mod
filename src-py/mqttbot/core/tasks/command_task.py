@@ -1,3 +1,4 @@
+from loguru import logger
 import logging
 import uuid
 from typing import Any
@@ -35,7 +36,7 @@ class CommandTask(TaskBase):
     def _step(self, ctx: Context) -> TaskStatus:
         if self._state == TaskState.INIT:
             # Send warp request
-            print("[CommandTask] Sending message")
+            logger.debug("Sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,
@@ -54,10 +55,10 @@ class CommandTask(TaskBase):
                 if result:
                     self.result = result
                     if result.status == RequestStatus.SUCCESS:
-                        print(f"[CommandTask] success to {self.service} - {self.method}")
+                        logger.debug(f"Success: {self.service}.{self.method}")
                         return TaskStatus.SUCCESS
                     else:
-                        print(f"[CommandTask] failed: {result.error}")
+                        logger.warning(f"Failed: {result.error}")
                         return TaskStatus.FAILED
 
             return TaskStatus.RUNNING

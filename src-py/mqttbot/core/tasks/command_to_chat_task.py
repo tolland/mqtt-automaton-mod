@@ -1,3 +1,4 @@
+from loguru import logger
 from typing import Any
 
 from mqttbot import ServiceMessage
@@ -30,14 +31,14 @@ class CommandToChatTask(TaskBase):
 
     def _enter(self, ctx: Context) -> None:
         """Initialize the task"""
-        print("[CommandToChatTask] Starting ")
+        logger.debug("Starting CommandToChatTask")
 
         ctx.blackboard.subscribe("events", self._handler)
 
         self._state = TaskState.INIT
 
     def _handler(self, event_state: EventsState):
-        print(f"[CommandToChatTask] Event received: {event_state}")
+        logger.debug(f"Event received: {event_state}")
         if isinstance(event_state, EventsState):
             if "clean_message" in event_state.message.response:
                 clean_message = event_state.message.response["clean_message"]

@@ -1,3 +1,4 @@
+from loguru import logger
 import time
 from typing import Any
 
@@ -49,7 +50,7 @@ class DwellTask(TaskBase):
     def _enter(self, ctx: Context) -> None:
         """Initialize dwell"""
         reason_str = f" ({self.reason})" if self.reason else ""
-        print(f"[DwellTask] Dwelling for {self.duration}s{reason_str}")
+        logger.debug(f"Dwelling for {self.duration}s{reason_str}")
         self.start_time = time.time()
         self._state = TaskState.WAITING
 
@@ -58,7 +59,7 @@ class DwellTask(TaskBase):
         elapsed = time.time() - self.start_time
 
         if elapsed >= self.duration:
-            print("[DwellTask] Dwell completed")
+            logger.debug("Dwell completed")
             self._state = TaskState.DONE
             return TaskStatus.SUCCESS
 
@@ -69,7 +70,7 @@ class DwellTask(TaskBase):
         """Suspend - save remaining time"""
         elapsed = time.time() - self.start_time
         remaining = self.duration - elapsed
-        print(f"[DwellTask] Suspended with {remaining:.1f}s remaining")
+        logger.debug(f"Dwell suspended: {remaining:.1f}s remaining")
         self._state = TaskState.SUSPENDED
 
     def _resume(self, ctx: Context) -> None:
@@ -77,7 +78,7 @@ class DwellTask(TaskBase):
         # Note: In real system, remaining_seconds would be passed via metadata or similar
         # If not present, we use current duration as default (start fresh)
         remaining = ctx.metadata.get("remaining_seconds", self.duration)
-        print(f"[DwellTask] Resumed - {remaining:.1f}s remaining")
+        logger.debug(f"Dwell resumed: {remaining:.1f}s remaining")
 
         # Adjust start time so elapsed calculation gives correct result
         self.start_time = time.time() - (self.duration - remaining)
@@ -85,4 +86,4 @@ class DwellTask(TaskBase):
 
     def _exit(self, ctx: Context, status: TaskStatus) -> None:
         """Clean shutdown"""
-        print(f"[DwellTask] Exiting with status {status}")
+        logger.debug(f"Exiting dwell: {status.name}")

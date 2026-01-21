@@ -42,15 +42,15 @@ class CommandToChatTask(TaskBase):
         if isinstance(event_state, EventsState):
             if "clean_message" in event_state.message.response:
                 clean_message = event_state.message.response["clean_message"]
-                print(f"[CommandToChatTask] Clean message: {clean_message}")
+                logger.debug(f"Clean message: {clean_message}")
                 if "[Wurst] All items sold successfully" in clean_message:
-                    print("[CommandToChatTask] Detected successful sell message.")
+                    logger.debug("Detected successful sell message")
                     self.found = True
 
     def _step(self, ctx: Context) -> TaskStatus:
         if self._state == TaskState.INIT:
             # Send warp request
-            print("[CommandToChatTask] stepping and sending message")
+            logger.debug("Stepping and sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,
@@ -73,7 +73,7 @@ class CommandToChatTask(TaskBase):
         return TaskStatus.FAILED
 
     def _exit(self, ctx: Any, status: TaskStatus) -> None:
-        print("[CommandToChatTask] exiting ")
+        logger.debug("CommandToChatTask exiting")
 
         ctx.blackboard.unsubscribe("events", self._handler)
 

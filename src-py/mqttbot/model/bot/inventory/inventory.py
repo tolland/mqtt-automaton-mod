@@ -1,3 +1,4 @@
+from loguru import logger
 import json
 import sys
 from dataclasses import dataclass
@@ -39,5 +40,5 @@ class Inventory:
                 description=data.get("description"),
             )
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Failed to parse Inventory from JSON: {e}", file=sys.stderr)
+            logger.error(f"Failed to parse Inventory from JSON: {e}")
             return None

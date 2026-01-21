@@ -1,3 +1,4 @@
+from loguru import logger
 import json
 import sys
 import uuid
@@ -38,7 +39,7 @@ class ServiceMessage:
     @staticmethod
     def _patch_request_id(data) -> str:
         """Ensure request_id is set."""
-        print("[ServiceMessage] Patching request_id as missing")
+        logger.warning("ServiceMessage: Patching missing request_id")
         return str(uuid.uuid4())
 
     @classmethod
@@ -57,5 +58,5 @@ class ServiceMessage:
                 message=data.get("message"),
             )
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"Failed to parse ServiceMessage from JSON: {e}", file=sys.stderr)
+            logger.error(f"Failed to parse ServiceMessage from JSON: {e}")
             return None

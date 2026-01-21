@@ -2,6 +2,7 @@ import sys
 import time
 from collections.abc import Callable
 
+from loguru import logger
 from paho.mqtt import client as mqtt
 
 from mqttbot.model.settings.settings import Settings
@@ -47,24 +48,24 @@ class MqttBotClient:
         # self._client.on_subscribe = self.on_subscribe
 
     def on_subscribe(self, client, userdata, mid, granted_qos):
-        print("Subscribed:", mid, granted_qos)
+        logger.debug(f"Subscribed: mid={mid}, qos={granted_qos}")
 
     def _on_connect(self, client, userdata, flags, rc):
         """Handle MQTT connection"""
         if rc != 0:
-            print(f"[mqtt] Connect failed rc={rc}", file=sys.stderr)
+            logger.error(f"MQTT connect failed: rc={rc}")
             return
         # Subscribe to device presence topics
         self.device_monitor.subscribe()
 
-        print(f"[mqtt] Connected → subscribing {self.topic_base}/reply and {self.topic_base}/events")
+        logger.info(f"Connected to MQTT broker, subscribing to topics")
         self._client.subscribe(f"{self.topic_base}/reply", qos=0)
         self._client.subscribe(f"{self.topic_base}/events", qos=0)
         self._mqtt_connected = True
 
     def _on_disconnect(self, client, userdata, rc):
         """Handle MQTT disconnection"""
-        print(f"[mqtt] Disconnected rc={rc}")
+        logger.info(f"Disconnected from MQTT broker: rc={rc}")
         self._mqtt_connected = False
 
     def _on_message(self, client, userdata, msg):
@@ -76,7 +77,7 @@ class MqttBotClient:
             try:
                 cb(topic, payload)
             except Exception as e:
-                print(f"[mqtt] Error in message callback: {e}")
+                logger.error(f"Error in message callback: {e}")
                 raise
 
     def connect(self) -> None:
@@ -90,7 +91,7 @@ class MqttBotClient:
         self._client.loop_start()
 
         # Wait for connection
-        print(f"[mqtt] Connecting to {self.settings.broker}:{self.settings.port}...")
+        logger.info(f"Connecting to {self.settings.broker}:{self.settings.port}...")
         timeout = 10
         start_time = time.time()
         while not self._mqtt_connected and time.time() - start_time < timeout:
@@ -99,7 +100,7 @@ class MqttBotClient:
         if not self._mqtt_connected:
             raise Exception(f"Failed to connect to MQTT broker within {timeout} seconds")
 
-        print("[mqtt] Connection established successfully")
+        logger.info("Connection established successfully")
 
     def disconnect(self) -> None:
         """Disconnect from MQTT broker"""
@@ -120,7 +121,7 @@ class MqttBotClient:
         if not self._client:
             raise RuntimeError("MQTT client not initialized. Call connect() first.")
 
-        print(f"[mqtt] → {self.topic_base}: {message}")
+        logger.debug(f"Publishing to {topic}: {message[:100]}...")  # Truncate long messages
         self._client.publish(topic, message, qos=0, retain=False)
 
     def register_message_callback(self, callback: Callable[[str, str], None]) -> None:

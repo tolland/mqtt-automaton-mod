@@ -1,3 +1,4 @@
+from loguru import logger
 from typing import Any
 
 from mqttbot import ServiceMessage
@@ -30,7 +31,7 @@ class OneShotTask(TaskBase):
     def _step(self, ctx: Context) -> TaskStatus:
         if self._state == TaskState.INIT:
             # Send warp request
-            print("[OneShotTask] Sending message")
+            logger.debug("OneShotTask: Sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,

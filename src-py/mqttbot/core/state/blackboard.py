@@ -1,3 +1,4 @@
+from loguru import logger
 import copy
 from collections.abc import Callable
 from typing import Any
@@ -13,7 +14,7 @@ class TypedBlackboard:
 
     def __new__(cls):
         if cls._instance is None:
-            print("Creating new instance")
+            logger.debug("Creating new Blackboard instance")
             cls._instance = super().__new__(cls)
             # Put any initialization here.
         return cls._instance

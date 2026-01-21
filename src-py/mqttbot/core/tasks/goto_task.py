@@ -1,3 +1,4 @@
+from loguru import logger
 import logging
 import time
 import uuid
@@ -93,10 +94,10 @@ class GotoTask(TaskBase):
 
         elif self._state == TaskState.WAITING:
             if self.result.status == RequestStatus.SUCCESS:
-                print(f"[GotoTask] Successfully reached {self.target}")
+                logger.debug(f"Reached {self.target}")
                 return TaskStatus.SUCCESS
             else:
-                print(f"[GotoTask] Failed to reach {self.target}: {self.result.error}")
+                logger.warning(f"Failed to reach {self.target}: {self.result.error}")
                 return TaskStatus.FAILED
 
         return TaskStatus.FAILED
@@ -129,6 +130,6 @@ class GotoTask(TaskBase):
 
     def _exit(self, ctx: Context, status: TaskStatus) -> None:
         """Clean shutdown"""
-        print(f"[GotoTask] Exiting {self.target} with status {status}")
+        logger.debug(f"Exiting goto {self.target}: {status.name}")
         # Could cancel pending request here if needed
         pass

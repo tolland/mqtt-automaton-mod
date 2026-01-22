@@ -1,3 +1,4 @@
+import json
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -65,7 +66,8 @@ class TaskBase(ABC):
         state = {
             "type": type(self).__name__,
             "status": self.status.name,
-            "state": self._state.name if hasattr(self, "_state") and isinstance(self._state, Enum) else str(self._state),
+            "state": self._state.name if hasattr(self, "_state") and isinstance(self._state, Enum) else str(
+                self._state),
             "correlation_id": self.correlation_id,
         }
 
@@ -78,7 +80,6 @@ class TaskBase(ABC):
         return state
 
     def to_json(self) -> str:
-        import json
         return json.dumps(self.to_dict())
 
     def __rich_repr__(self):

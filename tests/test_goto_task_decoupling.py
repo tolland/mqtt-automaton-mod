@@ -1,10 +1,11 @@
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+
+from mqttbot import ServiceMessage
+from mqttbot.core.services.message_service import RequestResult, RequestStatus
 from mqttbot.core.tasks.goto_task import GotoTask
 from mqttbot.core.tasks.task_status import TaskInternalState, TaskStatus
 from mqttbot.core.threads.scheduler_context import Context
-from mqttbot.core.services.message_service import RequestResult, RequestStatus
-from mqttbot import ServiceMessage
+
 
 class TestGotoTaskDecoupling:
     def test_goto_task_sends_message_directly(self):
@@ -21,6 +22,8 @@ class TestGotoTaskDecoupling:
         # Create task
         task = GotoTask.create(x=10, y=20, z=30)
         task.correlation_id = "test-corr-id"
+
+        task.enter(ctx)
 
         # Step 1: INIT -> SENT
         status = task.step(ctx)
@@ -82,7 +85,8 @@ class TestGotoTaskDecoupling:
 
         # Trigger suspension
         task.suspend(ctx)
-        assert task._state == TaskInternalState.SUSPENDED
+        assert task._state == TaskInternalState.SUSPEND
+        task.step(ctx)
 
         # Verify cancel message was sent
         mock_bot_service.send_message.assert_called_once()
@@ -112,7 +116,7 @@ class TestGotoTaskDecoupling:
 
         # Trigger suspension
         task.suspend(ctx)
-        assert task._state == TaskInternalState.SUSPENDED
+        assert task._state == TaskInternalState.SUSPEND
 
         # Verify NO cancel message was sent
         mock_bot_service.send_message.assert_not_called()

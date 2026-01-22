@@ -1,8 +1,10 @@
 """Tests for Scheduler - thread preemption and management"""
+from rich import inspect
 
 from mqttbot.core.tasks.task_priority import TaskPriority
 from mqttbot.core.threads.task_thread_base import TaskThreadBase
 
+from rich import print as rprint
 
 class TestSchedulerRegistration:
     """Test thread registration and enqueueing"""
@@ -65,16 +67,6 @@ class TestSchedulerSingleton:
         """Test that singleton detects thread in current slot"""
         thread1 = TaskThreadBase("farming", TaskPriority.NORMAL)
         scheduler.current_thread = thread1
-
-        thread2 = TaskThreadBase("farming", TaskPriority.NORMAL)
-        result = scheduler.enqueue_thread(thread2, singleton=True)
-
-        assert result is False
-
-    def test_singleton_detects_in_suspended(self, scheduler):
-        """Test that singleton detects thread in suspended stack"""
-        thread1 = TaskThreadBase("farming", TaskPriority.NORMAL)
-        scheduler.suspended_stack.append(thread1)
 
         thread2 = TaskThreadBase("farming", TaskPriority.NORMAL)
         result = scheduler.enqueue_thread(thread2, singleton=True)
@@ -150,16 +142,16 @@ class TestSchedulerThreadStateTracking:
         scheduler.ready_threads.clear()
         assert len(scheduler.ready_threads) == 0
 
-    def test_suspended_stack_lifo(self, scheduler):
-        """Test that suspended stack is LIFO"""
+    def test_done_queue_lifo(self, scheduler):
+        """Test that done_queue stack is LIFO"""
         thread1 = TaskThreadBase("thread1", TaskPriority.NORMAL)
         thread2 = TaskThreadBase("thread2", TaskPriority.NORMAL)
 
-        scheduler.suspended_stack.append(thread1)
-        scheduler.suspended_stack.append(thread2)
+        scheduler.done_queue.append(thread1)
+        scheduler.done_queue.append(thread2)
 
         # Should pop in reverse order
-        popped = scheduler.suspended_stack.pop()
+        popped = scheduler.done_queue.pop()
         assert popped.thread_id == "thread2"
 
 
@@ -193,7 +185,7 @@ class TestSchedulerEdgeCases:
         """Test operations on empty scheduler"""
         assert len(scheduler.ready_threads) == 0
         assert scheduler.current_thread is None
-        assert len(scheduler.suspended_stack) == 0
+        assert len(scheduler.done_queue) == 0
         assert scheduler._thread_id_exists("any") is False
 
 

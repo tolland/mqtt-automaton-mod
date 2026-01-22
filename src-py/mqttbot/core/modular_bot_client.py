@@ -20,10 +20,11 @@ from mqttbot.core.state.baritone.utils import dump_baritone_state
 from mqttbot.core.state.blackboard import TypedBlackboard
 from mqttbot.core.state.events.events_module import EventsModule
 from mqttbot.core.state.wurst_module import WurstModule
+from mqttbot.core.threads import scheduler
 from mqttbot.core.threads.scheduler import SchedulerBase
 from mqttbot.core.threads.scheduler_context import Context
 from mqttbot.core.threads.thread_helper import ThreadHelper
-from mqttbot.model.settings.settings import Settings
+from mqttbot.config.settings.settings import Settings
 from mqttbot.mqtt.mqtt_client import MqttBotClient
 
 """
@@ -88,7 +89,7 @@ class ModularBotClient:
         self.bot_service = BotService(self.ctx)
         self.ctx.bot_service = self.bot_service
 
-        self._scheduler = SchedulerBase()
+        self._scheduler = scheduler.create()
 
         # Log initialization summary
         logger.debug(f"ModularBotClient initialized: broker={settings.broker}:{settings.port}, client_id={settings.client_id}")

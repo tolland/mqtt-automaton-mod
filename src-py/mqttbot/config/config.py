@@ -3,7 +3,7 @@ from typing import Any
 
 import yaml
 
-from mqttbot.model.settings.settings import Settings
+from mqttbot.config.settings.settings import Settings
 
 """Configuration loading and management."""
 

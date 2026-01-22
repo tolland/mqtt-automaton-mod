@@ -86,7 +86,6 @@ class ThreadHelper:
             thread_id=config.thread_id,
             priority=config.priority,
             waypoints=[x.to_dict() for x in config.waypoints],
-            patterns=patterns,
             on_suspend=on_suspend,
             on_resume=on_resume,
             on_cancel=on_cancel,

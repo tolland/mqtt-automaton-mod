@@ -40,6 +40,7 @@ class ThreadInternalStatus(Enum):
             ThreadInternalStatus.RUNNING,
             ThreadInternalStatus.SUSPENDING,
             ThreadInternalStatus.RESUMING,
+            ThreadInternalStatus.CANCELING,
         )
 
     @property

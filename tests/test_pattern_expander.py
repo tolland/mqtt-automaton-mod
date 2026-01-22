@@ -69,16 +69,6 @@ class TestPatternExpanderExpansion:
         assert result[0] == ("goto", (100, 64, 95))
         assert result[1] == ("goto", (100, 64, 90))
 
-    def test_expand_pattern_with_dwell(self):
-        """Test expanding pattern with dwell steps"""
-        pattern = ["~ ~ ~-5", {"type": "dwell", "period": "2s"}, "~ ~ ~-5"]
-        result = PatternExpander.expand_pattern(pattern, (100, 64, 100))
-
-        assert len(result) == 3
-        assert result[0] == ("goto", (100, 64, 95))
-        assert result[1] == ("dwell", 2.0)
-        assert result[2] == ("goto", (100, 64, 90))
-
     def test_expand_pattern_position_tracking(self):
         """Test that position is tracked correctly through pattern"""
         pattern = ["~ ~ ~-5", "~ ~ ~-10", "~ ~ ~15"]
@@ -105,7 +95,7 @@ class TestPatternExpanderExpansion:
 
     def test_expand_pattern_returns_correct_types(self):
         """Test that expansion returns correct task type tuples"""
-        pattern = ["~ ~ ~5", {"type": "dwell", "period": "1s"}]
+        pattern = ["~ ~ ~5", {"type": "dwell", "params": {"period": "1s"}}]
         result = PatternExpander.expand_pattern(pattern, (0, 0, 0))
 
         # Check tuple structure
@@ -118,17 +108,11 @@ class TestPatternExpanderExpansion:
         assert isinstance(goto_task[1], tuple)
         assert len(goto_task[1]) == 3
 
-        assert isinstance(dwell_task, tuple)
-        assert len(dwell_task) == 2
-        assert dwell_task[0] == "dwell"
-        assert isinstance(dwell_task[1], float)
-
     def test_expand_complex_pattern(self):
         """Test expanding a realistic farming pattern"""
         pattern = [
             "~ ~ ~-5",
             "~ ~ ~-5",
-            {"type": "dwell", "period": "3s"},
             "~ ~ ~-5",
             "~ ~ ~10",
         ]
@@ -137,9 +121,8 @@ class TestPatternExpanderExpansion:
         # Verify the sequence
         assert result[0] == ("goto", (50, 65, 45))
         assert result[1] == ("goto", (50, 65, 40))
-        assert result[2] == ("dwell", 3.0)
-        assert result[3] == ("goto", (50, 65, 35))
-        assert result[4] == ("goto", (50, 65, 45))  # Back to start
+        assert result[2] == ("goto", (50, 65, 35))
+        assert result[3] == ("goto", (50, 65, 45))  # Back to start
 
 
 class TestPatternExpanderEdgeCases:

@@ -1,23 +1,31 @@
+"""Test configuration and fixtures."""
 import asyncio
+import builtins
 import os
+import subprocess
 import tempfile
+import time
 from pathlib import Path
-from typing import Generator, Any
+from typing import Generator
 from unittest.mock import Mock, AsyncMock
 
+import pytest
+from rich import inspect
+from rich import print as rprint
+from rich.pretty import pprint
 
-import subprocess
-import time
-import pytest
-from pathlib import Path
-import pytest
+builtins.rprint = rprint
+builtins.pprint = pprint
+builtins.inspect = inspect
+
+__all__ = ["rprint", "pprint", "inspect"]
 
 from mqttbot.core.threads.scheduler import SchedulerBase
-from mqttbot.core.protocol.scheduler import Scheduler
 
 """
 Pytest configuration and shared fixtures.
 """
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -143,7 +151,6 @@ def sample_waypoints():
             "patterns": ["simple"],
         },
     ]
-
 
 
 @pytest.fixture(scope="session")

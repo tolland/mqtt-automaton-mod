@@ -1,4 +1,4 @@
-from mqttbot.core.patterns.pattern_thread import PatternThread
+from mqttbot.core.patterns.pattern_thread import PatternThread, PatternThreadHelper
 from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
 from mqttbot.core.tasks.dwell_task import DwellTask
 from mqttbot.core.tasks.goto_task import GotoTask
@@ -21,14 +21,11 @@ class TestPatternThreadConstruction:
             thread_id="test_thread",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=sample_patterns,
         )
 
         assert thread.thread_id == "test_thread"
         assert thread.priority == TaskPriority.NORMAL
         assert len(thread.waypoints) == len(sample_waypoints)
-        # patterns should be a PatternsConfig object
-        assert thread.patterns_config is not None
 
     def test_build_task_sequence(self, sample_waypoints, sample_patterns):
         """Test that task sequence is built correctly"""
@@ -36,10 +33,9 @@ class TestPatternThreadConstruction:
             thread_id="test_thread",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=sample_patterns,
         )
 
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread,sample_patterns)
 
         # Should have tasks queued
         assert len(thread.task_queue) > 0
@@ -68,9 +64,8 @@ class TestPatternThreadExpansion:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=waypoints,
-            patterns=patterns,
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread, patterns)
 
         # Should have: goto(100,64,100) + 2 pattern gotos
         assert len(thread.task_queue) == 3
@@ -106,9 +101,8 @@ class TestPatternThreadExpansion:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=waypoints,
-            patterns=patterns,
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread, patterns)
 
         # Should have: goto(waypoint) + goto(pattern) + dwell + goto(pattern)
         assert len(thread.task_queue) == 4
@@ -126,9 +120,8 @@ class TestPatternThreadExpansion:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=sample_patterns,
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread, sample_patterns)
 
         # Ensure tasks were generated for both waypoints
         assert len(thread.task_queue) > 1
@@ -156,9 +149,8 @@ class TestPatternThreadExpansion:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=waypoints,
-            patterns=patterns,
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread, patterns)
 
         # Should still build: goto(waypoint) + goto(known pattern)
         assert len(thread.task_queue) == 2
@@ -173,9 +165,8 @@ class TestPatternThreadSuspensionResumption:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=sample_patterns,
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread, sample_patterns)
 
         initial_index = thread.current_task_index
         assert initial_index == 0
@@ -190,18 +181,16 @@ class TestPatternThreadSuspensionResumption:
             thread_id="test1",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=sample_patterns,
         )
-        thread1.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread1, sample_patterns)
         seq1 = [(t.target if isinstance(t, GotoTask) else t.duration) for t in thread1.task_queue]
 
         thread2 = PatternThread(
             thread_id="test2",
             priority=TaskPriority.NORMAL,
             waypoints=sample_waypoints,
-            patterns=sample_patterns,
         )
-        thread2.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread2, sample_patterns)
         seq2 = [(t.target if isinstance(t, GotoTask) else t.duration) for t in thread2.task_queue]
 
         # Sequences should be identical
@@ -223,9 +212,8 @@ class TestPatternThreadNoPatterns:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=waypoints,
-            patterns=patterns,
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread,patterns)
 
         # Should just have the goto waypoint task
         assert len(thread.task_queue) == 1
@@ -238,9 +226,8 @@ class TestPatternThreadNoPatterns:
             thread_id="test",
             priority=TaskPriority.NORMAL,
             waypoints=[],
-            patterns=PatternsConfigParser.from_yaml({}),
         )
-        thread.build_task_sequence()
+        PatternThreadHelper.build_task_sequence(thread, PatternsConfigParser.from_yaml({}))
 
         # Should have empty task queue
         assert len(thread.task_queue) == 0

@@ -6,7 +6,7 @@ from rich.repr import rich_repr
 from mqttbot.config.service_config import ServiceConfig
 from mqttbot.core.tasks.task_priority import TaskPriority
 from mqttbot.model.patterns.step import StepBase
-from mqttbot.model.waypoint import Waypoint
+from mqttbot.model.patterns.waypoint import Waypoint
 
 
 @rich_repr

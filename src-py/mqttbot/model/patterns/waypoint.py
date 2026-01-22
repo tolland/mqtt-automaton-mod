@@ -13,7 +13,6 @@ class Waypoint:
     y: int
     z: int
     patterns: list[str] = field(default_factory=list)  # Pattern names to run
-    dwell_seconds: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -25,8 +24,6 @@ class Waypoint:
         }
         if self.patterns:
             data["patterns"] = self.patterns
-        if self.dwell_seconds > 0:
-            data["dwell_seconds"] = self.dwell_seconds
         if self.metadata:
             data["metadata"] = self.metadata
         return data
@@ -37,7 +34,5 @@ class Waypoint:
         yield "z", self.z
         if self.patterns:
             yield "patterns", self.patterns
-        if self.dwell_seconds > 0:
-            yield "dwell_seconds", self.dwell_seconds
         if self.metadata:
             yield "metadata", self.metadata

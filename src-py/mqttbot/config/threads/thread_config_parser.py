@@ -3,7 +3,7 @@ from typing import Any
 from mqttbot.config.service_config import ServiceConfig
 from mqttbot.config.threads.thread_config import ThreadConfig
 from mqttbot.core.tasks.task_priority import TaskPriority
-from mqttbot.model.waypoint import Waypoint
+from mqttbot.model.patterns.waypoint import Waypoint
 
 
 class ThreadConfigParser:

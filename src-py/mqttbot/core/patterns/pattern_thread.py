@@ -39,7 +39,6 @@ class PatternThread(TaskThreadBase):
         thread_id: str,
         priority: TaskPriority,
         waypoints: list[dict[str, Any]],
-        patterns: PatternsConfig,
         on_suspend: Callable[["TaskThreadBase", "Context"], list[Task]] | None = None,
         on_resume: Callable[["TaskThreadBase", Context], list[Task]] | None = None,
         on_cancel: Callable[["TaskThreadBase", Context], list[Task]] | None = None,
@@ -55,7 +54,6 @@ class PatternThread(TaskThreadBase):
             thread_id: Unique identifier for this thread
             priority: Thread priority level
             waypoints: List of waypoint dictionaries with x, y, z, patterns
-            patterns: PatternsConfig object containing pattern definitions
             on_suspend: Optional callback when thread is suspended
             on_resume: Optional callback when thread is resumed
             on_cancel: Optional callback when thread is cancelled
@@ -64,7 +62,6 @@ class PatternThread(TaskThreadBase):
         super().__init__(thread_id, priority, on_suspend, on_resume, on_cancel, on_failed)
 
         self.waypoints = waypoints
-        self.patterns_config = patterns
         self.current_task_index = 0
 
     # async def step(self, ctx) -> ThreadStatus:
@@ -190,10 +187,10 @@ class PatternThreadHelper:
             yield from TaskFactory.from_config(step, context)
 
     @staticmethod
-    def build_task_sequence(pt: "PatternThread") -> None:
+    def build_task_sequence(pt: "PatternThread", patterns_config: PatternsConfig) -> None:
         """Build the full task sequence from waypoints and patterns"""
         pt.task_queue.clear()
-        compiler = TaskCompiler(pt.patterns_config)
+        compiler = TaskCompiler(patterns_config)
 
         for wp in pt.waypoints:
             wp_pos = (wp["x"], wp["y"], wp["z"])

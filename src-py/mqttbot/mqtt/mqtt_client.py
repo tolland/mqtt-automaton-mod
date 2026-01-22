@@ -6,7 +6,7 @@ from loguru import logger
 from paho.mqtt import client as mqtt
 from paho.mqtt.client import MQTTMessage
 
-from mqttbot.model.settings.settings import Settings
+from mqttbot.config.settings.settings import Settings
 from mqttbot.mqtt.device_presence import DevicePresenceMonitor
 
 

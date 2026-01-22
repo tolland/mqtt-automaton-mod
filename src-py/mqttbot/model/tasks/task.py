@@ -1,28 +1,12 @@
 from collections.abc import Generator
-from typing import Protocol
 
 from rich import inspect
 
 from mqttbot.config.tasks.task_registry import TaskRegistry
-from mqttbot.core.context import Context
-from mqttbot.core.tasks.task_priority import TaskStatus
+from mqttbot.core.protocol.task import Task
 from mqttbot.model.patterns.pattern import PatternStep
 from mqttbot.model.patterns.patterns_config import PatternsConfig
 from mqttbot.model.patterns.step import StepBase, TaskStep
-
-
-class Task(Protocol):
-    status: TaskStatus
-
-    def enter(self, ctx: Context) -> None: ...
-
-    def step(self, ctx: Context) -> TaskStatus: ...
-
-    def suspend(self) -> None: ...
-
-    def resume(self, ctx: Context) -> None: ...
-
-    def exit(self, ctx: Context, status: TaskStatus) -> None: ...
 
 
 class TaskCompiler:

@@ -1,21 +1,27 @@
-from collections.abc import Awaitable, Callable, Generator
+from __future__ import annotations
+
+from collections.abc import Callable
+from collections.abc import Generator
 from typing import Any
 
 from loguru import logger
 from rich.tree import Tree
 
-from mqttbot.core.context import Context
+from mqttbot.core.protocol.task import Task
 from mqttbot.core.tasks.dwell_task import DwellTask
 from mqttbot.core.tasks.goto_task import GotoTask
-from mqttbot.core.tasks.task_priority import TaskPriority, TaskStatus
-from mqttbot.core.threads.task_thread import TaskThread
+from mqttbot.core.tasks.task_priority import TaskPriority
+from mqttbot.core.tasks.task_status import TaskStatus
+from mqttbot.core.threads.scheduler_context import Context
+from mqttbot.core.threads.task_thread_base import TaskThreadBase
 from mqttbot.model.patterns.patterns_config import PatternsConfig
-from mqttbot.model.tasks.task import Task, TaskCompiler, TaskFactory
+from mqttbot.model.patterns.step import TaskStep
+from mqttbot.model.tasks.task import TaskCompiler, TaskFactory
 
 """PatternThread - expands waypoints and patterns into deterministic task sequences"""
 
 
-class PatternThread(TaskThread):
+class PatternThread(TaskThreadBase):
     """
     A thread that expands waypoints and patterns into task sequences.
 
@@ -34,9 +40,14 @@ class PatternThread(TaskThread):
         priority: TaskPriority,
         waypoints: list[dict[str, Any]],
         patterns: PatternsConfig,
-        on_suspend: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
-        on_resume: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
-        on_cancel: Callable[["TaskThread", Context], Awaitable[None]] | None = None,
+        on_suspend: Callable[["TaskThreadBase", "Context"], list[Task]] | None = None,
+        on_resume: Callable[["TaskThreadBase", Context], list[Task]] | None = None,
+        on_cancel: Callable[["TaskThreadBase", Context], list[Task]] | None = None,
+        on_failed: Callable[["TaskThreadBase", Context], list[Task]] | None = None,
+        on_waypoint_start: list[TaskStep] | None = None,
+        on_waypoint_end: list[TaskStep] | None = None,
+        on_waypoints_start: list[TaskStep] | None = None,
+        on_waypoints_end: list[TaskStep] | None = None,
     ) -> None:
         """Initialize a pattern-based thread
 
@@ -48,64 +59,39 @@ class PatternThread(TaskThread):
             on_suspend: Optional callback when thread is suspended
             on_resume: Optional callback when thread is resumed
             on_cancel: Optional callback when thread is cancelled
+            on_failed: Optional callback when thread is failed
         """
-        super().__init__(thread_id, priority, on_suspend, on_resume, on_cancel)
+        super().__init__(thread_id, priority, on_suspend, on_resume, on_cancel, on_failed)
 
         self.waypoints = waypoints
         self.patterns_config = patterns
         self.current_task_index = 0
 
-    def expand_pattern(self, name: str, start_pos: tuple) -> Generator[Task, None, None]:
-        if name not in self.patterns_config:
-            raise ValueError(f"Unknown pattern: {name}")
-
-        pattern_def = self.patterns_config.get(name)
-        # Context persists across the whole pattern sequence
-        context = {"pos": start_pos}
-
-        # 1. Pre-tasks (e.g., toggle wurst ON)
-        for step in pattern_def.get("on_pattern_start", []):
-            yield from TaskFactory.from_config(step, context)
-
-        # 2. Main Movement Steps
-        for step in pattern_def.get("steps", []):
-            yield from TaskFactory.from_config(step, context)
-
-        # 3. Post-tasks (e.g., toggle wurst OFF)
-        for step in pattern_def.get("on_pattern_end", []):
-            yield from TaskFactory.from_config(step, context)
-
-    def build_task_sequence(self) -> None:
-        """Build the full task sequence from waypoints and patterns"""
-        self.task_queue.clear()
-        compiler = TaskCompiler(self.patterns_config)
-
-        for wp in self.waypoints:
-            wp_pos = (wp["x"], wp["y"], wp["z"])
-
-            # Use enqueue_task to properly inject correlation_id
-            self.enqueue_task(GotoTask.create(*wp_pos))
-
-            # Expand and add pattern tasks
-            pattern_names = wp.get("patterns", [])
-            for p_name in pattern_names:
-                for task in compiler.compile_pattern(p_name, wp_pos):
-                    self.enqueue_task(task)
-                wp_pos = compiler.current_pos
+    # async def step(self, ctx) -> ThreadStatus:
+    #     """Execute one step of the pattern sequence"""
+    #     self.current_task_index += 1
+    #
+    #     return await super().step(ctx)
 
     async def suspend(self, ctx: Context) -> None:
         """Suspend - save waypoint and task index for resumption"""
         logger.debug(f"[{self.thread_id}] Suspending at task index {self.current_task_index}")
-        await super().suspend(ctx)
         if self.current_task:
             self.task_queue.appendleft(self.current_task)
-            self.current_task.status = TaskStatus.READY
+            self.current_task.suspend(ctx)
             self.current_task = None
+        await super().suspend(ctx)
 
     async def resume(self, ctx: Context) -> None:
         """Resume - resume this thread from suspension point
         """
         logger.debug(f"[{self.thread_id}] Resuming")
+
+        # So we rely on suspend to decide what to do with current_task
+        #  which currently to put it back on the queue so it is re-executed
+        if self.current_task and self.current_task.status == TaskStatus.SUSPENDED:
+            raise RuntimeError(f"Thread {self.thread_id} has a suspended current task on resume.")
+            # self.current_task.resume(ctx)
 
         self.current_task_index = 0
 
@@ -120,21 +106,19 @@ class PatternThread(TaskThread):
         })
         return state
 
-    async def step(self, ctx) -> bool:
-        """Execute one step of the pattern sequence"""
-        if not self.current_task:
-            return True
-
-        # Execute the task step
-        status = self.current_task.step(ctx)
-
-        if status == TaskStatus.SUCCESS or status == TaskStatus.FAILED:
-            # Task completed, move to next
-            self.current_task.exit(ctx, status)
-            await self._advance_to_next_task(ctx)
-            self.current_task_index += 1
-
-        return self.current_task is None
+    def __rich_repr__(self):
+        yield "thread_id", self.thread_id
+        yield "correlation_id", self.correlation_id
+        yield "priority", self.priority.name
+        yield "state", self.state.name
+        yield "_status", self._status.value
+        yield "uninterruptible", self.uninterruptible
+        yield "current_task", type(self.current_task).__name__ if self.current_task else None
+        yield "task_queue_len", len(self.task_queue)
+        yield "on_suspend", self._on_suspend
+        yield "on_resume", self._on_resume
+        yield "on_cancel", self._on_cancel
+        yield "on_failed", self._on_failed
 
     def __rich__(self):
         """Rich representation showing expanded task sequence as a tree"""
@@ -180,3 +164,46 @@ class PatternThread(TaskThread):
                 waypoint_node.add(f"[blue]dwell[/blue] {task.duration}s")
 
         return root
+
+
+
+class PatternThreadHelper:
+    @staticmethod
+    def expand_pattern(pt: type[PatternThread], name: str, start_pos: tuple) -> Generator[Task, None, None]:
+        if name not in pt.patterns_config:
+            raise ValueError(f"Unknown pattern: {name}")
+
+        pattern_def = pt.patterns_config.get(name)
+        # Context persists across the whole pattern sequence
+        context = {"pos": start_pos}
+
+        # 1. Pre-tasks (e.g., toggle wurst ON)
+        for step in pattern_def.get("on_pattern_start", []):
+            yield from TaskFactory.from_config(step, context)
+
+        # 2. Main Movement Steps
+        for step in pattern_def.get("steps", []):
+            yield from TaskFactory.from_config(step, context)
+
+        # 3. Post-tasks (e.g., toggle wurst OFF)
+        for step in pattern_def.get("on_pattern_end", []):
+            yield from TaskFactory.from_config(step, context)
+
+    @staticmethod
+    def build_task_sequence(pt: "PatternThread") -> None:
+        """Build the full task sequence from waypoints and patterns"""
+        pt.task_queue.clear()
+        compiler = TaskCompiler(pt.patterns_config)
+
+        for wp in pt.waypoints:
+            wp_pos = (wp["x"], wp["y"], wp["z"])
+
+            # Use enqueue_task to properly inject correlation_id
+            pt.enqueue_task(GotoTask.create(*wp_pos))
+
+            # Expand and add pattern tasks
+            pattern_names = wp.get("patterns", [])
+            for p_name in pattern_names:
+                for task in compiler.compile_pattern(p_name, wp_pos):
+                    pt.enqueue_task(task)
+                wp_pos = compiler.current_pos

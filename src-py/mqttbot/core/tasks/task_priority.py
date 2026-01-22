@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum, auto
+from enum import IntEnum
 
 
 class TaskPriority(IntEnum):
@@ -7,11 +7,3 @@ class TaskPriority(IntEnum):
     HIGH = 1  # Hunger
     NORMAL = 2  # Farming, travel
     LOW = 3  # Idle tasks
-
-
-class TaskStatus(Enum):
-    READY = auto()
-    RUNNING = auto()
-    SUCCESS = auto()
-    FAILED = auto()
-    SUSPENDED = auto()

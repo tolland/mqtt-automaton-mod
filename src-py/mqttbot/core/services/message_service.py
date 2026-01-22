@@ -5,7 +5,7 @@ from enum import Enum
 from loguru import logger
 
 from mqttbot import ServiceMessage
-from mqttbot.core.context import Context
+from mqttbot.core.threads.scheduler_context import Context
 
 
 class RequestStatus(Enum):
@@ -126,6 +126,8 @@ class MessageService:
                 self.pending_requests[request_id] = RequestResult(
                     request_id=request_id, status=RequestStatus.FAILED, error=error
                 )
-                logger.warning(f"Request {request_id} failed: {error}")
+                logger.error(f"Request {request_id} failed: {error}")
+                logger.error(f"Full response: {message_data}")
             else:
                 logger.warning(f"Request {request_id} unknown status: {status}")
+                logger.warning(f"Full response: {message_data}")

@@ -1,8 +1,10 @@
 import time
 from collections.abc import Callable
+from typing import Any
 
 from loguru import logger
 from paho.mqtt import client as mqtt
+from paho.mqtt.client import MQTTMessage
 
 from mqttbot.model.settings.settings import Settings
 from mqttbot.mqtt.device_presence import DevicePresenceMonitor
@@ -17,8 +19,8 @@ class MqttBotClient:
     """
 
     def __init__(
-            self,
-            settings: Settings,
+        self,
+        settings: Settings,
     ):
         """Initialize MQTT client
 
@@ -62,15 +64,17 @@ class MqttBotClient:
         self._client.subscribe(f"{self.topic_base}/events", qos=0)
         self._mqtt_connected = True
 
-    def _on_disconnect(self, client, userdata, rc):
+    def _on_disconnect(self, _client, _userdata, rc):
         """Handle MQTT disconnection"""
         logger.info(f"Disconnected from MQTT broker: rc={rc}")
         self._mqtt_connected = False
 
-    def _on_message(self, client, userdata, msg):
+    def _on_message(self, _client: mqtt.Client, _user_data: Any, msg: MQTTMessage) -> None:
         """Handle incoming MQTT messages"""
         topic = msg.topic
         payload = msg.payload.decode("utf-8", errors="replace").strip()
+
+        logger.bind(mqtt=True).debug(payload)
 
         for cb in self.message_callbacks:
             try:
@@ -121,6 +125,7 @@ class MqttBotClient:
             raise RuntimeError("MQTT client not initialized. Call connect() first.")
 
         logger.debug(f"Publishing to {topic}: {message[:100]}...")  # Truncate long messages
+        logger.bind(mqtt=True).debug(message)
         self._client.publish(topic, message, qos=0, retain=False)
 
     def register_message_callback(self, callback: Callable[[str, str], None]) -> None:

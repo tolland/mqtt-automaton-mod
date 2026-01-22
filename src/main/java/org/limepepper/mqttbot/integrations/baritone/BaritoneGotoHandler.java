@@ -13,8 +13,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.action.*;
-import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.mqtt.MessageHandler;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
 import java.util.Set;
@@ -189,8 +189,6 @@ public final class BaritoneGotoHandler extends Action
                 PathingState.INSTANCE.transitionTo(PathingPhase.PATHING);
                 PathingState.INSTANCE.logEvent("CALC_FINISHED",
                     "Path calculated, starting movement");
-                ResponseBuilder.sendPathingEvent("CALC_FINISHED_NOW_EXECUTING",
-                    null);
             }
             case AT_GOAL ->
             {
@@ -210,7 +208,10 @@ public final class BaritoneGotoHandler extends Action
                 ResponseBuilder.sendPathingEvent("NEXT_CALC_FAILED",
                     "next_segment");
             }
-            case CANCELED -> handleCanceled();
+            case CANCELED ->
+            {
+                handleCanceled();
+            }
             default ->
             {
                 // No action needed for other events
@@ -254,7 +255,8 @@ public final class BaritoneGotoHandler extends Action
                 "Path calculation failed (heuristic: %.2f >= %.2f)", heuristic,
                 threshold);
             LOGGER.warn(reason);
-            ResponseBuilder.sendGotoFailure("Path calculation failed", reason);
+            ResponseBuilder.sendGotoFailure("Path calculation failed", reason,
+                feet.x, feet.y, feet.z);
             PathingState.INSTANCE.completeFailed(reason);
         }
         
@@ -288,22 +290,44 @@ public final class BaritoneGotoHandler extends Action
             // Already at goal - Baritone canceled because no pathing needed
             LOGGER.info("Already at goal (heuristic: {} < {})", heuristic,
                 threshold);
-            ResponseBuilder.sendGotoSuccess("Already at goal",
-                feet.x, feet.y, feet.z);
+            ResponseBuilder.sendGotoSuccess("Goal reached", feet.x, feet.y,
+                feet.z);
             PathingState.INSTANCE.completeSuccess();
+            MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
+            requiredFeatures().forEach(CORE.features()::disable);
         }else
         {
-            // Canceled for other reason (actual failure)
-            String reason = String.format(
-                "Baritone canceled (heuristic: %.2f >= %.2f)", heuristic,
-                threshold);
-            LOGGER.warn(reason);
-            ResponseBuilder.sendGotoFailure("Baritone canceled", reason);
-            PathingState.INSTANCE.completeFailed(reason);
+            // Baritone CANCELED can happen during normal operation (e.g.
+            // recalculating)
+            // or when it actually gives up.
+            // If it's still active or has a goal, we should probably ignore the
+            // CANCELED event
+            // and wait for a more definitive failure (like CALC_FAILED) or
+            // success.
+            boolean isProcessActive =
+                MqttCore.baritone.getCustomGoalProcess().isActive();
+            LOGGER.info(
+                "Baritone CANCELED event received, but heuristic (%.2f) >= threshold (%.2f). Process active: {}",
+                heuristic, threshold, isProcessActive);
+            
+            if(isProcessActive)
+            {
+                LOGGER.info(
+                    "Ignoring CANCELED event as Baritone process is still active");
+            }else
+            {
+                // Truly canceled and not at goal
+                String reason = String.format(
+                    "Baritone canceled (heuristic: %.2f >= %.2f)", heuristic,
+                    threshold);
+                LOGGER.warn(reason);
+                ResponseBuilder.sendGotoFailure("Baritone canceled", reason,
+                    feet.x, feet.y, feet.z);
+                PathingState.INSTANCE.completeFailed(reason);
+                MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
+                requiredFeatures().forEach(CORE.features()::disable);
+            }
         }
-        
-        MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
-        requiredFeatures().forEach(CORE.features()::disable);
     }
     
     /**
@@ -335,7 +359,8 @@ public final class BaritoneGotoHandler extends Action
             String reason = String.format(
                 "Calculation timed out after %d seconds",
                 BaritoneConfig.getInstance().getMaxCalculationTimeSeconds());
-            ResponseBuilder.sendGotoFailure("Calculation timeout", reason);
+            ResponseBuilder.sendGotoFailure("Calculation timeout", reason,
+                currentPos.getX(), currentPos.getY(), currentPos.getZ());
             PathingState.INSTANCE.completeFailed(reason);
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
             requiredFeatures().forEach(CORE.features()::disable);
@@ -348,7 +373,8 @@ public final class BaritoneGotoHandler extends Action
             LOGGER.warn("Pathing phase timed out");
             String reason = String.format("Pathing timed out after %d seconds",
                 BaritoneConfig.getInstance().getMaxPathingTimeSeconds());
-            ResponseBuilder.sendGotoFailure("Pathing timeout", reason);
+            ResponseBuilder.sendGotoFailure("Pathing timeout", reason,
+                currentPos.getX(), currentPos.getY(), currentPos.getZ());
             PathingState.INSTANCE.completeFailed(reason);
             MqttCore.INSTANCE.setBotState(MqttCore.BotState.IDLE);
             requiredFeatures().forEach(CORE.features()::disable);

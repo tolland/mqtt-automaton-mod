@@ -1,5 +1,15 @@
 # CLAUDE.md
 
+## Structure of project
+
+- src/main/java - Java source code of mod
+- src/gametest/java - Fabric gametest testing framework code
+- src/test/java - Java unit tests based on junit jupiter
+- src-py - Python source code for mqttbot package
+- tests - pytest based unit tests for mqttbot package
+- docs - documentation and planning files
+- config - configuration files for launching mqttbot python cli
+
 ## Code Quality Standards
 
 ### git process

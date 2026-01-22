@@ -10,25 +10,24 @@ from mqttbot.core.modular_bot_client import ModularBotClient
 
 app = typer.Typer(name="config", no_args_is_help=True)
 
-@app.command("dump")
-def dump_config(
-        ctx: typer.Context,
+def _get_client(ctx: typer.Context) -> ModularBotClient:
+    config = ctx.obj["config"]
+    settings = ctx.obj["settings"]
+    client = ModularBotClient(settings, str(config))
+    client.configure()
+    return client
+
+
+@app.command("all")
+def dump_all(
+    ctx: typer.Context,
 ):
     """
-    Parse and display the bot configuration without running the bot.
-
-    This command loads the configuration file, parses threads and patterns,
-    and displays the parsed configuration in a readable format.
+    Dump all configuration elements.
     """
     console = Console()
     try:
-        config = ctx.obj["config"]
-        settings = ctx.obj["settings"]
-        # Create client (loads config and initializes components)
-        client = ModularBotClient(settings, str(config))
-
-        # Parse config by calling start() (but don't actually run)
-        client.configure()
+        client = _get_client(ctx)
 
         # Display summary
         rprint(
@@ -41,6 +40,14 @@ def dump_config(
             )
         )
 
+        rprint("[bold blue]Patterns Config:[/bold blue]")
+        pprint(client.patterns_configs)
+
+        rprint("[bold blue]Thread Configs:[/bold blue]")
+        for thread_config in client.thread_configs:
+            pprint(thread_config)
+
+        rprint("[bold blue]Threads:[/bold blue]")
         for thread in client.threads:
             pprint(thread)
 
@@ -52,3 +59,66 @@ def dump_config(
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
         raise
+
+
+@app.command("patterns")
+def dump_patterns(
+    ctx: typer.Context,
+):
+    """
+    Dump patterns configuration.
+    """
+    console = Console()
+    try:
+        client = _get_client(ctx)
+        pprint(client.patterns_configs)
+        return 0
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+        sys.exit(1)
+
+
+@app.command("thread-configs")
+def dump_thread_configs(
+    ctx: typer.Context,
+):
+    """
+    Dump thread configurations.
+    """
+    console = Console()
+    try:
+        client = _get_client(ctx)
+        for thread_config in client.thread_configs:
+            pprint(thread_config)
+        return 0
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+        sys.exit(1)
+
+
+@app.command("threads")
+def dump_threads(
+    ctx: typer.Context,
+):
+    """
+    Dump instantiated threads.
+    """
+    console = Console()
+    try:
+        client = _get_client(ctx)
+        for thread in client.threads:
+            pprint(thread)
+        return 0
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+        sys.exit(1)
+
+
+@app.command("dump")
+def dump_config(
+    ctx: typer.Context,
+):
+    """
+    Parse and display the bot configuration without running the bot. (Alias for 'all')
+    """
+    return dump_all(ctx)

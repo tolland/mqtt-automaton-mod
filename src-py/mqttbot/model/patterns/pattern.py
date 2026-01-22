@@ -20,6 +20,10 @@ class CoordAxis:
             return CoordAxis("relative", offset)
         return CoordAxis("absolute", int(token))
 
+    def __rich_repr__(self) -> rich.repr.Result:
+        yield "frame", self.frame
+        yield "value", self.value
+
 
 @dataclass(frozen=True)
 class Coords:
@@ -41,6 +45,10 @@ class Coords:
             axis(self.z, oz),
         )
 
+    def __rich_repr__(self) -> rich.repr.Result:
+        yield "x", f"{self.x.frame[0:3]}[{self.x.value}]"
+        yield "y", f"{self.y.frame[0:3]}[{self.y.value}]"
+        yield "z", f"{self.z.frame[0:3]}[{self.z.value}]"
 
 @dataclass
 class PatternStep(StepBase):
@@ -106,10 +114,7 @@ class Pattern:
 
     def __rich_repr__(self) -> rich.repr.Result:
         yield "pattern_id", self.pattern_id
-        if self.on_pattern_start_tasks:
-            yield "on_pattern_start_tasks", self.on_pattern_start_tasks
-        yield "steps", self.steps
-        if self.on_pattern_end_tasks:
-            yield "on_pattern_end_tasks", self.on_pattern_end_tasks
-        if self.metadata:
-            yield "metadata", self.metadata
+        yield "on_pattern_start_tasks", self.on_pattern_start_tasks, []
+        yield "steps", self.steps, []
+        yield "on_pattern_end_tasks", self.on_pattern_end_tasks, []
+        yield "metadata", self.metadata, {}

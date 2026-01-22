@@ -4,14 +4,12 @@ from enum import Enum
 
 from rich.repr import rich_repr
 
-from mqttbot.core.context import Context
-from mqttbot.core.tasks.task_priority import TaskStatus
-from mqttbot.core.tasks.task_status import TaskState
+from mqttbot.core.tasks.task_status import TaskInternalState, TaskStatus
+from mqttbot.core.threads.scheduler_context import Context
 
 
 @rich_repr
 class TaskBase(ABC):
-    priority: int = 0
     interruptible: bool = True
     intent: str = None
     log = logging.getLogger("task")
@@ -22,7 +20,7 @@ class TaskBase(ABC):
     def __init__(self):
         """Initialize task with correlation_id set to None (injected by thread on enqueue)"""
         self.correlation_id: str | None = None
-        self._state: TaskState = TaskState.READY
+        self._state: TaskInternalState = TaskInternalState.READY
 
     def enter(self, ctx):
         self._enter(ctx)
@@ -43,11 +41,11 @@ class TaskBase(ABC):
         pass
 
     def suspend(self, ctx: Context) -> None:
-        self.status = TaskStatus.SUSPENDED
         return self._suspend(ctx)
 
     def _suspend(self, ctx: Context) -> None:
-        pass
+        """Default suspend behavior: set status to SUSPENDED"""
+        self.status = TaskStatus.SUSPENDED
 
     def resume(self, ctx) -> None:
         self.status = TaskStatus.RUNNING

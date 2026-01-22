@@ -12,7 +12,8 @@ import pytest
 from pathlib import Path
 import pytest
 
-from mqttbot.core.scheduler import Scheduler
+from mqttbot.core.threads.scheduler import SchedulerBase
+from mqttbot.core.protocol.scheduler import Scheduler
 
 """
 Pytest configuration and shared fixtures.
@@ -94,7 +95,7 @@ def mock_ctx():
 @pytest.fixture
 def scheduler():
     """Create a fresh scheduler for each test"""
-    return Scheduler()
+    return SchedulerBase()
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
-from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import MessageService
+from mqttbot.core.threads.scheduler_context import Context
 
 
 class BotService(MessageService):

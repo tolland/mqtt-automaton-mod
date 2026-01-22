@@ -1,4 +1,3 @@
-
 from mqttbot.config.tasks.task_registry import TaskRegistry
 from mqttbot.core.tasks.task_base import TaskBase
 

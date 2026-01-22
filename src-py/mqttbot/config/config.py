@@ -1,5 +1,3 @@
-"""Configuration loading and management."""
-
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +5,7 @@ import yaml
 
 from mqttbot.model.settings.settings import Settings
 
+"""Configuration loading and management."""
 
 def load_yaml(path: str | Path) -> dict[str, Any]:
     """Load YAML configuration file."""

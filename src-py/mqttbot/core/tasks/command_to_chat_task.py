@@ -4,12 +4,11 @@ from loguru import logger
 
 from mqttbot import ServiceMessage
 from mqttbot.config.tasks.task_decorator import task
-from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestResult
 from mqttbot.core.state.events.events_state import EventsState
 from mqttbot.core.tasks.task_base import TaskBase
-from mqttbot.core.tasks.task_priority import TaskStatus
-from mqttbot.core.tasks.task_status import TaskState
+from mqttbot.core.tasks.task_status import TaskInternalState, TaskStatus
+from mqttbot.core.threads.scheduler_context import Context
 
 
 @task("commandtochat")
@@ -24,7 +23,7 @@ class CommandToChatTask(TaskBase):
         self.timeout = timeout
         self.request_id: str | None = None
         self.result: RequestResult | None = None
-        self._state = TaskState.INIT
+        self._state = TaskInternalState.INIT
         self.service = service
         self.method = method
         self.params = params
@@ -36,7 +35,7 @@ class CommandToChatTask(TaskBase):
 
         ctx.blackboard.subscribe("events", self._handler)
 
-        self._state = TaskState.INIT
+        self._state = TaskInternalState.INIT
 
     def _handler(self, event_state: EventsState):
         logger.debug(f"Event received: {event_state}")
@@ -49,7 +48,7 @@ class CommandToChatTask(TaskBase):
                     self.found = True
 
     def _step(self, ctx: Context) -> TaskStatus:
-        if self._state == TaskState.INIT:
+        if self._state == TaskInternalState.INIT:
             # Send warp request
             logger.debug("Stepping and sending message")
             message = ServiceMessage(
@@ -62,10 +61,10 @@ class CommandToChatTask(TaskBase):
             # track requestId
             ctx.message_sender(message)
             self.request_id = message.request_id
-            self._state = TaskState.WAITING
+            self._state = TaskInternalState.WAITING
             return TaskStatus.RUNNING
 
-        elif self._state == TaskState.WAITING:
+        elif self._state == TaskInternalState.WAITING:
             if self.found:
                 return TaskStatus.SUCCESS
 
@@ -78,4 +77,4 @@ class CommandToChatTask(TaskBase):
 
         ctx.blackboard.unsubscribe("events", self._handler)
 
-        self._state = TaskState.DONE
+        self._state = TaskInternalState.DONE

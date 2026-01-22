@@ -4,10 +4,9 @@ from typing import Any
 from loguru import logger
 
 from mqttbot.config.tasks.task_decorator import task
-from mqttbot.core.context import Context
 from mqttbot.core.tasks.task_base import TaskBase
-from mqttbot.core.tasks.task_priority import TaskStatus
-from mqttbot.core.tasks.task_status import TaskState
+from mqttbot.core.tasks.task_status import TaskInternalState, TaskStatus
+from mqttbot.core.threads.scheduler_context import Context
 
 
 @task("dwell")
@@ -46,14 +45,14 @@ class DwellTask(TaskBase):
         self.duration = float(self.duration)
         self.reason = params.get("reason", "")
         self.start_time: float = 0.0
-        self._state = TaskState.INIT
+        self._state = TaskInternalState.INIT
 
     def _enter(self, ctx: Context) -> None:
         """Initialize dwell"""
         reason_str = f" ({self.reason})" if self.reason else ""
         logger.debug(f"Dwelling for {self.duration}s{reason_str}")
         self.start_time = time.time()
-        self._state = TaskState.WAITING
+        self._state = TaskInternalState.WAITING
 
     def _step(self, ctx: dict) -> TaskStatus:
         """Check if dwell time has elapsed"""
@@ -61,7 +60,7 @@ class DwellTask(TaskBase):
 
         if elapsed >= self.duration:
             logger.debug("Dwell completed")
-            self._state = TaskState.DONE
+            self._state = TaskInternalState.DONE
             return TaskStatus.SUCCESS
 
         # Still waiting (don't log every tick to avoid spam)
@@ -72,7 +71,7 @@ class DwellTask(TaskBase):
         elapsed = time.time() - self.start_time
         remaining = self.duration - elapsed
         logger.debug(f"Dwell suspended: {remaining:.1f}s remaining")
-        self._state = TaskState.SUSPENDED
+        self._state = TaskInternalState.SUSPENDED
 
     def _resume(self, ctx: Context) -> None:
         """Resume - adjust start time to account for remaining duration"""
@@ -83,8 +82,25 @@ class DwellTask(TaskBase):
 
         # Adjust start time so elapsed calculation gives correct result
         self.start_time = time.time() - (self.duration - remaining)
-        self._state = TaskState.WAITING
+        self._state = TaskInternalState.WAITING
 
     def _exit(self, ctx: Context, status: TaskStatus) -> None:
         """Clean shutdown"""
         logger.debug(f"Exiting dwell: {status.name}")
+
+    @staticmethod
+    def parse_dwell(dwell_spec: Any) -> float:
+        """Parse dwell period (e.g., '5s', '500ms', or float)"""
+        if isinstance(dwell_spec, (int, float)):
+            return float(dwell_spec)
+
+        if isinstance(dwell_spec, str):
+            dwell_spec = dwell_spec.strip().lower()
+            if dwell_spec.endswith("ms"):
+                return float(dwell_spec[:-2]) / 1000.0
+            elif dwell_spec.endswith("s"):
+                return float(dwell_spec[:-1])
+            else:
+                return float(dwell_spec)
+
+        return 0.0

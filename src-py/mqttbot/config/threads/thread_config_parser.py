@@ -4,7 +4,6 @@ from mqttbot.config.service_config import ServiceConfig
 from mqttbot.config.threads.thread_config import ThreadConfig
 from mqttbot.core.tasks.task_priority import TaskPriority
 from mqttbot.model.waypoint import Waypoint
-from mqttbot.utils.common import parse_dwell
 
 
 class ThreadConfigParser:
@@ -19,7 +18,6 @@ class ThreadConfigParser:
 
         threads = []
         threads_data = yaml_data.get("threads", {})
-        patterns = yaml_data.get("patterns", {})
 
         for thread_id, thread_data in threads_data.items():
             # Parse priority
@@ -30,16 +28,11 @@ class ThreadConfigParser:
             waypoints = []
             for wp_data in thread_data.get("waypoints", []):
                 if isinstance(wp_data, dict):
-                    if "type" in wp_data and wp_data["type"] == "dwell":
-                        # Skip dwell entries (handle separately)
-                        continue
-
                     waypoint = Waypoint(
                         x=wp_data["x"],
                         y=wp_data["y"],
                         z=wp_data["z"],
                         patterns=wp_data.get("patterns", []),
-                        dwell_seconds=parse_dwell(wp_data.get("dwell", 0)),
                     )
                     waypoints.append(waypoint)
 
@@ -62,8 +55,11 @@ class ThreadConfigParser:
                 on_suspend_tasks=thread_data.get("on_suspend", []),
                 on_resume_tasks=thread_data.get("on_resume", []),
                 on_cancel_tasks=thread_data.get("on_cancel", []),
+                on_failed_tasks=thread_data.get("on_failed", []),
                 on_waypoint_end_tasks=thread_data.get("on_waypoint_end", []),
                 on_waypoint_start_tasks=thread_data.get("on_waypoint_start", []),
+                on_waypoints_start_tasks=thread_data.get("on_waypoints_start", []),
+                on_waypoints_end_tasks=thread_data.get("on_waypoints_end", []),
                 metadata=thread_data.get("metadata", {}),
             )
             threads.append(thread_config)

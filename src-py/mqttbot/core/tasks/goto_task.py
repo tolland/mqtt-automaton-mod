@@ -1,4 +1,3 @@
-import logging
 import time
 import uuid
 from typing import Any
@@ -8,13 +7,10 @@ from loguru import logger
 from mqttbot import ServiceMessage
 from mqttbot.config.service_config import ServiceConfig
 from mqttbot.config.tasks.task_decorator import task
-from mqttbot.core.context import Context
 from mqttbot.core.services.message_service import RequestStatus
 from mqttbot.core.tasks.task_base import TaskBase
-from mqttbot.core.tasks.task_priority import TaskStatus
-from mqttbot.core.tasks.task_status import TaskState
-
-logger = logging.getLogger(__name__)
+from mqttbot.core.tasks.task_status import TaskInternalState, TaskStatus
+from mqttbot.core.threads.scheduler_context import Context
 
 
 @task("goto")
@@ -33,10 +29,9 @@ class GotoTask(TaskBase):
         y = params["target"]["y"]
         z = params["target"]["z"]
         self.target = (x, y, z)
-        self.service_config = service_config
         self.request_id: str | None = None
         self.result = None
-        self._state = TaskState.INIT
+        self._state: TaskInternalState | None = None
         self._timeout = 60.0
         self._sent_time = 0.0
 
@@ -54,13 +49,13 @@ class GotoTask(TaskBase):
         """Initialize the task"""
         logger.debug(f"[GotoTask] Starting navigation to {self.target}")
 
-        self._state = TaskState.INIT
+        self._state = TaskInternalState.INIT
 
     def _step(self, ctx: Context) -> TaskStatus:
         """Synchronous step - returns immediately without blocking"""
         bot_service = ctx.bot_service
 
-        if self._state == TaskState.INIT:
+        if self._state == TaskInternalState.INIT:
             # Send request
             logger.info(f"[GotoTask] Sending goto {self.target}")
 
@@ -75,58 +70,63 @@ class GotoTask(TaskBase):
             bot_service.send_message(message_data)
 
             self._sent_time = time.time()
-            self._state = TaskState.SENT
+            self._state = TaskInternalState.SENT
             return TaskStatus.RUNNING
 
-        elif self._state == TaskState.SENT:
+        elif self._state == TaskInternalState.SENT:
             # Check if response arrived (non-blocking)
             result = bot_service.get_result(self.request_id)
             if result is not None:
                 self.result = result
-                self._state = TaskState.WAITING
+                self._state = TaskInternalState.WAITING
                 return TaskStatus.RUNNING
 
             # Check timeout
             if time.time() - self._sent_time > self._timeout:
                 logger.info(f"[GotoTask] Timeout waiting for goto {self.target}")
+                self._state = TaskInternalState.DONE
                 return TaskStatus.FAILED
 
             return TaskStatus.RUNNING
 
-        elif self._state == TaskState.WAITING:
+        elif self._state == TaskInternalState.WAITING:
             if self.result.status == RequestStatus.SUCCESS:
                 logger.debug(f"Reached {self.target}")
+                self._state = TaskInternalState.DONE
                 return TaskStatus.SUCCESS
             else:
                 logger.warning(f"Failed to reach {self.target}: {self.result.error}")
                 return TaskStatus.FAILED
 
+        elif self._state == TaskInternalState.SUSPEND:
+            if self.request_id:
+                logger.info(f"[GotoTask] Suspending {self.target}, cancelling request {self.request_id}")
+                cancel_msg = ServiceMessage(
+                    service="baritone",
+                    method="cancel",
+                    request_id=str(uuid.uuid4()),
+                    correlation_id=self.correlation_id,
+                    params={
+                        "request_id": self.request_id,
+                        "reason": "preempted"
+                    }
+                )
+                ctx.bot_service.send_message(cancel_msg)
+            self._state = TaskInternalState.SUSPENDED
+            # se we can't do anything more with this task until resumed
+            return TaskStatus.SUCCESS
         return TaskStatus.FAILED
 
     def _suspend(self, ctx: Context) -> None:
-        """Suspend - cancel remote operation and save state"""
-        if self.request_id:
-            logger.info(f"[GotoTask] Suspending {self.target}, cancelling request {self.request_id}")
-            cancel_msg = ServiceMessage(
-                service="baritone",
-                method="cancel",
-                request_id=str(uuid.uuid4()),
-                correlation_id=self.correlation_id,
-                params={
-                    "request_id": self.request_id,
-                    "reason": "preempted"
-                }
-            )
-            ctx.bot_service.send_message(cancel_msg)
-
-        self._state = TaskState.SUSPENDED
+        """Suspend - tell task to handle suspend on next step"""
+        self._state = TaskInternalState.SUSPEND
 
     def _resume(self, ctx: Context) -> None:
         """Resume - reset state to trigger a fresh request"""
         logger.info(f"[GotoTask] Resuming for {self.target}")
-
-        # Reset to INIT to force a new request_id and fresh message
-        self._state = TaskState.INIT
+        # WE don't have special resume logic, just continue
+        # self._state = TaskInternalState.RESUME
+        self._state = TaskInternalState.INIT
         self.request_id = None
 
     def _exit(self, ctx: Context, status: TaskStatus) -> None:

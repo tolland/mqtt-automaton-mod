@@ -11,17 +11,17 @@ from rich.repr import rich_repr
 
 from mqttbot import ServiceMessage
 from mqttbot.config.threads.thread_config_parser import ThreadConfigParser
-from mqttbot.core.context import Context
 from mqttbot.core.events.event_manager import EventManager
 from mqttbot.core.events.event_manager_helper import EventManagerHelper
 from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
-from mqttbot.core.scheduler import Scheduler
 from mqttbot.core.services.bot_service import BotService
 from mqttbot.core.state.baritone.baritone_module import BaritoneModule
 from mqttbot.core.state.baritone.utils import dump_baritone_state
 from mqttbot.core.state.blackboard import TypedBlackboard
 from mqttbot.core.state.events.events_module import EventsModule
 from mqttbot.core.state.wurst_module import WurstModule
+from mqttbot.core.threads.scheduler import SchedulerBase
+from mqttbot.core.threads.scheduler_context import Context
 from mqttbot.core.threads.thread_helper import ThreadHelper
 from mqttbot.model.settings.settings import Settings
 from mqttbot.mqtt.mqtt_client import MqttBotClient
@@ -88,14 +88,14 @@ class ModularBotClient:
         self.bot_service = BotService(self.ctx)
         self.ctx.bot_service = self.bot_service
 
-        self._scheduler = Scheduler()
+        self._scheduler = SchedulerBase()
 
         # Log initialization summary
         logger.debug(f"ModularBotClient initialized: broker={settings.broker}:{settings.port}, client_id={settings.client_id}")
 
     def _handle_mqtt_message(self, topic: str, payload: str) -> None:
         """Handle incoming MQTT message payload turn into ServiceMessage
-        
+
         Args:
             topic: MQTT topic the message was received on
             payload: Message payload string
@@ -112,7 +112,7 @@ class ModularBotClient:
     def _process_message(self, topic: str, message_data):
         """
         Distribute incoming message based on topic routing
-        
+
         Args:
             topic: MQTT topic the message was received on
             message_data: Parsed ServiceMessage object
@@ -193,6 +193,7 @@ class ModularBotClient:
     def stop(self) -> None:
         """Stop the bot"""
         logger.info("Stopping modular bot client")
+        self._scheduler._publish_state(self.ctx)
 
         self.running = False
         self.mqtt.disconnect()
@@ -278,9 +279,9 @@ class ModularBotClient:
         except KeyboardInterrupt:
             logger.info("Interrupted by user")
             return 130
-        except Exception as e:
-            logger.error(f"Bot error: {e}")
-            raise
+        # except Exception as e:
+        #     logger.error(f"Bot error: {e}")
+        #     raise
         finally:
             self.stop()
 

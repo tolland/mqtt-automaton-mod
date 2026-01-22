@@ -27,12 +27,16 @@ class ResponseBuilder {
         ResponseBuilder.sendResponse("goto", response);
     }
     
-    static void sendGotoFailure(String message, String reason)
+    static void sendGotoFailure(String message, String reason, int x, int y,
+        int z)
     {
         JsonObject response = new JsonObject();
         response.addProperty("status", "failure");
         response.addProperty("message", message);
         response.addProperty("reason", reason);
+        response.addProperty("x", x);
+        response.addProperty("y", y);
+        response.addProperty("z", z);
         response.addProperty("player", mqttCore.getPlayerName());
         
         sendResponse("goto", response);

@@ -92,7 +92,7 @@ public final class SendCommandHandler extends Action
                     successParams.addProperty("status", "success");
                     successParams.addProperty("message", "message sent");
                     
-                    ServiceMessage replyData = new ServiceMessage("wurst",
+                    ServiceMessage replyData = new ServiceMessage("commands",
                         mqttMessageEvent.serviceMessage.getMethod(),
                         mqttMessageEvent.serviceMessage.getRequestId(),
                         mqttMessageEvent.serviceMessage.getCorrelationId(),
@@ -105,7 +105,7 @@ public final class SendCommandHandler extends Action
             }
             break;
             default:
-            LOGGER.debug("unknownn method in commands handler");
+            LOGGER.debug("unknown method in commands handler");
         }
     }
     

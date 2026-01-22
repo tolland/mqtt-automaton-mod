@@ -28,10 +28,18 @@ class PatternsConfigParser:
         """
         patterns_data = yaml_data.get("patterns", {})
         patterns = PatternsConfigParser.from_pattern_yaml(patterns_data)
+        on_failed = yaml_data.get("on_failed", [])
+        on_patterns_start = yaml_data.get("on_patterns_start", [])
+        on_patterns_end = yaml_data.get("on_patterns_end", [])
+        on_pattern_start = yaml_data.get("on_pattern_start", [])
+        on_pattern_end = yaml_data.get("on_pattern_end", [])
         return PatternsConfig(
             patterns=patterns,
-            on_patterns_start_tasks=yaml_data.get("on_patterns_start", []),
-            on_patterns_end_tasks=yaml_data.get("on_patterns_end", []),
+            on_pattern_start_tasks=[PatternExpander.parse_pattern_step(x) for x in on_pattern_start],
+            on_pattern_end_tasks=[PatternExpander.parse_pattern_step(x) for x in on_pattern_end],
+            on_patterns_start_tasks=[PatternExpander.parse_pattern_step(x) for x in on_patterns_start],
+            on_patterns_end_tasks=[PatternExpander.parse_pattern_step(x) for x in on_patterns_end],
+            on_failed_tasks=[PatternExpander.parse_pattern_step(x) for x in on_failed],
             metadata=yaml_data.get("metadata", {}),
         )
 
@@ -40,19 +48,10 @@ class PatternsConfigParser:
         patterns = []
         for pattern_id, pattern_data in patterns_data.items():
             step_defs = []
-            # Support two shapes for pattern_data:
-            # 1) dict with keys like {"steps": [...], "on_pattern_start": [...]} (new)
-            # 2) direct list of step definitions (legacy): ["~ ~ ~-5", {...}]
-            if isinstance(pattern_data, list):
-                steps_list = pattern_data
-                on_start = []
-                on_end = []
-                metadata = {}
-            else:
-                steps_list = pattern_data.get("steps", [])
-                on_start = pattern_data.get("on_pattern_start", [])
-                on_end = pattern_data.get("on_pattern_end", [])
-                metadata = pattern_data.get("metadata", {})
+            steps_list = pattern_data.get("steps", [])
+            on_start = pattern_data.get("on_pattern_start", [])
+            on_end = pattern_data.get("on_pattern_end", [])
+            metadata = pattern_data.get("metadata", {})
             for step_def in steps_list:
                 step_defs.append(PatternExpander.parse_pattern_step(step_def))
 

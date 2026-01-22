@@ -29,6 +29,7 @@ dependencies = [
     "rich>=13.0.0,<14.0",
     "pytest>=9.0.2",
     "loguru>=0.7.0,<1.0",
+    "mypy>=1.19.1",
 ]
 
 [project.optional-dependencies]

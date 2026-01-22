@@ -1,3 +1,9 @@
+import json
+import sys
+from pathlib import Path
+
+from loguru import logger
+
 """Logging configuration using Loguru
 
 Provides structured logging with:
@@ -7,10 +13,9 @@ Provides structured logging with:
 - MQTT traffic isolation to separate file
 """
 
-import sys
-from pathlib import Path
 
-from loguru import logger
+def mqtt_only(record):
+    return "mqtt" in record["extra"]
 
 
 def configure_logging(
@@ -71,23 +76,48 @@ def configure_logging(
             compression="zip",
         )
 
-    # Per-package log levels (if specified)
-    if package_levels:
-        for package, level in package_levels.items():
-            logger.add(
-                sys.stderr,
-                level=level,
-                filter=lambda record, pkg=package: record["name"].startswith(pkg),
-                format=(
-                    "<green>{time:HH:mm:ss.SSS}</green> | "
-                    "<level>{level: <8}</level> | "
-                    "<cyan>{name}</cyan> - "
-                    "<level>{message}</level>"
-                ),
-                colorize=True,
-            )
+        # Sink callable that pretty-prints on-wire JSON strings only.
+        # It intentionally raises for non-JSON inputs (including Python dict/list values),
+        # as requested: callers must pass the on-wire JSON string.
+        def _mqtt_json_sink(message):
+            # message is a loguru.Message (subclass of str); structured record is at message.record
+            record = getattr(message, "record", None)
+            if record is None:
+                raise TypeError("Invalid Loguru Message: missing record")
+            raw = record.get("message")
+            # Always treat the log message as JSON text. Use str(raw) so bytes etc convert.
+            obj = json.loads(str(raw))  # will raise JSONDecodeError on invalid input
+            pretty = json.dumps(obj, indent=2, ensure_ascii=False)
+            path = log_path / "mqtt_dump.log"
+            # Append pretty JSON and a newline. Open per-call for simplicity and thread-safety.
+            with path.open("a", encoding="utf-8") as f:
+                f.write(pretty)
+                f.write("\n")
 
-    logger.info(f"Logging configured: console={console_level}, file={file_level}, dir={log_dir}")
+        logger.add(
+            _mqtt_json_sink,
+            level="TRACE",
+            filter=mqtt_only,
+            enqueue=True,
+        )
+
+        # Per-package log levels (if specified)
+        if package_levels:
+            for package, level in package_levels.items():
+                logger.add(
+                    sys.stderr,
+                    level=level,
+                    filter=lambda record, pkg=package: record["name"].startswith(pkg),
+                    format=(
+                        "<green>{time:HH:mm:ss.SSS}</green> | "
+                        "<level>{level: <8}</level> | "
+                        "<cyan>{name}</cyan> - "
+                        "<level>{message}</level>"
+                    ),
+                    colorize=True,
+                )
+
+        logger.info(f"Logging configured: console={console_level}, file={file_level}, dir={log_dir}")
 
 
 def get_logger(name: str):

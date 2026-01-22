@@ -73,21 +73,8 @@ class PatternExpander:
                 result.append(("goto", (nx, ny, nz)))
                 cx, cy, cz = nx, ny, nz
             elif isinstance(step, dict):
-                t = step.get("type")
-                params = step.get("params", {})
-                period = step.get("period") or params.get("period")
-                if t == "dwell" or (period is not None):
-                    if isinstance(period, str) and period.endswith("ms"):
-                        seconds = float(period[:-2]) / 1000.0
-                    elif isinstance(period, str) and period.endswith("s"):
-                        seconds = float(period[:-1])
-                    else:
-                        seconds = float(period)
-                    result.append(("dwell", seconds))
-                else:
-                    # Unknown dict step - attempt to parse as TaskStep
-                    ts = TaskStep(**step)
-                    result.append((ts.type, ts.params))
+                ts = TaskStep(**step)
+                result.append((ts.type, ts.params))
             else:
                 raise ValueError(f"Unsupported step type: {step}")
         return result

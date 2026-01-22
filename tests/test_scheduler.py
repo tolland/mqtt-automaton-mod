@@ -1,7 +1,7 @@
 """Tests for Scheduler - thread preemption and management"""
 
 from mqttbot.core.tasks.task_priority import TaskPriority
-from mqttbot.core.threads.task_thread import TaskThread
+from mqttbot.core.threads.task_thread_base import TaskThreadBase
 
 
 class TestSchedulerRegistration:
@@ -9,7 +9,7 @@ class TestSchedulerRegistration:
 
     def test_register_thread(self, scheduler):
         """Test registering a thread at startup"""
-        thread = TaskThread("test_thread", TaskPriority.NORMAL)
+        thread = TaskThreadBase("test_thread", TaskPriority.NORMAL)
         scheduler.register_thread(thread)
 
         # Thread should be in ready queue
@@ -17,7 +17,7 @@ class TestSchedulerRegistration:
 
     def test_enqueue_thread(self, scheduler):
         """Test enqueueing a thread (after startup)"""
-        thread = TaskThread("test_thread", TaskPriority.NORMAL)
+        thread = TaskThreadBase("test_thread", TaskPriority.NORMAL)
         result = scheduler.enqueue_thread(thread)
 
         assert result is True
@@ -25,8 +25,8 @@ class TestSchedulerRegistration:
 
     def test_enqueue_multiple_threads(self, scheduler):
         """Test enqueueing multiple threads"""
-        thread1 = TaskThread("thread1", TaskPriority.NORMAL)
-        thread2 = TaskThread("thread2", TaskPriority.HIGH)
+        thread1 = TaskThreadBase("thread1", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("thread2", TaskPriority.HIGH)
 
         scheduler.enqueue_thread(thread1)
         scheduler.enqueue_thread(thread2)
@@ -39,8 +39,8 @@ class TestSchedulerSingleton:
 
     def test_singleton_prevents_duplicate(self, scheduler):
         """Test that singleton=True prevents enqueueing duplicate thread"""
-        thread1 = TaskThread("evasion", TaskPriority.CRITICAL)
-        thread2 = TaskThread("evasion", TaskPriority.CRITICAL)
+        thread1 = TaskThreadBase("evasion", TaskPriority.CRITICAL)
+        thread2 = TaskThreadBase("evasion", TaskPriority.CRITICAL)
 
         result1 = scheduler.enqueue_thread(thread1, singleton=True)
         result2 = scheduler.enqueue_thread(thread2, singleton=True)
@@ -51,8 +51,8 @@ class TestSchedulerSingleton:
 
     def test_singleton_allows_different_threads(self, scheduler):
         """Test that singleton doesn't block different thread IDs"""
-        thread1 = TaskThread("evasion", TaskPriority.CRITICAL)
-        thread2 = TaskThread("sleep", TaskPriority.HIGH)
+        thread1 = TaskThreadBase("evasion", TaskPriority.CRITICAL)
+        thread2 = TaskThreadBase("sleep", TaskPriority.HIGH)
 
         result1 = scheduler.enqueue_thread(thread1, singleton=True)
         result2 = scheduler.enqueue_thread(thread2, singleton=True)
@@ -63,20 +63,20 @@ class TestSchedulerSingleton:
 
     def test_singleton_detects_in_current_thread(self, scheduler):
         """Test that singleton detects thread in current slot"""
-        thread1 = TaskThread("farming", TaskPriority.NORMAL)
+        thread1 = TaskThreadBase("farming", TaskPriority.NORMAL)
         scheduler.current_thread = thread1
 
-        thread2 = TaskThread("farming", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("farming", TaskPriority.NORMAL)
         result = scheduler.enqueue_thread(thread2, singleton=True)
 
         assert result is False
 
     def test_singleton_detects_in_suspended(self, scheduler):
         """Test that singleton detects thread in suspended stack"""
-        thread1 = TaskThread("farming", TaskPriority.NORMAL)
+        thread1 = TaskThreadBase("farming", TaskPriority.NORMAL)
         scheduler.suspended_stack.append(thread1)
 
-        thread2 = TaskThread("farming", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("farming", TaskPriority.NORMAL)
         result = scheduler.enqueue_thread(thread2, singleton=True)
 
         assert result is False
@@ -87,7 +87,7 @@ class TestSchedulerThreadIdTracking:
 
     def test_thread_id_exists_in_ready_queue(self, scheduler):
         """Test detecting thread ID in ready queue"""
-        thread = TaskThread("test_thread", TaskPriority.NORMAL)
+        thread = TaskThreadBase("test_thread", TaskPriority.NORMAL)
         scheduler.ready_threads.append(thread)
 
         exists = scheduler._thread_id_exists("test_thread")
@@ -100,7 +100,7 @@ class TestSchedulerThreadIdTracking:
 
     def test_has_active_thread_public_api(self, scheduler):
         """Test public has_active_thread method"""
-        thread = TaskThread("farming", TaskPriority.NORMAL)
+        thread = TaskThreadBase("farming", TaskPriority.NORMAL)
         scheduler.current_thread = thread
 
         assert scheduler.has_active_thread("farming") is True
@@ -112,9 +112,9 @@ class TestSchedulerPriority:
 
     def test_threads_ordered_by_priority(self, scheduler):
         """Test that threads are ordered by priority in heap"""
-        normal_thread = TaskThread("normal", TaskPriority.NORMAL)
-        high_thread = TaskThread("high", TaskPriority.HIGH)
-        critical_thread = TaskThread("critical", TaskPriority.CRITICAL)
+        normal_thread = TaskThreadBase("normal", TaskPriority.NORMAL)
+        high_thread = TaskThreadBase("high", TaskPriority.HIGH)
+        critical_thread = TaskThreadBase("critical", TaskPriority.CRITICAL)
 
         # Add in random order
         scheduler.enqueue_thread(normal_thread)
@@ -126,8 +126,8 @@ class TestSchedulerPriority:
 
     def test_priority_comparison(self):
         """Test that priority comparison works"""
-        normal = TaskThread("normal", TaskPriority.NORMAL)
-        high = TaskThread("high", TaskPriority.HIGH)
+        normal = TaskThreadBase("normal", TaskPriority.NORMAL)
+        high = TaskThreadBase("high", TaskPriority.HIGH)
 
         # High priority should be "less than" normal (for min-heap)
         assert high < normal
@@ -138,8 +138,8 @@ class TestSchedulerThreadStateTracking:
 
     def test_clear_ready_threads(self, scheduler):
         """Test clearing ready threads"""
-        thread1 = TaskThread("thread1", TaskPriority.NORMAL)
-        thread2 = TaskThread("thread2", TaskPriority.NORMAL)
+        thread1 = TaskThreadBase("thread1", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("thread2", TaskPriority.NORMAL)
 
         scheduler.enqueue_thread(thread1)
         scheduler.enqueue_thread(thread2)
@@ -152,8 +152,8 @@ class TestSchedulerThreadStateTracking:
 
     def test_suspended_stack_lifo(self, scheduler):
         """Test that suspended stack is LIFO"""
-        thread1 = TaskThread("thread1", TaskPriority.NORMAL)
-        thread2 = TaskThread("thread2", TaskPriority.NORMAL)
+        thread1 = TaskThreadBase("thread1", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("thread2", TaskPriority.NORMAL)
 
         scheduler.suspended_stack.append(thread1)
         scheduler.suspended_stack.append(thread2)
@@ -168,8 +168,8 @@ class TestSchedulerEdgeCases:
 
     def test_enqueue_thread_without_singleton(self, scheduler):
         """Test that without singleton, duplicates are allowed"""
-        thread1 = TaskThread("farming", TaskPriority.NORMAL)
-        thread2 = TaskThread("farming", TaskPriority.NORMAL)
+        thread1 = TaskThreadBase("farming", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("farming", TaskPriority.NORMAL)
 
         result1 = scheduler.enqueue_thread(thread1, singleton=False)
         result2 = scheduler.enqueue_thread(thread2, singleton=False)
@@ -180,8 +180,8 @@ class TestSchedulerEdgeCases:
 
     def test_singleton_default_is_false(self, scheduler):
         """Test that singleton defaults to False"""
-        thread1 = TaskThread("test", TaskPriority.NORMAL)
-        thread2 = TaskThread("test", TaskPriority.NORMAL)
+        thread1 = TaskThreadBase("test", TaskPriority.NORMAL)
+        thread2 = TaskThreadBase("test", TaskPriority.NORMAL)
 
         result1 = scheduler.enqueue_thread(thread1)  # No singleton param
         result2 = scheduler.enqueue_thread(thread2)  # No singleton param
@@ -203,11 +203,11 @@ class TestSchedulerUninterruptible:
     def test_normal_thread_can_be_preempted(self, scheduler):
         """Test that normal threads can be preempted by higher priority"""
         # Start with a normal priority thread running
-        normal_thread = TaskThread("farming", TaskPriority.NORMAL)
+        normal_thread = TaskThreadBase("farming", TaskPriority.NORMAL)
         scheduler.current_thread = normal_thread
 
         # Enqueue a high priority thread
-        high_thread = TaskThread("combat", TaskPriority.HIGH)
+        high_thread = TaskThreadBase("combat", TaskPriority.HIGH)
         scheduler.enqueue_thread(high_thread)
 
         # Should preempt (HIGH < NORMAL in priority value)
@@ -216,7 +216,7 @@ class TestSchedulerUninterruptible:
     def test_uninterruptible_thread_cannot_be_preempted(self, scheduler):
         """Test that uninterruptible threads CANNOT be preempted"""
         # Start with an uninterruptible cleanup thread running
-        cleanup_thread = TaskThread(
+        cleanup_thread = TaskThreadBase(
             "cleanup",
             TaskPriority.NORMAL,
             uninterruptible=True
@@ -224,7 +224,7 @@ class TestSchedulerUninterruptible:
         scheduler.current_thread = cleanup_thread
 
         # Try to preempt with even higher priority
-        critical_thread = TaskThread("panic", TaskPriority.CRITICAL)
+        critical_thread = TaskThreadBase("panic", TaskPriority.CRITICAL)
         scheduler.enqueue_thread(critical_thread)
 
         # Should NOT preempt - cleanup must finish
@@ -232,7 +232,7 @@ class TestSchedulerUninterruptible:
 
     def test_uninterruptible_flag_in_thread_repr(self):
         """Test that uninterruptible flag shows in thread repr"""
-        thread = TaskThread(
+        thread = TaskThreadBase(
             "test",
             TaskPriority.NORMAL,
             uninterruptible=True
@@ -242,25 +242,25 @@ class TestSchedulerUninterruptible:
 
     def test_uninterruptible_defaults_to_false(self):
         """Test that uninterruptible defaults to False"""
-        thread = TaskThread("test", TaskPriority.NORMAL)
+        thread = TaskThreadBase("test", TaskPriority.NORMAL)
 
         assert thread.uninterruptible is False
 
     def test_priority_still_applies_when_not_uninterruptible(self, scheduler):
         """Test that priority-based preemption still works normally"""
         # Normal interruptible thread
-        normal_thread = TaskThread("farming", TaskPriority.NORMAL)
+        normal_thread = TaskThreadBase("farming", TaskPriority.NORMAL)
         scheduler.current_thread = normal_thread
 
         # Higher priority should preempt
-        high_thread = TaskThread("event", TaskPriority.HIGH)
+        high_thread = TaskThreadBase("event", TaskPriority.HIGH)
         scheduler.enqueue_thread(high_thread)
 
         assert scheduler._should_preempt() is True
 
         # Lower priority should NOT preempt
         scheduler.ready_threads.clear()
-        low_thread = TaskThread("background", TaskPriority.LOW)
+        low_thread = TaskThreadBase("background", TaskPriority.LOW)
         scheduler.enqueue_thread(low_thread)
 
         assert scheduler._should_preempt() is False

@@ -1,5 +1,5 @@
 # Mqttbot control system for minecraft fabric based mod
-    
+
 This document outlines the coding standards, architectural patterns, and best practices for developing this project.
 
 ## Technology stack
@@ -32,3 +32,5 @@ To fix formatting errors:
 
 * `uv run pytest`
 * `./gradlew test`
+
+Python tests are in the tests/ directory for the mqttbot client.

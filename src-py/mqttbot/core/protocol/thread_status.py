@@ -83,7 +83,7 @@ class ThreadInternalStatus(Enum):
         # Define valid "Current -> Next" mappings
         return {
             self.READY: [self.RUNNING, self.CANCELLED],
-            self.RUNNING: [self.SUSPENDING, self.COMPLETED, self.FAILED, self.CANCELING, self.RUNNING],
+            self.RUNNING: [self.SUSPENDING, self.COMPLETED, self.FAILED, self.CANCELING],
             self.SUSPENDING: [self.SUSPENDED, self.FAILED],  # Enforces intermediate state
             self.SUSPENDED: [self.RESUMING, self.CANCELLED],
             self.RESUMING: [self.RUNNING, self.FAILED],
@@ -91,7 +91,7 @@ class ThreadInternalStatus(Enum):
             self.COMPLETED: [],
             self.FAILED: [],
             self.CANCELLED: [],
-            self.CANCELING: [self.CANCELING, self.CANCELLED],
+            self.CANCELING: [self.CANCELLED, self.FAILED],
         }
 
     def can_transition_to(self, next_state: "ThreadInternalStatus") -> bool:

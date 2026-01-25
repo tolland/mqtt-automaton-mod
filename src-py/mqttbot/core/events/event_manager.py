@@ -1,78 +1,46 @@
 from dataclasses import dataclass
-from typing import Any
 
 from loguru import logger
-from rich import inspect
 
 from mqttbot import ServiceMessage
-from mqttbot.core.threads.task_thread_base import TaskThreadBase
-from mqttbot.model.patterns.step import TaskStep
-
-
-@dataclass
-class EventHandlerConfig:
-    """Configuration for an event handler"""
-
-    enabled: bool
-    steps: list[TaskStep]
+from mqttbot.config.model.events.event_handler import EventHandlerConfig
+from mqttbot.config.model.events.events_config import EventsConfig
+from mqttbot.core.protocol.thread import ThreadInterface
 
 
 class EventManager:
     """Config-driven event handling"""
 
-    def __init__(self, config: dict[str, dict[str, Any]]):
-        """Initialize from config
-
-        Args:
-            config: event_handlers section from YAML
-                {
-                    "events": {
-                        "night_start": {
-                            "enabled": True,
-                            "steps": [...]
-                        }
-                    }
-                }
-        """
+    def __init__(self, config: EventsConfig):
+        """Initialize from config"""
+        self._enabled: bool = False
         self.config = config
         self.handlers: dict[tuple[str, str], EventHandlerConfig] = {}
         self._load_config()
 
     def _load_config(self) -> None:
         """Parse config and index handlers by service:method"""
-        for service_name, methods in self.config.items():
-            for method_name, handler_config in methods.items():
-                if not isinstance(handler_config, dict):
-                    continue
+        self.handlers = self.config.root
 
-                if not handler_config.get("enabled", False):
-                    continue
+    def start(self) -> None:
+        """Enable the event manager"""
+        self._enabled = True
+        logger.info("EventManager enabled")
 
-                steps = []
-                for step_def in handler_config.get("steps", []):
-                    try:
-                        step = TaskStep(
-                            type=step_def.get("type", "command"),
-                            service=step_def["service"],
-                            method=step_def["method"],
-                            params=step_def.get("params", {}),
-                        )
-                    except:
-                        inspect(step_def)
-                        raise
-                    steps.append(step)
-
-                key = (service_name, method_name)
-                self.handlers[key] = EventHandlerConfig(enabled=True, steps=steps)
-                logger.info(
-                    f"Registered event handler: {service_name}:{method_name} ({len(steps)} steps)"
-                )
+    def stop(self) -> None:
+        """Disable the event manager"""
+        self._enabled = False
+        logger.info("EventManager disabled")
 
     def get_handler_config(self, service: str, method: str) -> EventHandlerConfig | None:
         """Look up handler config for a service:method pair"""
         return self.handlers.get((service, method))
 
-    async def handle_message(self, message_data: ServiceMessage) -> TaskThreadBase | None:
+    async def handle_message(self, message_data: ServiceMessage) -> ThreadInterface | None:
+        """Handle an incoming service message by invoking the appropriate handler"""
+        if not self._enabled:
+            logger.debug("EventManager is disabled; skipping message handling")
+            return None
         for pattern, callbacks in self.handlers.items():
             for callback in callbacks:
                 if pattern[0] == message_data.service and pattern[1] == message_data.method:
@@ -81,3 +49,7 @@ class EventManager:
                         return result
         logger.debug(f"No handler found for {message_data.service}:{message_data.method}")
         return None
+
+    def __rich_repr__(self) -> "rich.repr.Result":
+        yield "enabled", self._enabled
+        yield "handlers", self.handlers

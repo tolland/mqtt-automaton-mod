@@ -2,23 +2,23 @@ import heapq
 
 from loguru import logger
 
-from mqttbot.config.threads.thread_status import ThreadStatus
+from mqttbot.core.protocol.thread_status import ThreadStatus
+from mqttbot.core.protocol.thread import ThreadInterface
 from mqttbot.core.threads.scheduler_context import Context
-from mqttbot.core.threads.task_thread_base import TaskThreadBase
 
 
 class Dispatcher:
     def __init__(self,
-                 ready_queue: list[TaskThreadBase],
-                 done_queue: list[TaskThreadBase],
+                 ready_queue: list[ThreadInterface],
+                 done_queue: list[ThreadInterface],
                  ):
         """
 
         :rtype: None
         """
-        self.ready_queue: list[TaskThreadBase] = ready_queue
-        self.done_queue: list[TaskThreadBase] = done_queue
-        self.current_thread: TaskThreadBase | None = None
+        self.ready_queue: list[ThreadInterface] = ready_queue
+        self.done_queue: list[ThreadInterface] = done_queue
+        self.current_thread: ThreadInterface | None = None
 
     async def step(self, ctx: Context) -> bool:
         """Execute one dispatcher tick.
@@ -31,7 +31,7 @@ class Dispatcher:
         if self.current_thread:
             current = self.current_thread
             try:
-                status = await current.step(ctx)
+                status = current.step(ctx)
                 if status == ThreadStatus.RUNNING:
                     return False
                 else:
@@ -41,12 +41,12 @@ class Dispatcher:
                 logger.error(f"Thread {current.thread_id} failed with exception: {e}")
                 raise e
         elif self.ready_queue:
-            await self._start_next_thread(ctx)
+            self._start_next_thread(ctx)
 
         # Return True if all work is done
         return self.is_complete()
 
-    async def _start_next_thread(self, ctx: Context) -> None:
+    def _start_next_thread(self, ctx: Context) -> None:
         """Pop highest-priority ready thread"""
         if not self.ready_queue:
             self.current_thread = None
@@ -55,13 +55,18 @@ class Dispatcher:
         thread = heapq.heappop(self.ready_queue)
         self.current_thread = thread
 
-        if thread.state == ThreadStatus.READY:
-            await thread.start(ctx)
-        elif thread.state == ThreadStatus.SUSPENDED:
-            await thread.resume(ctx)
+        if thread.status == ThreadStatus.READY:
+            thread.start(ctx)
+        elif thread.status == ThreadStatus.SUSPENDED:
+            thread.resume(ctx)
 
     def is_complete(self) -> bool:
         """Check if dispatcher has consumed all threads."""
         return (
             len(self.ready_queue) == 0
             and self.current_thread is None)
+
+    def __rich_repr__(self):
+        yield "current_thread", self.current_thread
+        yield "ready_queue", self.ready_queue
+        yield "done_queue", self.done_queue

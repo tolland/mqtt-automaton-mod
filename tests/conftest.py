@@ -4,23 +4,36 @@ import builtins
 import os
 import subprocess
 import tempfile
+import sys
 import time
 from pathlib import Path
 from typing import Generator
 from unittest.mock import Mock, AsyncMock
 
 import pytest
+from pydantic import TypeAdapter
 from rich import inspect
 from rich import print as rprint
 from rich.pretty import pprint
+
+from mqttbot.config.model.full_config import FullConfig
+from mqttbot.config.model.step.service_step import ServiceStep
+from mqttbot.core.threads import scheduler
+from .mocks.message_service_mock import (
+    MockMessageService,
+    make_success_service,
+    make_failure_service,
+    make_delayed_service,
+)
 
 builtins.rprint = rprint
 builtins.pprint = pprint
 builtins.inspect = inspect
 
-__all__ = ["rprint", "pprint", "inspect"]
+# Ensure the tests package directory is on sys.path so imports like `from mocks...` work
+sys.path.insert(0, str(Path(__file__).parent))
 
-from mqttbot.core.threads.scheduler import SchedulerBase
+__all__ = ["rprint", "pprint", "inspect"]
 
 """
 Pytest configuration and shared fixtures.
@@ -101,37 +114,58 @@ def mock_ctx():
 
 
 @pytest.fixture
-def scheduler():
+def mock_scheduler():
     """Create a fresh scheduler for each test"""
-    return SchedulerBase()
+    return scheduler.create()
+
+
+@pytest.fixture
+def sample_steps():
+    # container = HookDefinition.model_validate({"Step": data})
+    # if this should be a callback
+    return TypeAdapter(list[ServiceStep]).validate_python(
+        [
+            {
+                "type": "oneshot",
+                "service": "commands",
+                "method": "sendCommand",
+                "params": {
+                    "message": "bal"
+                }
+            }
+        ])
 
 
 @pytest.fixture
 def sample_patterns():
     """Sample pattern definitions for testing"""
-    from mqttbot.core.patterns.patterns_config_parser import PatternsConfigParser
-
-    return PatternsConfigParser.from_yaml({
-        "patterns": {
-            "row_01": {
-                "steps": [
-                    "~ ~ ~-5",
-                    "~ ~ ~-10",
-                    {"type": "dwell", "params": {"period": "1s"}},
-                    "~ ~ ~5",
-                ]},
-            "row_02": {
-                "steps": [
-                    "~5 ~ ~",
-                    "~10 ~ ~",
-                    "~-15 ~ ~",
-                ]},
-            "simple": {
-                "steps": [
-                    "~ ~ ~10",
-                ]},
-        }
-    })
+    return FullConfig.model_validate(
+        {
+            "pattern_config": {
+                "patterns": [
+                    {
+                        "pattern_id": "row_01",
+                        "steps": [
+                            "~ ~ ~-5",
+                            "~ ~ ~-10",
+                            {"type": "dwell", "params": {"period": "1"}},
+                            "~ ~ ~5",
+                        ]},
+                    {
+                        "pattern_id": "row_02",
+                        "steps": [
+                            "~5 ~ ~",
+                            "~10 ~ ~",
+                            "~-15 ~ ~",
+                        ]},
+                    {
+                        "pattern_id": "simple",
+                        "steps": [
+                            "~ ~ ~10",
+                        ]},
+                ]
+            }
+        })
 
 
 @pytest.fixture
@@ -178,3 +212,15 @@ def minecraft_client():
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait()
+
+
+@pytest.fixture
+def mock_message_service() -> MockMessageService:
+    """A controllable mock MessageService for tests (delayed by default)."""
+    return make_delayed_service()
+
+
+@pytest.fixture
+def mock_bot_service(mock_message_service: MockMessageService) -> MockMessageService:
+    """Alias fixture named for tests that expect a 'bot_service' object."""
+    return mock_message_service

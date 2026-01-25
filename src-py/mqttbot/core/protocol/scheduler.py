@@ -1,17 +1,17 @@
 from typing import Protocol, Any
 
+from mqttbot.core.protocol.thread import ThreadInterface
 from mqttbot.core.threads.scheduler_context import Context
-from mqttbot.core.threads.task_thread_base import TaskThreadBase
 
 
 class Scheduler(Protocol):
     """Protocol for the thread scheduler"""
 
-    def register_thread(self, thread: TaskThreadBase) -> None:
+    def register_thread(self, thread: ThreadInterface) -> None:
         """Register a thread (typically at startup)"""
         ...
 
-    def enqueue_thread(self, thread: TaskThreadBase, singleton: bool = False) -> bool:
+    def enqueue_thread(self, thread: ThreadInterface, singleton: bool = False) -> bool:
         """
         Wake a thread (move to ready queue).
 

@@ -125,7 +125,8 @@ class MqttBotClient:
             raise RuntimeError("MQTT client not initialized. Call connect() first.")
 
         logger.debug(f"Publishing to {topic}: {message[:100]}...")  # Truncate long messages
-        logger.bind(mqtt=True).debug(message)
+        if not '"service": "scheduler", "method": "state"' in message:
+            logger.bind(mqtt=True).debug(message)
         self._client.publish(topic, message, qos=0, retain=False)
 
     def register_message_callback(self, callback: Callable[[str, str], None]) -> None:

@@ -1,15 +1,15 @@
 import heapq
-from collections import deque
 from typing import Any
 
 from loguru import logger
+from rich import inspect
 from rich.repr import rich_repr
 
-from mqttbot.config.threads.thread_status import ThreadStatus
+from mqttbot.core.protocol.thread_status import ThreadStatus
 from mqttbot.core.protocol.scheduler import Scheduler
+from mqttbot.core.protocol.thread import ThreadInterface
 from mqttbot.core.threads.dispatcher import Dispatcher
 from mqttbot.core.threads.scheduler_context import Context
-from mqttbot.core.threads.task_thread_base import TaskThreadBase
 
 
 @rich_repr
@@ -21,36 +21,45 @@ class SchedulerBase(Scheduler):
 
         :rtype: None
         """
-        self.ready_threads: list[TaskThreadBase] = []
-        # the dispatcher puts items here when done
-        self.done_queue: list[TaskThreadBase] = []
+        # self.ready_threads: list[ThreadInterface] = []
+        # # the dispatcher puts items here when done
+        # self.done_queue: list[ThreadInterface] = []
         self.dispatcher = Dispatcher(
-            self.ready_threads,
-            self.done_queue,
+            [],
+            [],
         )
         # For MQTT state diff publishing
         self.old_state: dict[str, Any] | None = None
-
 
     """
     To match behaviour for before the scheduler was split out, we are using these property settere and getters to keep tests working
     """
 
     @property
-    def current_thread(self) -> TaskThreadBase | None:
+    def current_thread(self) -> ThreadInterface | None:
         """Get the currently executing thread, if any."""
         return self.dispatcher.current_thread
 
     @current_thread.setter
-    def current_thread(self, thread: TaskThreadBase | None) -> None:
+    def current_thread(self, thread: ThreadInterface | None) -> None:
         """Set the currently executing thread."""
         self.dispatcher.current_thread = thread
 
-    def register_thread(self, thread: TaskThreadBase) -> None:
+    @property
+    def done_queue(self) -> list[ThreadInterface] | None:
+        """Get the currently executing thread, if any."""
+        return self.dispatcher.done_queue
+
+    @property
+    def ready_threads(self) -> list[ThreadInterface] | None:
+        """Get the currently executing thread, if any."""
+        return self.dispatcher.ready_queue
+
+    def register_thread(self, thread: ThreadInterface) -> None:
         """Register a thread (typically at startup)"""
         heapq.heappush(self.ready_threads, thread)
 
-    def enqueue_thread(self, thread: TaskThreadBase, singleton: bool = False) -> bool:
+    def enqueue_thread(self, thread: ThreadInterface, singleton: bool = False) -> bool:
         """
         Wake a thread (move to ready queue).
 
@@ -95,7 +104,6 @@ class SchedulerBase(Scheduler):
         return (
             len(self.ready_threads) == 0
             and self.current_thread is None
-            and len(self.suspended_stack) == 0
         )
 
     async def step(self, ctx: Context) -> bool:
@@ -105,7 +113,7 @@ class SchedulerBase(Scheduler):
         # move done threads done due to suspension back to ready queue
         remaining_done_queue = []
         for thread in self.done_queue:
-            if thread.state == ThreadStatus.SUSPENDED:
+            if thread.status == ThreadStatus.SUSPENDED:
                 logger.debug(f"Thread {thread.thread_id} suspended, moving to ready_threads stack")
                 self.ready_threads.append(thread)
             else:
@@ -118,7 +126,11 @@ class SchedulerBase(Scheduler):
             await self._preempt(ctx)
             return False
         # Return True if all work is done
-        return await self.dispatcher.step(ctx)
+        try:
+            return await self.dispatcher.step(ctx)
+        except Exception as e:
+            inspect(self)
+            raise e
 
     def _should_preempt(self) -> bool:
         """
@@ -134,13 +146,18 @@ class SchedulerBase(Scheduler):
         if self.current_thread.uninterruptible:
             return False
 
-        return any([thread.priority.value < self.current_thread.priority.value for thread in self.ready_threads])
+        return any(
+            [
+                thread.priority.value < self.current_thread.priority.value
+                for thread in self.ready_threads
+            ]
+        )
 
     async def _preempt(self, ctx: Context) -> None:
         """Suspend current thread, switch to higher priority"""
         assert self.current_thread is not None
 
-        await self.current_thread.suspend(ctx)
+        self.current_thread.suspend(ctx)
 
     async def shutdown(self, ctx: Context) -> None:
         """Gracefully shutdown scheduler - cancel all threads and execute on_cancel tasks"""
@@ -149,7 +166,7 @@ class SchedulerBase(Scheduler):
         # Cancel current thread
         if self.current_thread:
             logger.info(f"Cancelling current thread: {self.current_thread.thread_id}")
-            await self.current_thread.cancel(ctx)
+            self.current_thread.cancel(ctx)
 
         # @TODO are there any circumstances where we want to cancel suspended threads?
         # Cancel all ready threads
@@ -168,24 +185,35 @@ class SchedulerBase(Scheduler):
                 topic = f"{ctx.mqtt.topic_base}/scheduler/state"
                 ctx.mqtt.send(topic, self.to_json())
 
-    def __rich_repr__(self):
-        yield "current_thread", self.current_thread.thread_id if self.current_thread else None
-        yield "ready_threads", [(t.thread_id, t.priority,) for t in self.ready_threads]
-
     def to_dict(self) -> dict[str, Any]:
         return {
             "current_thread": self.current_thread.to_dict() if self.current_thread else None,
-            "ready_threads": [(t.thread_id, t.priority,) for t in self.ready_threads],
+            "ready_threads": [
+                (
+                    t.thread_id,
+                    t.priority,
+                )
+                for t in self.ready_threads
+            ],
             "done_queue": [t.to_dict() for t in self.done_queue],
         }
 
     def to_json(self) -> str:
         from mqttbot import ServiceMessage
-        return ServiceMessage(
-            service="scheduler",
-            method="state",
-            params=self.to_dict()
-        ).to_json()
+
+        return ServiceMessage(service="scheduler", method="state", params=self.to_dict()).to_json()
+
+    def __rich_repr__(self):
+        yield "is_complete", self.is_complete()
+        yield "ready_threads", [
+            (
+                t.thread_id,
+                t.priority,
+            )
+            for t in self.ready_threads
+        ]
+        yield self.dispatcher
+
 
 def create(*args, **kwargs) -> Scheduler:
     """Entry point to get a scheduler instance."""

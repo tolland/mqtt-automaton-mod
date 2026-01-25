@@ -1,7 +1,7 @@
+from mqttbot.config.threads.pattern_thread import PatternThread
 from rich.console import Console
 from rich.tree import Tree
 
-from mqttbot.core.patterns.pattern_thread import PatternThread
 from mqttbot.core.tasks.dwell_task import DwellTask
 from mqttbot.core.tasks.goto_task import GotoTask
 

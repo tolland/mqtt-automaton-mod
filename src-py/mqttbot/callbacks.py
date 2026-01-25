@@ -9,7 +9,7 @@ from rich.panel import Panel
 from mqttbot import (
     __app_name__,
 )
-from mqttbot.config.config import build_settings
+from mqttbot.config.settings.config import build_settings
 from mqttbot.logging_config import configure_logging
 
 
@@ -108,7 +108,7 @@ def get_callback():
             # Display startup info
             rprint(
                 Panel.fit(
-                    f"[bold cyan]MQTT Bot Starting[/bold cyan]\n"
+                    f"[bold cyan]MQTT Bot Configuration[/bold cyan]\n"
                     f"Config: [yellow]{config}[/yellow]\n"
                     f"Broker: [green]{settings.broker}:{settings.port}[/green]\n"
                     f"Client ID: [blue]{settings.client_id}[/blue]\n",

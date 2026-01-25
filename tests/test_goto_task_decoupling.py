@@ -1,10 +1,11 @@
 from unittest.mock import Mock
-
+import pytest
 from mqttbot import ServiceMessage
 from mqttbot.core.services.message_service import RequestResult, RequestStatus
-from mqttbot.core.tasks.goto_task import GotoTask
-from mqttbot.core.tasks.task_status import TaskInternalState, TaskStatus
+from mqttbot.core.protocol.task_status import TaskInternalState, TaskStatus
+from mqttbot.core.tasks.concrete import GotoTask
 from mqttbot.core.threads.scheduler_context import Context
+from mqttbot.core.protocol.thread_status import IllegalStateTransition
 
 
 class TestGotoTaskDecoupling:
@@ -21,7 +22,7 @@ class TestGotoTaskDecoupling:
 
         # Create task
         task = GotoTask.create(x=10, y=20, z=30)
-        task.correlation_id = "test-corr-id"
+        task.enqueue("test-corr-id")
 
         task.enter(ctx)
 
@@ -29,7 +30,7 @@ class TestGotoTaskDecoupling:
         status = task.step(ctx)
 
         assert status == TaskStatus.RUNNING
-        assert task._state == TaskInternalState.SENT
+        assert task._internal_status == TaskInternalState.SENT
 
         # Verify message was sent via bot_service.send_message
         # and it contains the correct data
@@ -52,7 +53,7 @@ class TestGotoTaskDecoupling:
         )
 
         task = GotoTask.create(x=10, y=20, z=30)
-        task._state = TaskInternalState.SENT
+        task._internal_status = TaskInternalState.SENT
         task.request_id = "test-req-id"
 
         # Mock successful response
@@ -64,7 +65,7 @@ class TestGotoTaskDecoupling:
         # Step: SENT -> WAITING -> SUCCESS
         status = task.step(ctx)
         assert status == TaskStatus.RUNNING
-        assert task._state == TaskInternalState.WAITING
+        assert task._internal_status == TaskInternalState.WAITING
 
         status = task.step(ctx)
         assert status == TaskStatus.SUCCESS
@@ -80,12 +81,12 @@ class TestGotoTaskDecoupling:
 
         task = GotoTask.create(x=10, y=20, z=30)
         task.request_id = "test-req-id"
-        task._state = TaskInternalState.SENT
+        task._internal_status = TaskInternalState.SENT
         task.correlation_id = "test-corr-id"
 
         # Trigger suspension
         task.suspend(ctx)
-        assert task._state == TaskInternalState.SUSPEND
+        assert task._internal_status == TaskInternalState.SUSPENDING
         task.step(ctx)
 
         # Verify cancel message was sent
@@ -97,9 +98,9 @@ class TestGotoTaskDecoupling:
         assert msg.correlation_id == "test-corr-id"
 
         # Resume
-        task.resume(ctx)
-        assert task._state == TaskInternalState.INIT
-        assert task.request_id is None
+        with pytest.raises(IllegalStateTransition):
+            task.resume(ctx)
+        assert task._internal_status == TaskInternalState.DONE
 
     def test_goto_task_suspend_without_request_id(self):
         mock_bot_service = Mock()
@@ -111,12 +112,13 @@ class TestGotoTaskDecoupling:
         )
 
         task = GotoTask.create(x=10, y=20, z=30)
+        task.enqueue("test-corr-id")
         task.request_id = None
-        task._state = TaskInternalState.INIT
+        task.transition_to(TaskInternalState.READY)
 
         # Trigger suspension
         task.suspend(ctx)
-        assert task._state == TaskInternalState.SUSPEND
+        assert task._internal_status == TaskInternalState.SUSPENDING
 
         # Verify NO cancel message was sent
         mock_bot_service.send_message.assert_not_called()

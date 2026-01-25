@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from mqttbot.core.tasks.task_status import TaskStatus
+from mqttbot.core.protocol.task_status import TaskStatus
 from mqttbot.core.threads.scheduler_context import Context
 
 
@@ -8,6 +8,7 @@ class Task(Protocol):
     status: TaskStatus
 
     def enter(self, ctx: Context) -> None: ...
+    def enqueue(self, correlation_id: str) -> None: ...
 
     def step(self, ctx: Context) -> TaskStatus: ...
 
@@ -16,3 +17,7 @@ class Task(Protocol):
     def resume(self, ctx: Context) -> None: ...
 
     def exit(self, ctx: Context, status: TaskStatus) -> None: ...
+
+    def cancel(self, ctx) -> None: ...
+
+    def clone(self) -> "Task": ...

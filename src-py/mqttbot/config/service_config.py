@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from mqttbot.core.service_method_config import ServiceMethodConfig
+from mqttbot.config.service_method_config import ServiceMethodConfig
 
 
 @dataclass

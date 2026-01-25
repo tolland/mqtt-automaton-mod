@@ -1,9 +1,8 @@
 
 from mqttbot import ServiceMessage
 from mqttbot.core.events.event_manager import EventHandlerConfig
-from mqttbot.core.tasks.task_priority import TaskPriority
-from mqttbot.core.threads.task_thread_base import TaskThreadBase
-from mqttbot.core.threads.thread_helper import ThreadHelper
+from mqttbot.core.protocol.task_priority import ThreadPriority
+from mqttbot.core.threads.thread_base import TaskThreadBase
 
 
 class EventManagerHelper:
@@ -17,10 +16,10 @@ class EventManagerHelper:
     ) -> TaskThreadBase | None:
         """Build a TaskThread from event handler config"""
 
-        thread = TaskThreadBase(thread_id, TaskPriority.HIGH)
+        thread = TaskThreadBase(thread_id, ThreadPriority.HIGH)
 
         for step in handler_config.steps:
-            task = ThreadHelper._create_task_from_step(step, trigger_msg)
+            task = PatternThreadHelper._create_task_from_step(step, trigger_msg)
             if task:
                 thread.enqueue_task(task)
 

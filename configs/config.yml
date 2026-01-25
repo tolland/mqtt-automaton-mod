@@ -1,0 +1,142 @@
+---
+
+thread_config:
+  threads:
+    - thread_id: canes_farming_1
+      priority: NORMAL
+      hooks:
+        # static event handlers for this thread
+        on_waypoints_start:
+          steps:
+            - type: oneshot
+              service: commands
+              method: sendCommand
+              params:
+                message: "bal"
+
+        # dynamic event handlers for this thread
+        on_suspend:
+          steps:
+            - service: wurst
+              method: command
+              params:
+                command: t
+                args:
+                  - autofarm
+                  - "off"
+
+        on_resume:
+          steps:
+            - service: wurst
+              method: command
+              params:
+                command: t
+                args:
+                  - autofarm
+                  - "on"
+
+      waypoints:
+        - x: 18
+          y: 65
+          z: -8
+          patterns: [ cane_row_01 ]
+        - x: 21
+          y: 65
+          z: -110
+          patterns: [ cane_row_02 ]
+
+# Patterns (reusable movement sequences)
+pattern_config:
+  patterns:
+    - pattern_id: cane_row_01
+      hooks:
+        on_pattern_start:
+          steps:
+            - service: wurst
+              method: command
+              params:
+                command: t
+                args:
+                  - autofarm
+                  - "on"
+      steps:
+        # make space in inventory in case is full already
+        - type: oneshot
+          service: commands
+          method: sendCommand
+          params:
+            message: "minecraft:clear SandyFire minecraft:sugar_cane"
+        - "~ ~ ~-5"
+        # force event handling for inventory_full
+        - type: oneshot
+          service: commands
+          method: sendCommand
+          params:
+            message: "give @p minecraft:sugar_cane 3000"
+        - type: command
+          service: baritone
+          method: collect
+          params:
+            block: minecraft:sugar_cane
+            range: "5"
+        - "~ ~ ~-5"
+
+    - pattern_id: cane_row_02
+      steps:
+        - "~ ~ ~5"
+        - "~-1 65 ~5"
+        - "~ ~ ~5"
+        - "~ ~ ~5"
+
+event_handlers:
+  # this just generates lots of events to test preemption
+  events:
+    chat_message:
+      enabled: true
+      steps: [ ]
+  inventory:
+    inventory_full:
+      enabled: true
+      steps:
+        - type: oneshot
+          service: baritone
+          method: cancel
+
+        # do some stuff to clear inventory
+
+        - type: oneshot
+          service: commands
+          method: sendCommand
+          params:
+            message: "back"
+
+  day_night:
+    night_start:
+      enabled: true
+      steps:
+        - type: oneshot
+          service: baritone
+          method: cancel
+
+        - type: command
+          service: warp
+          method: teleport
+          params:
+            name: "bed"
+            target:
+              x: 3
+              y: 64
+              z: 49
+            timeout: 15
+            command_template: "home {name}"
+
+        - service: sleep
+          method: start
+          params:
+            timeout: 30
+
+        - type: oneshot
+          service: commands
+          method: sendCommand
+          params:
+            message: "back"

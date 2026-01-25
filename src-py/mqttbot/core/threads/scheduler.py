@@ -4,6 +4,7 @@ from typing import Any
 from loguru import logger
 from rich import inspect
 from rich.repr import rich_repr
+from rich import print as rprint
 
 from mqttbot.core.protocol.thread_status import ThreadStatus
 from mqttbot.core.protocol.scheduler import Scheduler
@@ -32,7 +33,7 @@ class SchedulerBase(Scheduler):
         self.old_state: dict[str, Any] | None = None
 
     """
-    To match behaviour for before the scheduler was split out, we are using these property settere and getters to keep tests working
+    To match behaviour for before the scheduler was split out, we are using these property setters and getters to keep tests working
     """
 
     @property
@@ -46,9 +47,9 @@ class SchedulerBase(Scheduler):
         self.dispatcher.current_thread = thread
 
     @property
-    def done_queue(self) -> list[ThreadInterface] | None:
+    def done_threads(self) -> list[ThreadInterface] | None:
         """Get the currently executing thread, if any."""
-        return self.dispatcher.done_queue
+        return self.dispatcher.done_threads
 
     @property
     def ready_threads(self) -> list[ThreadInterface] | None:
@@ -112,24 +113,25 @@ class SchedulerBase(Scheduler):
 
         # move done threads done due to suspension back to ready queue
         remaining_done_queue = []
-        for thread in self.done_queue:
+        for thread in self.done_threads:
             if thread.status == ThreadStatus.SUSPENDED:
                 logger.debug(f"Thread {thread.thread_id} suspended, moving to ready_threads stack")
                 self.ready_threads.append(thread)
             else:
                 remaining_done_queue.append(thread)
         # Maintain the same list object that Dispatcher holds by mutating in-place
-        self.done_queue[:] = remaining_done_queue
+        self.done_threads[:] = remaining_done_queue
 
         # Check if any ready thread should preempt current thread
         if self.ready_threads and self._should_preempt():
             await self._preempt(ctx)
             return False
+
         # Return True if all work is done
         try:
             return await self.dispatcher.step(ctx)
         except Exception as e:
-            inspect(self)
+            rprint(self)
             raise e
 
     def _should_preempt(self) -> bool:
@@ -195,7 +197,7 @@ class SchedulerBase(Scheduler):
                 )
                 for t in self.ready_threads
             ],
-            "done_queue": [t.to_dict() for t in self.done_queue],
+            "done_queue": [t.to_dict() for t in self.done_threads],
         }
 
     def to_json(self) -> str:

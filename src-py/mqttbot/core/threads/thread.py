@@ -1,3 +1,4 @@
+from typing import Any
 from mqttbot.core.protocol.thread_status import ThreadInternalStatus
 from mqttbot.core.protocol.task_priority import ThreadPriority
 from mqttbot.core.protocol.task_provider import TaskProvider
@@ -15,8 +16,9 @@ class TaskThread(TaskThreadBase):
         on_failed_provider: TaskProvider,
         thread_id: str,
         priority: ThreadPriority,
+        metadata: dict[str, Any] | None = None,
     ):
-        super().__init__(thread_id, priority)
+        super().__init__(thread_id, priority, metadata=metadata)
         self.main_source_provider = main_source_provider
         self.on_suspend_provider = on_suspend_provider
         self.on_resume_provider = on_resume_provider
@@ -31,11 +33,6 @@ class TaskThread(TaskThreadBase):
             self.enqueue_task(task)
         self._advance_to_next_task(ctx)
         self.transition_to(ThreadInternalStatus.RUNNING)
-
-    def suspend(self, ctx: Context):
-        # Trigger the dynamic delegate
-        suspend_tasks = self.on_suspend_provider.get_tasks(self)
-        self.task_queue.extendleft(suspend_tasks)
 
     def __rich_repr__(self):
         yield "thread_id", self.thread_id

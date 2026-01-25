@@ -17,8 +17,15 @@ class OneShotTask(TaskBase):
     This is a task type used when we have not fully implemented the response handling to confirm task completion on the remote side. It should typically be only used for tasks that can be executed immediately and have little chance of failing, or that would cause problems if it failed remotely.
     """
 
-    def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):
-        super().__init__()
+    def __init__(
+        self,
+        service: str,
+        method: str,
+        params: dict[str, Any],
+        timeout: int = 15,
+        metadata: dict[str, Any] | None = None,
+    ):
+        super().__init__(metadata)
         self.timeout = timeout
         self.result: RequestResult | None = None
         self.service = service

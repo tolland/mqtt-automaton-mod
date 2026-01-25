@@ -14,6 +14,7 @@ from mqttbot.config.model.full_config import FullConfig
 from mqttbot.config.model.pattern.pattern_config import PatternsConfig
 from mqttbot.config.model.thread.threads_config import ThreadConfig
 from mqttbot.config.settings.settings import Settings
+from mqttbot.core.services.message_service import MessageService
 from mqttbot.core.tasks.task_compiler import TaskCompiler
 from mqttbot.core.events.event_manager_helper import EventManagerHelper
 from mqttbot.core.services.bot_service import BotService
@@ -81,7 +82,7 @@ class ModularBotClient:
             }
         )
 
-        self.bot_service = BotService(self.ctx)
+        self.bot_service = MessageService(self.ctx, "bot")
         self.ctx.bot_service = self.bot_service
 
         # Log initialization summary

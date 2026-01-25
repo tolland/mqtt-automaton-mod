@@ -1,16 +1,20 @@
 import importlib
-import inspect as pyinspect
 import json
 import logging
 import uuid
 from abc import ABC, abstractmethod
+from typing import Any
 
 from rich.repr import rich_repr
 
+from mqttbot.core.protocol.task import Task
 from mqttbot.core.protocol.task_status import TaskInternalState, TaskStatus
 from mqttbot.core.threads.scheduler_context import Context
+from mqttbot.utils.tracing_tools import trace, trace_task_state
 
+# This import is down at the bottom to avoid circular imports
 # importlib.import_module("mqttbot.core.tasks")
+# prevent intellij from removing this import
 inspect = importlib.import_module("rich").inspect
 
 
@@ -45,7 +49,7 @@ class TaskRegistry:
 
 
 @rich_repr
-class TaskBase(ABC):
+class TaskBase(ABC, Task):
     interruptible: bool = True
     resumable: bool = False
     intent: str = None
@@ -53,16 +57,22 @@ class TaskBase(ABC):
 
     _log_level: str = "DEBUG"
 
-    def __init__(self):
+    def __init__(self, metadata: dict[str, Any] | None = None):
         """Initialize task with correlation_id set to None (injected by thread on enqueue)"""
-        self.request_id = str(uuid.uuid4())
+        self.request_id = str(uuid.uuid4())[-10:]
         self.correlation_id: str | None = None
         self._internal_status: TaskInternalState = TaskInternalState.INITIAL
+        self.metadata = metadata or {}
 
     @property
     def status(self) -> TaskStatus:
         """Public status for the parent Thread/Scheduler."""
         return self._internal_status.external
+
+    @property
+    def status_internal(self) -> TaskInternalState:
+        """Private status for the parent Thread/Scheduler."""
+        return self._internal_status
 
     def enqueue(self, correlation_id: str) -> None:
         self.correlation_id = correlation_id
@@ -105,34 +115,16 @@ class TaskBase(ABC):
     def _resume(self, ctx) -> None:
         self.transition_to(TaskInternalState.RESUMING)
 
+    @trace
     def exit(self, ctx, status: TaskStatus):
         self._exit(ctx, status)
 
     def _exit(self, ctx, status: TaskStatus):
         pass
 
+    @trace_task_state
     def transition_to(self, next_state: TaskInternalState):
         """Enforces validity and updates the internal state."""
-        # Trace caller information for debugging who caused the transition.
-        try:
-            caller_frame = pyinspect.stack()[1]
-            caller_file = caller_frame.filename
-            caller_line = caller_frame.lineno
-            caller_func = caller_frame.function
-        except Exception:
-            caller_file = caller_line = caller_func = None
-
-        self.log.debug(
-            "transition_to called: %s(%s) %s -> %s by %s:%s %s",
-            type(self).__name__,
-            getattr(self, "correlation_id", None),
-            self._internal_status.name,
-            next_state.name,
-            caller_file,
-            caller_line,
-            caller_func,
-        )
-
         # Use the transition map logic here and update internal status
         new_state = self._internal_status.transition_to(next_state)
         self._internal_status = new_state
@@ -165,6 +157,7 @@ class TaskBase(ABC):
             if hasattr(self, "correlation_id") and self.correlation_id:
                 yield "correlation_id", f"...{self.correlation_id[-8:]}", None
 
+            yield "request_id", self.request_id
             # Show task-specific attributes (common ones)
             if hasattr(self, "target"):
                 yield "target", self.target
@@ -184,6 +177,8 @@ class TaskBase(ABC):
                 yield "_internal_status", str(self._internal_status)
             if hasattr(self, "status"):
                 yield "status", str(self.status.name)
+            if self.metadata:
+                yield "metadata", self.metadata
             if hasattr(self, "params"):
                 yield "params", self.params
 

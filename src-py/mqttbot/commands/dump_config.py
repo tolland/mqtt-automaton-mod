@@ -173,7 +173,7 @@ def parse_config_pydantic(
 
     config_yaml = _load_config(config)
     model = FullConfig.model_validate(config_yaml)
-    rprint(model.patterns)
+    rprint(model)
 
 @app.command("pydantic-threads")
 def parse_threads_pydantic(

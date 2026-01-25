@@ -21,7 +21,7 @@ class PatternStep(StepBase):
         x = CoordAxis.create(tokens[0])
         y = CoordAxis.create(tokens[1])
         z = CoordAxis.create(tokens[2])
-        return cls(type="pattern", coords=Coords(x, y, z))
+        return cls(type="pattern", coords=Coords(x, y, z), metadata={})
 
     @property
     def relative_coords(self) -> tuple[float, float, float]:
@@ -42,6 +42,7 @@ class PatternStep(StepBase):
                     "frame": self.coords.x.frame,  # assuming all axes have same frame
                 }
             },
+            "metadata": self.metadata.model_dump() if self.metadata else {},
         }
         return data
 

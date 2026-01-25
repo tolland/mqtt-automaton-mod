@@ -85,8 +85,20 @@ pattern_config:
       steps:
         - "~ ~ ~5"
         - "~-1 65 ~5"
-        - "~ ~ ~5"
-        - "~ ~ ~5"
+        # fully defined pattern step to allow adding a metadata key
+        - type: pattern
+          coords:
+            x:
+              frame: relative
+              value: 10.0
+            y:
+              frame: relative
+              value: 0.0
+            z:
+              frame: absolute
+              value: 100.0
+          metadata: {}
+
 
 event_handlers:
   # this just generates lots of events to test preemption

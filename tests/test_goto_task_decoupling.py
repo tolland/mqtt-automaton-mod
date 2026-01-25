@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 import pytest
+from rich import inspect
+
 from mqttbot import ServiceMessage
 from mqttbot.core.services.message_service import RequestResult, RequestStatus
 from mqttbot.core.protocol.task_status import TaskInternalState, TaskStatus
@@ -97,10 +99,10 @@ class TestGotoTaskDecoupling:
         assert msg.params["request_id"] == "test-req-id"
         assert msg.correlation_id == "test-corr-id"
 
+        inspect(task)
         # Resume
-        with pytest.raises(IllegalStateTransition):
-            task.resume(ctx)
-        assert task._internal_status == TaskInternalState.DONE
+        task.resume(ctx)
+        assert task._internal_status == TaskInternalState.RESUMING
 
     def test_goto_task_suspend_without_request_id(self):
         mock_bot_service = Mock()

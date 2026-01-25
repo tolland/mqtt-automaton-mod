@@ -34,4 +34,5 @@ class ThreadFactory:
             on_cancel_provider=on_cancel,
             on_failed_provider=on_failed,
             priority=definition.priority,
+            metadata=definition.metadata.model_dump() if definition.metadata else {},
         )

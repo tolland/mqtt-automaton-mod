@@ -91,7 +91,7 @@ class TaskInternalState(Enum):
         return {
             self.INITIAL: [self.ENQUEUED, self.SUSPENDED, self.CANCELING, self.RESUMING],
             self.ENQUEUED: [self.READY, self.FAILED, self.SUSPENDING, self.CANCELING],
-            self.READY: [self.SENT, self.SUSPENDING, self.CANCELING, self.RESUMING],
+            self.READY: [self.SENT, self.WAITING, self.SUSPENDING, self.CANCELING, self.RESUMING],
             self.SENT: [
                 self.SUSPENDING,
                 self.CANCELING,
@@ -107,7 +107,7 @@ class TaskInternalState(Enum):
                 self.SUSPENDING,
                 self.CANCELING,
             ],
-            self.SUSPENDED: [self.RESUMING, self.CANCELLED],
+            self.SUSPENDED: [self.READY, self.RESUMING, self.CANCELLED],
             self.RESUMING: [self.RESUMED, self.FAILED, self.CANCELING, self.READY],
             # canceling is uninterruptible, so we should only go to
             # CANCELLED or FAILED from there
@@ -120,18 +120,10 @@ class TaskInternalState(Enum):
 
     def can_transition_to(self, next_state: "TaskInternalState") -> bool:
         allowed = self._transition_map.get(self, [])
-        logger.debug("can_transition_to: %s allowed -> %s", self.name, [s.name for s in allowed])
+        # logger.debug("can_transition_to: %s allowed -> %s", self.name, [s.name for s in allowed])
         return next_state in allowed
 
     def transition_to(self, next_state: "TaskInternalState") -> "TaskInternalState":
-        # Trace attempted transition for debugging
-        logger.debug(
-            "TaskInternalState.transition_to: Attempt %s -> %s", self.name, next_state.name
-        )
         if not self.can_transition_to(next_state):
-            logger.warning("Illegal transition attempted: %s -> %s", self.name, next_state.name)
             raise IllegalStateTransition(f"Invalid transition: {self.name} -> {next_state.name}")
-        logger.debug(
-            "TaskInternalState.transition_to: Success %s -> %s", self.name, next_state.name
-        )
         return next_state

@@ -24,6 +24,7 @@ class ServiceStep(StepBase):
     :ivar params: A dictionary of parameters required for executing the step. Defaults to None.
     :type params: dict[str, Any]
     """
+
     type: Literal["oneshot", "command", "dwell", "commandtochat"] = "command"
     service: str = "none"
     method: str = "none"

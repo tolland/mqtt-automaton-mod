@@ -3,10 +3,10 @@ from typing import Any
 from loguru import logger
 
 from mqttbot import ServiceMessage
-from mqttbot.core.tasks.task_base import task, TaskBase
 from mqttbot.core.protocol.task_status import TaskInternalState, TaskStatus
 from mqttbot.core.services.message_service import RequestResult
 from mqttbot.core.state.events.events_state import EventsState
+from mqttbot.core.tasks.task_base import task, TaskBase
 from mqttbot.core.threads.scheduler_context import Context
 
 
@@ -17,8 +17,15 @@ class CommandToChatTask(TaskBase):
     in the chat and filter based on params
     """
 
-    def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):
-        super().__init__()
+    def __init__(
+        self,
+        service: str,
+        method: str,
+        params: dict[str, Any],
+        timeout: int = 15,
+        metadata: dict[str, Any] | None = None,
+    ):
+        super().__init__(metadata)
         self.timeout = timeout
         self.result: RequestResult | None = None
         self.service = service

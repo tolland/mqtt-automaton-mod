@@ -27,6 +27,7 @@ class DwellTask(TaskBase):
         service: str = None,
         method: str = None,
         params: dict[str, Any] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Initialize dwell task
 
@@ -34,7 +35,7 @@ class DwellTask(TaskBase):
             seconds: How long to dwell
             reason: Optional description (for logging)
         """
-        super().__init__()
+        super().__init__(metadata)
         # Support both legacy 'period' key and normalized 'dwell_seconds' from pattern parsing
         if params is None:
             params = {}
@@ -50,11 +51,18 @@ class DwellTask(TaskBase):
         reason_str = f" ({self.reason})" if self.reason else ""
         logger.debug(f"Dwelling for {self.duration}s{reason_str}")
         self.start_time = time.time()
+        self.transition_to(TaskInternalState.READY)
         self.transition_to(TaskInternalState.WAITING)
 
     def _step(self, ctx: dict) -> TaskStatus:
         """Check if dwell time has elapsed"""
         elapsed = time.time() - self.start_time
+
+        if self._internal_status in [TaskInternalState.CANCELING]:
+            self.transition_to(TaskInternalState.CANCELLED)
+
+        elif self._internal_status in [TaskInternalState.SUSPENDING]:
+            self.transition_to(TaskInternalState.DONE)
 
         if elapsed >= self.duration:
             logger.debug("Dwell completed")
@@ -69,7 +77,7 @@ class DwellTask(TaskBase):
         elapsed = time.time() - self.start_time
         remaining = self.duration - elapsed
         logger.debug(f"Dwell suspended: {remaining:.1f}s remaining")
-        self.transition_to(TaskInternalState.SUSPENDED)
+        self.transition_to(TaskInternalState.SUSPENDING)
 
     def _resume(self, ctx: Context) -> None:
         """Resume - adjust start time to account for remaining duration"""

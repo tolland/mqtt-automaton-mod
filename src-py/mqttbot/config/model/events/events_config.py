@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import RootModel, model_validator
 
-from mqttbot.config.model.events.event_handler import EventHandlerConfig
+from mqttbot.config.model.events.event_handler_config import EventHandlerConfig
 
 
 class EventsConfig(RootModel):

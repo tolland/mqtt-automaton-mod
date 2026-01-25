@@ -1,7 +1,7 @@
 from typing import Protocol, Tuple, runtime_checkable, Iterator
 
 from mqttbot.config.model.pattern.pattern_config import PatternsConfig
-from mqttbot.config.model.pattern.pattern_step import PatternStep
+from mqttbot.config.model.step.pattern_step import PatternStep
 from mqttbot.core.protocol.task import Task
 
 

@@ -10,14 +10,14 @@ from mqttbot.core.threads.scheduler_context import Context
 class Dispatcher:
     def __init__(self,
                  ready_queue: list[ThreadInterface],
-                 done_queue: list[ThreadInterface],
+                 done_threads: list[ThreadInterface],
                  ):
         """
 
         :rtype: None
         """
         self.ready_queue: list[ThreadInterface] = ready_queue
-        self.done_queue: list[ThreadInterface] = done_queue
+        self.done_threads: list[ThreadInterface] = done_threads
         self.current_thread: ThreadInterface | None = None
 
     async def step(self, ctx: Context) -> bool:
@@ -35,7 +35,7 @@ class Dispatcher:
                 if status == ThreadStatus.RUNNING:
                     return False
                 else:
-                    self.done_queue.append(current)
+                    self.done_threads.append(current)
                     self.current_thread = None
             except Exception as e:
                 logger.error(f"Thread {current.thread_id} failed with exception: {e}")
@@ -69,4 +69,4 @@ class Dispatcher:
     def __rich_repr__(self):
         yield "current_thread", self.current_thread
         yield "ready_queue", self.ready_queue
-        yield "done_queue", self.done_queue
+        yield "done_queue", self.done_threads

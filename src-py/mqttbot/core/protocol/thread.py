@@ -24,7 +24,12 @@ class ThreadInterface(Protocol):
 
     def cancel(self, ctx: Context) -> None: ...
 
-    def step(self, ctx: Context) -> ThreadStatus: ...
+    def step(self, ctx: Context) -> ThreadStatus:
+        """
+        1. if there is no current task, and we are "active",
+          then we are 'COMPLETED', thus later operations must
+          call _advance_to_next
+        """
 
     def __lt__(self, other: Any) -> bool: ...
 

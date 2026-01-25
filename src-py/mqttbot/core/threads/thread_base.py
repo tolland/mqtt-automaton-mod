@@ -1,9 +1,11 @@
 import uuid
 from collections import deque
 from functools import total_ordering
+from typing import Any
 
 from loguru import logger
 from rich import inspect
+from rich import print as rprint
 
 from mqttbot.config.threads.default_thread_hooks import DefaultThreadHooks
 from mqttbot.core.protocol.task import Task
@@ -13,6 +15,7 @@ from mqttbot.core.protocol.thread import ThreadInterface
 from mqttbot.core.protocol.thread_lifecycle_hooks import ThreadLifecycleHooks
 from mqttbot.core.protocol.thread_status import ThreadStatus, ThreadInternalStatus
 from mqttbot.core.threads.scheduler_context import Context
+from mqttbot.utils.tracing_tools import trace
 
 
 @total_ordering
@@ -30,16 +33,18 @@ class TaskThreadBase(ThreadInterface):
         priority: ThreadPriority,
         hooks: ThreadLifecycleHooks | None = None,
         uninterruptible: bool = False,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         self.thread_id = thread_id
         self.priority = priority
         self.uninterruptible = uninterruptible
         self._internal_status: ThreadInternalStatus = ThreadInternalStatus.READY
         self.hooks = hooks or DefaultThreadHooks()
+        self.metadata = metadata or {}
 
         # Generate unique correlation_id for this thread execution instance
         # Format: thread_id-uuid allows tracking all messages from this thread instance
-        self.correlation_id = f"{thread_id}-{uuid.uuid4()}"
+        self.correlation_id = f"{thread_id}-{str(uuid.uuid4())[-10:]}"
 
         self.current_task: Task | None = None
         # queue of tasks to execute
@@ -59,7 +64,7 @@ class TaskThreadBase(ThreadInterface):
         # so we shouldn't be stepping if we have no current task
         # every thread transition should handle advancing a task onto the queue
         # or the queue is empty and the current task is None
-        if not self.current_task and (self.task_queue or self.wait_queue):
+        if not self.current_task and self.task_queue:
             raise RuntimeError(f"Thread {self.thread_id} has no current task but has tasks queued.")
 
         if not self.current_task:
@@ -83,6 +88,9 @@ class TaskThreadBase(ThreadInterface):
                     while self.wait_queue:
                         self.task_queue.append(self.wait_queue.popleft())
                     self._advance_to_next_task(ctx)
+                    # This not working because advance_to_next already set READY
+                    # if self.current_task:
+                    #     self.current_task.resume(ctx)
                     self.transition_to(ThreadInternalStatus.RUNNING)
                     return self.status
                 case ThreadInternalStatus.RUNNING:
@@ -95,7 +103,9 @@ class TaskThreadBase(ThreadInterface):
         if self.status.is_active:
             current_task_status = self.current_task.step(ctx)
 
-            if current_task_status == TaskStatus.SUCCESS:
+            if current_task_status == TaskStatus.RUNNING:
+                return ThreadStatus.RUNNING
+            elif current_task_status == TaskStatus.SUCCESS:
                 self.current_task.exit(ctx, current_task_status)
                 self._advance_to_next_task(ctx)
                 return ThreadStatus.RUNNING
@@ -104,9 +114,11 @@ class TaskThreadBase(ThreadInterface):
                 self.current_task.exit(ctx, current_task_status)
                 self._handle_failure(ctx)
                 return ThreadStatus.FAILED
-            elif current_task_status == TaskStatus.RUNNING:
-                return ThreadStatus.RUNNING
             elif current_task_status == TaskStatus.CANCELLED:
+                self.current_task.exit(ctx, current_task_status)
+                self._advance_to_next_task(ctx)
+                return ThreadStatus.RUNNING
+            elif current_task_status == TaskStatus.SUSPENDED:
                 self.current_task.exit(ctx, current_task_status)
                 self._advance_to_next_task(ctx)
                 return ThreadStatus.RUNNING
@@ -133,13 +145,19 @@ class TaskThreadBase(ThreadInterface):
         self.uninterruptible = True
 
         if self.current_task:
-            self.task_queue.appendleft(self.current_task)
             self.current_task.suspend(ctx)
-            self.current_task = None
+            self.wait_queue.appendleft(self.current_task)
+            self.current_task.clone()
+            # let current task handle its own suspension
+            # self.current_task = None
 
-        # move the current task back to the wait queue
+        # move the remaining task queue to the wait queue
         while self.task_queue:
             self.wait_queue.append(self.task_queue.popleft())
+
+        # enqueue on_suspend uninterruptible tasks
+        for task in self.on_suspend_provider.get_tasks(self):
+            self.enqueue_task(task)
 
         if not self.current_task:
             self._advance_to_next_task(ctx)
@@ -150,8 +168,11 @@ class TaskThreadBase(ThreadInterface):
         self.transition_to(ThreadInternalStatus.RESUMING)
         self.uninterruptible = True
 
-        if self.hooks.on_resume:
-            self.task_queue.extend(self.hooks.on_resume(self, ctx))
+        for task in self.on_resume_provider.get_tasks(self):
+            self.enqueue_task(task)
+
+        if not self.current_task:
+            self._advance_to_next_task(ctx)
 
     def cancel(self, ctx: Context) -> None:
         """Cancel this thread - execute cleanup tasks and mark as cancelled"""
@@ -165,7 +186,11 @@ class TaskThreadBase(ThreadInterface):
         # Clear remaining tasks, no more main tasks should run after cancel
         self.task_queue.clear()
 
-        self.task_queue.extend(self.on_cancel_provider.get_tasks(self))
+        for task in self.on_cancel_provider.get_tasks(self):
+            self.enqueue_task(task)
+
+        if not self.current_task:
+            self._advance_to_next_task(ctx)
 
     def _handle_failure(self, ctx: Context) -> None:
         """Handle task failure by clearing queue and running on_failed tasks"""
@@ -181,11 +206,12 @@ class TaskThreadBase(ThreadInterface):
         if self.current_task is None and self.task_queue:
             self._advance_to_next_task(ctx)
 
+    # @trace
     def _advance_to_next_task(self, ctx: Context) -> None:
         """Move to next task in queue"""
         if self.task_queue:
             self.current_task = self.task_queue.popleft()
-            inspect(self.current_task)
+            rprint(self.current_task)
             self.current_task.enter(ctx)
         else:
             self.current_task = None
@@ -193,24 +219,6 @@ class TaskThreadBase(ThreadInterface):
     # def on_suspend(self, ctx: Context) -> list[Task]:
     #     tasks: list[Task] = []
     #     for step in self.on_suspend_steps:
-    #         tasks.append(TaskFactory.create(step.to_dict()))
-    #     return tasks
-    #
-    # def on_resume(self, ctx: Context) -> list[Task]:
-    #     tasks: list[Task] = []
-    #     for step in self.on_resume_steps:
-    #         tasks.append(TaskFactory.create(step.to_dict()))
-    #     return tasks
-    #
-    # def on_cancel(self, ctx: Context) -> list[Task]:
-    #     tasks: list[Task] = []
-    #     for step in self.on_cancel_steps:
-    #         tasks.append(TaskFactory.create(step.to_dict()))
-    #     return tasks
-    #
-    # def on_failed(self, ctx: Context) -> list[Task]:
-    #     tasks: list[Task] = []
-    #     for step in self.on_failed_steps:
     #         tasks.append(TaskFactory.create(step.to_dict()))
     #     return tasks
 

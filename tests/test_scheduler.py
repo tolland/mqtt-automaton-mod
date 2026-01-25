@@ -145,11 +145,11 @@ class TestSchedulerThreadStateTracking:
         thread1 = TaskThreadBase("thread1", ThreadPriority.NORMAL)
         thread2 = TaskThreadBase("thread2", ThreadPriority.NORMAL)
 
-        mock_scheduler.done_queue.append(thread1)
-        mock_scheduler.done_queue.append(thread2)
+        mock_scheduler.done_threads.append(thread1)
+        mock_scheduler.done_threads.append(thread2)
 
         # Should pop in reverse order
-        popped = mock_scheduler.done_queue.pop()
+        popped = mock_scheduler.done_threads.pop()
         assert popped.thread_id == "thread2"
 
 
@@ -183,7 +183,7 @@ class TestSchedulerEdgeCases:
         """Test operations on empty scheduler"""
         assert len(mock_scheduler.ready_threads) == 0
         assert mock_scheduler.current_thread is None
-        assert len(mock_scheduler.done_queue) == 0
+        assert len(mock_scheduler.done_threads) == 0
         assert mock_scheduler._thread_id_exists("any") is False
 
 

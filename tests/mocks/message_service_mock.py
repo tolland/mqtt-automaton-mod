@@ -46,8 +46,7 @@ class MockMessageService:
 
         Returns the request_id used.
         """
-        request_id = message_data.request_id or str(uuid.uuid4())
-        message_data.request_id = request_id
+        request_id = message_data.request_id
         self.pending_requests[request_id] = None
         self.sent_messages.append(message_data)
 

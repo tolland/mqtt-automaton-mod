@@ -3,7 +3,7 @@ from typing import Iterator
 
 import mqttbot.core.tasks as _tasks  # noqa: F401
 from mqttbot.config.model.pattern.pattern_config import PatternsConfig
-from mqttbot.config.model.pattern.pattern_step import PatternStep
+from mqttbot.config.model.step.pattern_step import PatternStep
 from mqttbot.config.model.step.service_step import ServiceStep
 from mqttbot.config.model.step.steps_discriminator import Step
 from mqttbot.core.tasks.task_base import TaskFactory
@@ -38,29 +38,27 @@ class TaskCompiler(TaskCompilerProtocol):
         """Compile a single step into one or more tasks, updating internal state as needed."""
         try:
             # inspect(step_config, title="Compiling Step")
-            for step_item in step_config:
-                # inspect(step_item, title="Compiling Step Item")
-                config_def = step_config.to_dict()
-                # Update internal state if it's a movement task
-                if isinstance(step_item, ServiceStep) and step_config.type == "goto":
-                    p = step_config["params"]["target"]
-                    self.current_pos = (p["x"], p["y"], p["z"])
-                elif isinstance(step_item, PatternStep) and step_config.type == "goto":
-                    coords = step_item.coords.resolve(self.current_pos)
-                    self.current_pos = coords
-                    config_def.update(
-                        {
-                            "params": {
-                                "target": {
-                                    "x": coords[0],
-                                    "y": coords[1],
-                                    "z": coords[2],
-                                }
+            config_def = step_config.to_dict()
+            # Update internal state if it's a movement task
+            if isinstance(step_config, ServiceStep) and step_config.type == "goto":
+                p = step_config.params["target"]
+                self.current_pos = (p["x"], p["y"], p["z"])
+            elif isinstance(step_config, PatternStep) and step_config.type == "pattern":
+                coords = step_config.coords.resolve(self.current_pos)
+                self.current_pos = coords
+                config_def.update(
+                    {
+                        "params": {
+                            "target": {
+                                "x": coords[0],
+                                "y": coords[1],
+                                "z": coords[2],
                             }
                         }
-                    )
+                    }
+                )
 
-                yield TaskFactory.create(config_def)
+            yield TaskFactory.create(config_def)
         except:
             inspect(step_config)
             raise

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from loguru import logger
 
 from mqttbot import ServiceMessage
-from mqttbot.config.model.events.event_handler import EventHandlerConfig
+from mqttbot.config.model.events.event_handler_config import EventHandlerConfig
 from mqttbot.config.model.events.events_config import EventsConfig
 from mqttbot.core.protocol.thread import ThreadInterface
 

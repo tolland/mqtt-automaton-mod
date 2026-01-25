@@ -19,8 +19,15 @@ class CommandTask(TaskBase):
 
     """
 
-    def __init__(self, service: str, method: str, params: dict[str, Any], timeout: int = 15):
-        super().__init__()
+    def __init__(
+        self,
+        service: str,
+        method: str,
+        params: dict[str, Any],
+        timeout: int = 15,
+        metadata: dict[str, Any] | None = None,
+    ):
+        super().__init__(metadata)
         self.timeout = timeout
         self.result: RequestResult | None = None
         self.service = service
@@ -28,6 +35,7 @@ class CommandTask(TaskBase):
         self.params = params
 
     def _step(self, ctx: Context) -> TaskStatus:
+
         if self._internal_status == TaskInternalState.READY:
             # Send warp request
             logger.debug("Sending message")
@@ -53,42 +61,36 @@ class CommandTask(TaskBase):
                     self.result = result
                     if result.status == RequestStatus.SUCCESS:
                         logger.debug(f"Success: {self.service}.{self.method}")
+                        self.transition_to(TaskInternalState.DONE)
                         return TaskStatus.SUCCESS
                     else:
                         logger.warning(f"Failed: {result.error}")
+                        self.transition_to(TaskInternalState.FAILED)
                         return TaskStatus.FAILED
 
             return TaskStatus.RUNNING
         elif self._internal_status == TaskInternalState.SUSPENDING:
             if self.request_id:
-                logger.info(f"[CommandTask] Suspending {self.target}, cancelling request {self.request_id}")
+                logger.info(
+                    f"[CommandTask] Suspending {self.params}, cancelling request {self.request_id}"
+                )
                 cancel_msg = ServiceMessage(
                     service="baritone",
                     method="cancel",
                     request_id=str(uuid.uuid4()),
                     correlation_id=self.correlation_id,
-                    params={
-                        "request_id": self.request_id,
-                        "reason": "preempted"
-                    }
+                    params={"request_id": self.request_id, "reason": "preempted"},
                 )
                 ctx.bot_service.send_message(cancel_msg)
-            self.transition_to( TaskInternalState.SUSPENDED)
+            self.transition_to(TaskInternalState.SUSPENDED)
             return TaskStatus.SUSPENDED
 
         elif self._internal_status in [TaskInternalState.CANCELING]:
             self.transition_to(TaskInternalState.CANCELLED)
 
         elif self._internal_status in [TaskInternalState.SUSPENDING]:
-            self.transition_to(TaskInternalState.DONE)
+            self.transition_to(TaskInternalState.SUSPENDED)
         return self.status
-
-    def _resume(self, ctx: Context) -> None:
-        """Resume - reset state to trigger a fresh request"""
-        logger.info(f"[CommandTask] Resuming for {self.service}:{self.method}")
-
-        # Reset to INIT to force a new request_id and fresh message
-        self.transition_to(TaskInternalState.READY)
 
     def to_dict(self) -> dict[str, Any]:
         """Specific override for CommandTask state."""

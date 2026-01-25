@@ -1,4 +1,3 @@
-"""Test configuration and fixtures."""
 import asyncio
 import builtins
 import os
@@ -18,17 +17,25 @@ from rich.pretty import pprint
 
 from mqttbot.config.model.full_config import FullConfig
 from mqttbot.config.model.step.service_step import ServiceStep
+from mqttbot.core.events.event_manager import EventManager
+from mqttbot.core.protocol.task_priority import ThreadPriority
+from mqttbot.core.tasks.task_compiler import TaskCompiler
 from mqttbot.core.threads import scheduler
+from mqttbot.core.threads.dynamic_handler import DynamicHandler
+from mqttbot.core.threads.thread import TaskThread
 from .mocks.message_service_mock import (
     MockMessageService,
     make_success_service,
     make_failure_service,
     make_delayed_service,
 )
+import yaml
 
 builtins.rprint = rprint
 builtins.pprint = pprint
 builtins.inspect = inspect
+
+"""Test configuration and fixtures."""
 
 # Ensure the tests package directory is on sys.path so imports like `from mocks...` work
 sys.path.insert(0, str(Path(__file__).parent))
@@ -213,6 +220,37 @@ def minecraft_client():
         process.kill()
         process.wait()
 
+@pytest.fixture
+def sample_config():
+    config_path = Path(__file__).parent.parent / "configs" / "config.yml"
+    with open(config_path, "r") as f:
+        yaml_data = yaml.safe_load(f)
+    return FullConfig.model_validate(yaml_data)
+
+@pytest.fixture
+def sample_event_thread(
+    sample_config,
+) -> "TaskThread":
+
+    pydantic_patterns = sample_config.pattern_config
+    thread_configs = sample_config.thread_config
+    event_configs = sample_config.event_handlers
+
+    event_manager = EventManager(event_configs)
+
+    handler_config = event_manager.get_handler_config("inventory", "inventory_full")
+
+    task_compiler = TaskCompiler(pydantic_patterns)
+    event_thread = TaskThread(
+        thread_id="event-thread-1",
+        main_source_provider=DynamicHandler(handler_config.steps, task_compiler),
+        on_suspend_provider=DynamicHandler([], task_compiler),
+        on_resume_provider=DynamicHandler([], task_compiler),
+        on_cancel_provider=DynamicHandler([], task_compiler),
+        on_failed_provider=DynamicHandler([], task_compiler),
+        priority=ThreadPriority.HIGH,
+    )
+    return event_thread
 
 @pytest.fixture
 def mock_message_service() -> MockMessageService:
@@ -221,6 +259,22 @@ def mock_message_service() -> MockMessageService:
 
 
 @pytest.fixture
-def mock_bot_service(mock_message_service: MockMessageService) -> MockMessageService:
-    """Alias fixture named for tests that expect a 'bot_service' object."""
-    return mock_message_service
+def mock_success_message_service() -> MockMessageService:
+    """A controllable mock MessageService for tests (delayed by default)."""
+    return make_success_service()
+
+
+async def step_until(scheduler, ctx, predicate, timeout=100):
+    """
+    Step the scheduler until the predicate is True or timeout is reached.
+    """
+    counter = 0
+    while not predicate(scheduler) and counter < timeout:
+        await scheduler.step(ctx)
+        counter += 1
+    return predicate(scheduler)
+
+
+@pytest.fixture
+def step_until_helper():
+    return step_until

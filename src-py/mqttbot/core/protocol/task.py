@@ -5,7 +5,9 @@ from mqttbot.core.threads.scheduler_context import Context
 
 
 class Task(Protocol):
-    status: TaskStatus
+
+    @property
+    def status(self) -> TaskStatus: ...
 
     def enter(self, ctx: Context) -> None: ...
     def enqueue(self, correlation_id: str) -> None: ...

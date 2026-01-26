@@ -27,7 +27,7 @@ public class MqttClientInternal extends Action
         new MqttBotLogger(MqttClientInternal.class);
     
     private MqttClient mqttClient;
-    int qos = 2;
+    int qos = 0;
     private DevicePresence presence;
     
     private final MqttBotConfig config = MqttBotConfig.getInstance();

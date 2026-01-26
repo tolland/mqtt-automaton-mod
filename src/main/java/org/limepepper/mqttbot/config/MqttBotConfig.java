@@ -18,7 +18,7 @@ public class MqttBotConfig {
     
     private String logLevel = "INFO";
     private String mqttBroker = "tcp://mosquitto.lan:1883";
-    private int mqttQos = 2;
+    private int mqttQos = 1;
     private boolean debugEvents = false;
     private boolean debugMqtt = true;
     

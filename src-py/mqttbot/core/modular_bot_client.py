@@ -6,7 +6,6 @@ from asyncio import Queue
 from typing import Any, Optional
 
 from loguru import logger
-from rich import inspect
 from rich.repr import rich_repr
 
 from mqttbot import ServiceMessage
@@ -163,7 +162,7 @@ class ModularBotClient:
             thread = thread_factory.create_thread(thread_config)
             self.threads.append(thread)
 
-        inspect(self.threads[0], title="Configured Threads")
+        # inspect(self.threads[0], title="Configured Threads")
 
         self.event_manager = EventManager(self.full_config.event_handlers)
 

@@ -10,7 +10,7 @@ from rich.repr import rich_repr
 from mqttbot.core.protocol.task import Task
 from mqttbot.core.protocol.task_status import TaskInternalState, TaskStatus
 from mqttbot.core.threads.scheduler_context import Context
-from mqttbot.utils.tracing_tools import trace, trace_task_state
+from mqttbot.utils.tracing_tools import trace, trace_transition_to
 
 # This import is down at the bottom to avoid circular imports
 # importlib.import_module("mqttbot.core.tasks")
@@ -129,7 +129,7 @@ class TaskBase(ABC, Task):
     def _exit(self, ctx, status: TaskStatus):
         pass
 
-    @trace_task_state
+    @trace_transition_to
     def transition_to(self, next_state: TaskInternalState):
         """Enforces validity and updates the internal state."""
         # Use the transition map logic here and update internal status
@@ -154,6 +154,9 @@ class TaskBase(ABC, Task):
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} request_id={self.request_id} status={self.status.name}>"
 
     def __rich_repr__(self):
         """Rich representation that varies based on log level."""
@@ -203,6 +206,7 @@ class TaskBase(ABC, Task):
                 yield "method", self.method
 
         # WARNING/ERROR: minimal info (just class name, already shown)
+
 
 # We need to force import of task implementations to allow registration
 # for the TaskFactory to work. Howevr they need to have seen TaskBase first.

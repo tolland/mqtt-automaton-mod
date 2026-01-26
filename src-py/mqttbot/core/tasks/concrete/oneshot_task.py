@@ -34,7 +34,6 @@ class OneShotTask(TaskBase):
 
     def _step(self, ctx: Context) -> TaskStatus:
         if self._internal_status == TaskInternalState.READY:
-            logger.debug("OneShotTask: Sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,

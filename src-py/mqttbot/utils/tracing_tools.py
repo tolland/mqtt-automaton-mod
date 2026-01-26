@@ -1,19 +1,45 @@
-from rich.pretty import pprint
+import sys
 from functools import wraps
+from typing import Any, Callable, TypeVar
+
+from loguru import logger
+from rich.pretty import pprint
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def trace_task_state_withsettrace(fn: F) -> F:
+    def tracer(frame, event, arg):
+        if event == "return" and frame.f_code.co_name == fn.__name__:
+            # Your tracing logic here
+            print(f"Task exit: {fn.__name__}")
+        return tracer
+
+    @wraps(fn)
+    def wrapper(self, *a, **kw):
+        old_trace = sys.gettrace()
+        sys.settrace(tracer)
+        try:
+            return fn(self, *a, **kw)
+        finally:
+            sys.settrace(old_trace)
+
+    return wrapper
+
 
 def trace(fn):
 
     @wraps(fn)
     def wrapper(self, *a, **kw):
         # Print entry with method name and rich repr
-        print(f"entering method: {fn.__name__}(args)")
-        pprint(self)
+        logger.trace(f"entering method: {fn.__name__}(args)")
+        logger.trace(self)
 
         try:
             result = fn(self, *a, **kw)
             # Print exit with method name and rich repr
-            print(f"exiting method: {fn.__name__}(args)")
-            pprint(self)
+            logger.trace(f"exiting method: {fn.__name__}(args)")
+            logger.trace(self)
             return result
         except Exception as e:
             # Print exit with error
@@ -24,11 +50,11 @@ def trace(fn):
     return wrapper
 
 
-def trace_task_state(fn):
+def trace_transition_to(fn):
     @wraps(fn)
     def wrapper(self, *a, **kw):
         # Print entry with method name and rich repr
-        print(f"Task({self.__class__.__name__}): '{fn.__name__}({self.request_id})': {self._internal_status.name:<15} -> {a[0].name if a else 'N/A':>15}")
+        logger.trace(f"Task({self.__class__.__name__}): '{fn.__name__}({self.request_id})': {self._internal_status.name:<15} -> {a[0].name if a else 'N/A':>15}")
 
         try:
             result = fn(self, *a, **kw)

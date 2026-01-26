@@ -37,8 +37,6 @@ class CommandTask(TaskBase):
     def _step(self, ctx: Context) -> TaskStatus:
 
         if self._internal_status == TaskInternalState.READY:
-            # Send warp request
-            logger.debug("Sending message")
             message = ServiceMessage(
                 service=self.service,
                 method=self.method,
@@ -103,6 +101,9 @@ class CommandTask(TaskBase):
         elif self._internal_status in [TaskInternalState.SUSPENDING]:
             self.transition_to(TaskInternalState.SUSPENDED)
         return self.status
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} 'id={self.request_id}' status={self._internal_status.name} service={self.service} method={self.method} params={self.params}>"
 
     def to_dict(self) -> dict[str, Any]:
         """Specific override for CommandTask state."""

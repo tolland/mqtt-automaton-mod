@@ -7,7 +7,8 @@ import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
-import org.limepepper.mqttbot.events.ClientListener;
+import org.limepepper.mqttbot.events.ClientDisconnectListener;
+import org.limepepper.mqttbot.events.ClientJoinListener;
 import org.limepepper.mqttbot.events.HeartbeatListener;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 
@@ -25,13 +26,15 @@ public class GameEventWatcher {
             String world = client.level != null
                 ? client.level.dimension().location().toString() : "unknown";
             EventManager
-                .fire(new ClientListener.ClientJoinEvent(playerName, world));
+                .fire(
+                    new ClientJoinListener.ClientJoinEvent(playerName, world));
         });
         
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             String playerName = client.getUser().getName();
             EventManager
-                .fire(new ClientListener.ClientDisconnectEvent(playerName));
+                .fire(new ClientDisconnectListener.ClientDisconnectEvent(
+                    playerName));
         });
         
         ClientSendMessageEvents.CHAT.register((message -> EventManager

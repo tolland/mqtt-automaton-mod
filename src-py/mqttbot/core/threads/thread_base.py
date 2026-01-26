@@ -222,9 +222,9 @@ class TaskThreadBase(ThreadInterface):
     def _advance_to_next_task(self, ctx: Context) -> None:
         """Move to next task in queue"""
         if self.task_queue:
-            self.done_tasks.append(self.current_task) if self.current_task else None
+            if self.current_task:
+                self.done_tasks.append(self.current_task)
             self.current_task = self.task_queue.popleft()
-            rprint(self.current_task)
             self.current_task.enter(ctx)
         else:
             self.current_task = None

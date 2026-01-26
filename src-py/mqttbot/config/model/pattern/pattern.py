@@ -18,8 +18,6 @@ class Pattern(WithMetadata):
     steps: list[Step]
     # Hooks
     hooks: HooksCollection = Field(default_factory=HooksCollection)
-    on_pattern_start_tasks: list[Step] = Field(default_factory=list, alias="on_pattern_start")
-    on_pattern_end_tasks: list[Step] = Field(default_factory=list, alias="on_pattern_end")
 
     @field_validator("steps", mode="before")
     def normalize_steps(cls, v):

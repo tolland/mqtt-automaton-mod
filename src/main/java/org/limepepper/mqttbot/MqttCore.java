@@ -40,13 +40,18 @@ public enum MqttCore
         
         EventManager eventManager = EventManager.INSTANCE;
         
-        eventManager.add(ClientListener.class, new ClientAction());
+        ClientAction clientAction = new ClientAction();
+        eventManager.add(ClientJoinListener.class, clientAction);
+        eventManager.add(ClientDisconnectListener.class, clientAction);
+        eventManager.add(ClientWorldChangeListener.class, clientAction);
+        
         eventManager.add(DeathListener.class, new DeathAction());
         // @TODO this is not working since 1.20.x changes. need to fix
         eventManager.add(DamageListener.class, new DamageAction());
         eventManager.add(DayNightListener.class, new DayNightAction());
         eventManager.add(InventoryListener.class, new InventoryAction());
         eventManager.add(ChatMessageListener.class, new ChatMessageAction());
+        eventManager.add(ClientJoinListener.class, new AdHocAction());
         // eventManager.add(HeartbeatListener.class, new HeartbeatAction());
         eventManager.add(MqttMessageListener.class,
             // MessageDispatcher is a sub-router to redirect to specific service
@@ -60,7 +65,11 @@ public enum MqttCore
         
         // This sources events into the EventManager from Mqtt
         MqttClientInternal handler = MqttClientInternal.INSTANCE;
-        eventManager.add(ClientListener.class, new ClientUpdateStateAction());
+        ReadinessAction readinessAction = new ReadinessAction();
+        eventManager.add(ClientJoinListener.class, readinessAction);
+        eventManager.add(ClientDisconnectListener.class, readinessAction);
+        eventManager.add(ClientWorldChangeListener.class, readinessAction);
+        eventManager.add(DeathListener.class, readinessAction);
         
         // Things that can be toggled
         features().register(new InventoryFullFeature());

@@ -2,7 +2,9 @@ package org.limepepper.mqttbot.actions;
 
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.event.EventManager;
-import org.limepepper.mqttbot.events.ClientListener;
+import org.limepepper.mqttbot.events.ClientDisconnectListener;
+import org.limepepper.mqttbot.events.ClientJoinListener;
+import org.limepepper.mqttbot.events.ClientWorldChangeListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
 import org.limepepper.mqttbot.mqtt.ServiceMessage;
 
@@ -11,7 +13,9 @@ import java.util.UUID;
 /**
  * Game, Player and mc client related event actions.
  */
-public class ClientAction extends Action implements ClientListener {
+public class ClientAction extends Action
+    implements ClientJoinListener, ClientDisconnectListener,
+    ClientWorldChangeListener {
     @Override
     public void onClientJoin(ClientJoinEvent event)
     {
@@ -39,5 +43,11 @@ public class ClientAction extends Action implements ClientListener {
                     UUID.randomUUID().toString(), null, null, null,
                     event.getPlayerName(), "player disconnected"),
                 "events"));
+    }
+    
+    @Override
+    public void onClientWorldChange(ClientWorldChangeEvent event)
+    {
+        
     }
 }

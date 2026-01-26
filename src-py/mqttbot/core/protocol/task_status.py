@@ -120,7 +120,6 @@ class TaskInternalState(Enum):
 
     def can_transition_to(self, next_state: "TaskInternalState") -> bool:
         allowed = self._transition_map.get(self, [])
-        # logger.debug("can_transition_to: %s allowed -> %s", self.name, [s.name for s in allowed])
         return next_state in allowed
 
     def transition_to(self, next_state: "TaskInternalState") -> "TaskInternalState":

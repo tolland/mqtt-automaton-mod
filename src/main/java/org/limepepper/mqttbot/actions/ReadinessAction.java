@@ -6,7 +6,9 @@ import net.minecraft.client.Minecraft;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.action.Action;
-import org.limepepper.mqttbot.events.ClientListener;
+import org.limepepper.mqttbot.events.ClientDisconnectListener;
+import org.limepepper.mqttbot.events.ClientJoinListener;
+import org.limepepper.mqttbot.events.ClientWorldChangeListener;
 import org.limepepper.mqttbot.events.DeathListener;
 import org.limepepper.mqttbot.presence.DevicePresence;
 import org.limepepper.mqttbot.presence.ReadinessState;
@@ -15,11 +17,12 @@ import org.limepepper.mqttbot.util.MqttBotLogger;
 /**
  * Game, Player and mc client related event actions.
  */
-public class ClientUpdateStateAction extends Action
-    implements ClientListener, DeathListener {
+public class ReadinessAction extends Action
+    implements ClientJoinListener, ClientDisconnectListener,
+    ClientWorldChangeListener, DeathListener {
     
     private static final MqttBotLogger LOGGER =
-        new MqttBotLogger(ClientUpdateStateAction.class);
+        new MqttBotLogger(ReadinessAction.class);
     private final DevicePresence presence =
         DevicePresence.getInstance(CORE.getPlayerName());
     
@@ -74,6 +77,12 @@ public class ClientUpdateStateAction extends Action
         {
             LOGGER.error("Failed to publish readiness: {}", e.getMessage());
         }
+    }
+    
+    @Override
+    public void onClientWorldChange(ClientWorldChangeEvent event)
+    {
+        
     }
     
     @Override

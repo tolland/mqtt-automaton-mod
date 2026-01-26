@@ -81,32 +81,6 @@ class SchedulerBase(Scheduler):
         logger.debug(f"Enqueued thread: {thread.thread_id}")
         return True
 
-    def _thread_id_exists(self, thread_id: str) -> bool:
-        """Check if a thread with this ID exists in any queue"""
-        # Check current thread
-        if self.current_thread and self.current_thread.thread_id == thread_id:
-            return True
-
-        # Check ready queue
-        if any(t.thread_id == thread_id for t in self.ready_threads):
-            return True
-
-        return False
-
-    def has_active_thread(self, thread_id: str) -> bool:
-        """Public method to check if a thread is active"""
-        return self._thread_id_exists(thread_id)
-
-    def is_complete(self) -> bool:
-        """Check if scheduler has completed all tasks.
-
-        Returns True if ready_threads, current_thread, and suspended_stack are all empty.
-        """
-        return (
-            len(self.ready_threads) == 0
-            and self.current_thread is None
-        )
-
     async def step(self, ctx: Context) -> bool:
         """Execute one scheduler tick."""
         self._publish_state(ctx)  # for debugging hung schedulers
@@ -133,6 +107,32 @@ class SchedulerBase(Scheduler):
         except Exception as e:
             rprint(self)
             raise e
+
+    def _thread_id_exists(self, thread_id: str) -> bool:
+        """Check if a thread with this ID exists in any queue"""
+        # Check current thread
+        if self.current_thread and self.current_thread.thread_id == thread_id:
+            return True
+
+        # Check ready queue
+        if any(t.thread_id == thread_id for t in self.ready_threads):
+            return True
+
+        return False
+
+    def has_active_thread(self, thread_id: str) -> bool:
+        """Public method to check if a thread is active"""
+        return self._thread_id_exists(thread_id)
+
+    def is_complete(self) -> bool:
+        """Check if scheduler has completed all tasks.
+
+        Returns True if ready_threads, current_thread, and suspended_stack are all empty.
+        """
+        return (
+            len(self.ready_threads) == 0
+            and self.current_thread is None
+        )
 
     def _should_preempt(self) -> bool:
         """
@@ -161,7 +161,7 @@ class SchedulerBase(Scheduler):
 
         self.current_thread.suspend(ctx)
 
-    async def shutdown(self, ctx: Context) -> None:
+    def shutdown(self, ctx: Context) -> None:
         """Gracefully shutdown scheduler - cancel all threads and execute on_cancel tasks"""
         logger.info("Shutting down - cancelling all threads")
 
@@ -170,12 +170,11 @@ class SchedulerBase(Scheduler):
             logger.info(f"Cancelling current thread: {self.current_thread.thread_id}")
             self.current_thread.cancel(ctx)
 
-        # @TODO are there any circumstances where we want to cancel suspended threads?
         # Cancel all ready threads
-        # while self.ready_threads:
-        #     thread = heapq.heappop(self.ready_threads)
-        #     logger.debug(f"Cancelling ready thread: {thread.thread_id}")
-        #     await thread.cancel(ctx)
+        while self.ready_threads:
+            thread = heapq.heappop(self.ready_threads)
+            logger.debug(f"Cancelling ready thread: {thread.thread_id}")
+            thread.cancel(ctx)
 
         logger.info("Shutdown complete")
 

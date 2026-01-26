@@ -1,5 +1,6 @@
 import importlib
 import logging
+import sys
 from unittest.mock import Mock
 
 import pytest
@@ -170,14 +171,23 @@ class TestCallbackThreadConstruction:
         thread = thread_factory.create_thread(first_or_default(thread_configs.threads))
         mock_scheduler.enqueue_thread(thread)
 
+        # Step scheduler once to load a task
+        await mock_scheduler.step(ctx)
+
+        rprint(mock_scheduler)
+
+        # get requets Id of loaded task
+        request_id = thread.current_task.request_id
+        rprint(f"Request ID of main thread's current task: {request_id}")
         reached = await step_until_helper(
             mock_scheduler,
             ctx,
-            lambda s: s.current_thread
-            and s.current_thread.current_task
-            and s.current_thread.current_task.status == TaskStatus.SUCCESS,
+            lambda s: s.current_thread.get(request_id).status == TaskStatus.SUCCESS,
             timeout=200,
         )
+
+        rprint(mock_scheduler)
+        assert len(mock_scheduler.current_thread.done_tasks) == 1
 
         await mock_scheduler.step(ctx)
         rprint(mock_scheduler)

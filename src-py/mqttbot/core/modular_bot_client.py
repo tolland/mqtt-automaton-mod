@@ -14,15 +14,15 @@ from mqttbot.config.model.full_config import FullConfig
 from mqttbot.config.model.pattern.pattern_config import PatternsConfig
 from mqttbot.config.model.thread.threads_config import ThreadConfig
 from mqttbot.config.settings.settings import Settings
-from mqttbot.core.services.message_service import MessageService
-from mqttbot.core.tasks.task_compiler import TaskCompiler
+from mqttbot.core.events.event_manager import EventManager
 from mqttbot.core.events.event_manager_helper import EventManagerHelper
-from mqttbot.core.services.bot_service import BotService
+from mqttbot.core.services.message_service import MessageService
 from mqttbot.core.state.baritone.baritone_module import BaritoneModule
 from mqttbot.core.state.baritone.utils import dump_baritone_state
 from mqttbot.core.state.blackboard import TypedBlackboard
 from mqttbot.core.state.events.events_module import EventsModule
 from mqttbot.core.state.wurst_module import WurstModule
+from mqttbot.core.tasks.task_compiler import TaskCompiler
 from mqttbot.core.threads import scheduler
 from mqttbot.core.threads.scheduler_context import Context
 from mqttbot.core.threads.thread_factory import ThreadFactory
@@ -43,6 +43,7 @@ class ModularBotClient:
             settings: Settings object containing MQTT and connection configuration
             config_path: Path to YAML config file containing waypoints, patterns, and behaviors
         """
+        self.full_config = None
         self.event_manager = None
         self._scheduler = None
         self.threads = None
@@ -79,6 +80,7 @@ class ModularBotClient:
                 "message_sender": self.send_mqtt_message,
                 "blackboard": self.blackboard,
                 "mqtt": self.mqtt,
+                "bot_service": None
             }
         )
 
@@ -109,6 +111,7 @@ class ModularBotClient:
         """Exit the bot gracefully"""
         logger.info("Exit requested - will shutdown gracefully")
         self._shutdown_requested = True
+        self._scheduler.shutdown(self.ctx)
         self.send_mqtt_message(
             ServiceMessage(
                 **{
@@ -124,7 +127,8 @@ class ModularBotClient:
     def stop(self) -> None:
         """Stop the bot"""
         logger.info("Stopping modular bot client")
-        self._scheduler._publish_state(self.ctx)
+        if self._scheduler:
+            self._scheduler._publish_state(self.ctx)
 
         self.running = False
         self.mqtt.disconnect()
@@ -143,13 +147,13 @@ class ModularBotClient:
         """Start the bot by initializing threads from config"""
         logger.info("Configuring modular bot client")
 
-        full_config = FullConfig.model_validate(self.config)
-        self.patterns_configs = full_config.pattern_config
+        self.full_config = FullConfig.model_validate(self.config)
+        self.patterns_configs = self.full_config.pattern_config
         logger.info(f"Loaded {len(self.patterns_configs.patterns)} patterns configuration(s)")
 
         # Parse thread configurations
         # self.thread_configs = PatternThreadConfigParser.from_yaml(self.config)
-        self.thread_configs = full_config.thread_config
+        self.thread_configs = self.full_config.thread_config
         logger.info(f"Loaded {len(self.thread_configs.threads)} thread configuration(s)")
 
         task_compiler = TaskCompiler(self.patterns_configs)
@@ -161,7 +165,7 @@ class ModularBotClient:
 
         inspect(self.threads[0], title="Configured Threads")
 
-        # self.event_manager = EventManager(self.config.get("event_handlers", {}))
+        self.event_manager = EventManager(self.full_config.event_handlers)
 
     def start(self) -> None:
 
@@ -169,9 +173,9 @@ class ModularBotClient:
         self._scheduler = scheduler.create()
 
         """Start the bot by registering threads with the scheduler"""
-        for thread_config, thread in zip(self.thread_configs, self.threads, strict=False):
+        for thread in self.threads:
             self._scheduler.register_thread(thread)
-            logger.debug(f"Registered thread: {thread_config.thread_id}")
+            logger.debug(f"Registered thread: {thread.thread_id}")
 
         self.running = True
         logger.info("Bot started successfully")
@@ -188,12 +192,12 @@ class ModularBotClient:
 
             while self.running:
                 # Check for shutdown request
-                if self._shutdown_requested:
-                    logger.info("Processing shutdown request")
-                    await self._scheduler.shutdown(self.ctx)
-                    self.running = False
-                    self.stop()
-                    break
+                # this prevents the scheduler form processing exit steps
+                # if self._shutdown_requested:
+                #     logger.info("Processing shutdown request")
+                #     self.running = False
+                #     self.stop()
+                #     break
 
                 await self._process_event_queue()
 
@@ -204,6 +208,7 @@ class ModularBotClient:
                 if all_complete:
                     logger.info("All tasks completed, exiting")
                     self.running = False
+                    self.stop()
                     break
 
                 # Log status periodically
@@ -221,7 +226,6 @@ class ModularBotClient:
         #     raise
         finally:
             self.stop()
-
 
     def _handle_mqtt_message(self, topic: str, payload: str) -> None:
         """Handle incoming MQTT message payload turn into ServiceMessage
@@ -276,9 +280,7 @@ class ModularBotClient:
         )
 
         if handler_config:
-            thread = await EventManagerHelper._build_thread_from_config(
-                f"{message_data.service}_{message_data.method}", handler_config, message_data
-            )
+            thread = EventManagerHelper.build_thread_from_config(self.full_config)
 
             if thread:
                 self._scheduler.enqueue_thread(thread, singleton=True)
@@ -287,7 +289,6 @@ class ModularBotClient:
         """Public method to send MQTT message"""
         topic = f"mqttbot/{self.settings.client_id}/command"
         self.mqtt.send(topic, message.to_json())
-
 
     async def _process_event_queue(self) -> None:
         """Drain event queue and process all pending events"""
@@ -314,9 +315,9 @@ class ModularBotClient:
         if hasattr(self._scheduler, "_threads"):
             yield "scheduler_threads", len(self._scheduler._threads)
         if self.thread_configs is not None:
-            yield "thread_configs", len(self.thread_configs)
+            yield "thread_configs", len(self.thread_configs.threads)
         if self.patterns_configs is not None:
-            yield "patterns_configs", len(self.patterns_configs)
+            yield "patterns_configs", len(self.patterns_configs.patterns)
         yield "event_handlers", len(self.event_manager.handlers)
 
     def __repr__(self) -> str:

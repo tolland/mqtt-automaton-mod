@@ -86,6 +86,18 @@ class CommandTask(TaskBase):
             return TaskStatus.SUSPENDED
 
         elif self._internal_status in [TaskInternalState.CANCELING]:
+            if self.request_id:
+                logger.info(
+                    f"[CommandTask] Suspending {self.params}, cancelling request {self.request_id}"
+                )
+                cancel_msg = ServiceMessage(
+                    service="baritone",
+                    method="cancel",
+                    request_id=str(uuid.uuid4()),
+                    correlation_id=self.correlation_id,
+                    params={"request_id": self.request_id, "reason": "preempted"},
+                )
+                ctx.bot_service.send_message(cancel_msg)
             self.transition_to(TaskInternalState.CANCELLED)
 
         elif self._internal_status in [TaskInternalState.SUSPENDING]:

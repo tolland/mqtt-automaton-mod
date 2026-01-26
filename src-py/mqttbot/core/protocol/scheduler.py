@@ -36,7 +36,7 @@ class Scheduler(Protocol):
         """Execute one scheduler tick."""
         ...
 
-    async def shutdown(self, ctx: Context) -> None:
+    def shutdown(self, ctx: Context) -> None:
         """Gracefully shutdown scheduler"""
         ...
 

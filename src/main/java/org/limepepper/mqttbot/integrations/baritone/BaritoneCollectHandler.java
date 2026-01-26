@@ -3,8 +3,10 @@ package org.limepepper.mqttbot.integrations.baritone;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import com.google.gson.*;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 import net.wurstclient.util.ItemUtils;
+import org.jetbrains.annotations.Nullable;
 import org.limepepper.mqttbot.MqttCore;
 import org.limepepper.mqttbot.action.Action;
 import org.limepepper.mqttbot.action.Feature;
@@ -13,8 +15,8 @@ import org.limepepper.mqttbot.action.RequiresFeatures;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.MqttReplyListener;
-import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.mqtt.MessageHandler;
+import org.limepepper.mqttbot.mqtt.ServiceMessage;
 import org.limepepper.mqttbot.util.MqttBotLogger;
 import org.limepepper.mqttbot.util.MsgUtils;
 
@@ -107,7 +109,18 @@ public final class BaritoneCollectHandler extends Action
         {
             items.add(item);
         }
-        baritone.getCollectProcess().collect(items, cmd.range);
+        
+        if(cmd.origin != null)
+        {
+            LOGGER.debug("Using custom origin for collect: {},{},{}",
+                cmd.origin.x, cmd.origin.y, cmd.origin.z);
+            baritone.getCollectProcess().collect(items, cmd.range,
+                new BlockPos(cmd.origin.x, cmd.origin.y, cmd.origin.z));
+            
+        }else
+        {
+            baritone.getCollectProcess().collect(items, cmd.range);
+        }
     }
     
     @Override
@@ -153,9 +166,6 @@ public final class BaritoneCollectHandler extends Action
         return Set.of(InventoryFullFeature.class);
     }
     
-    public record BaritoneCollectCommand(String block, int range)
-    {}
-    
     static
     {
         MESSAGE_PATTERNS.add(new MessagePattern(
@@ -188,6 +198,17 @@ public final class BaritoneCollectHandler extends Action
         }
     }
     
+    public record Coords(
+        int x,
+        int y,
+        int z)
+    {}
+    
+    public record BaritoneCollectCommand(String block,
+        int range,
+        @Nullable Coords origin)
+    {}
+    
     static class BaritoneCollectCommandDeserializer
         implements JsonDeserializer<BaritoneCollectCommand> {
         
@@ -217,7 +238,15 @@ public final class BaritoneCollectHandler extends Action
             }
             int range = coerceToInt(rangeEl);
             
-            return new BaritoneCollectCommand(block, range);
+            Coords origin = null;
+            JsonElement originEl = obj.get("origin");
+            if(originEl != null && !originEl.isJsonNull())
+            {
+                origin = context.deserialize(originEl, Coords.class);
+            }
+            
+            return new BaritoneCollectCommand(block, range, origin);
+            
         }
         
         private int coerceToInt(JsonElement element)

@@ -4,3 +4,4 @@ from .dwell_task import DwellTask
 from .goto_task import GotoTask
 from .oneshot_task import OneShotTask
 from .pattern_task import PatternTask
+from .collect_task import CollectTask

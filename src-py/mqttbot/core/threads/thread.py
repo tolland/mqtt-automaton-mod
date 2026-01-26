@@ -1,8 +1,7 @@
 from typing import Any
-from mqttbot.core.protocol.thread_status import ThreadInternalStatus
+
 from mqttbot.core.protocol.task_priority import ThreadPriority
 from mqttbot.core.protocol.task_provider import TaskProvider
-from mqttbot.core.threads.scheduler_context import Context
 from mqttbot.core.threads.thread_base import TaskThreadBase
 
 
@@ -25,15 +24,6 @@ class TaskThread(TaskThreadBase):
         self.on_cancel_provider = on_cancel_provider
         self.on_failed_provider = on_failed_provider
 
-    def start(self, ctx: Context) -> None:
-        """Start this thread - transition to RUNNING and load initial tasks"""
-        # Load initial tasks from main source
-        initial_tasks = self.main_source_provider.get_tasks(self)
-        for task in initial_tasks:
-            self.enqueue_task(task)
-        self._advance_to_next_task(ctx)
-        self.transition_to(ThreadInternalStatus.RUNNING)
-
     def __rich_repr__(self):
         yield "thread_id", self.thread_id
         yield "correlation_id", self.correlation_id
@@ -44,6 +34,7 @@ class TaskThread(TaskThreadBase):
         if self.current_task:
             yield "current_task", self.current_task
         yield "task_queue_len", len(self.task_queue)
+        yield "done_queue_len", len(self.done_tasks)
         yield "main_source_provider", self.main_source_provider
         yield "on_suspend_provider", self.on_suspend_provider
         yield "on_resume_provider", self.on_resume_provider

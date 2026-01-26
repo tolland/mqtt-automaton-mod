@@ -12,7 +12,8 @@ from mqttbot.core.threads.thread import TaskThread
 from mqttbot.core.threads.dynamic_handler import DynamicHandler
 from mqttbot.core.events.event_manager import EventManager
 from mqttbot.utils.collections import first_or_default
-from rich import print as rprint
+from rich import print as rprint, inspect
+
 
 @pytest.mark.asyncio
 async def test_preemption_with_metadata(
@@ -124,10 +125,17 @@ async def test_preemption_with_metadata(
     rprint(f"[DEBUG_LOG] Current thread BEFORE preemption step: {mock_scheduler.current_thread.thread_id}")
     rprint(f"[DEBUG_LOG] Ready threads: {[t.thread_id for t in mock_scheduler.ready_threads]}")
     await mock_scheduler.step(ctx)
+    await mock_scheduler.step(ctx)
+    await mock_scheduler.step(ctx)
+    await mock_scheduler.step(ctx)
+    await mock_scheduler.step(ctx)
+    await mock_scheduler.step(ctx)
+    await mock_scheduler.step(ctx)
     rprint(mock_scheduler)
 
     # After preemption, the current thread should be the event thread
     rprint(f"[DEBUG_LOG] Current thread AFTER preemption step: {mock_scheduler.current_thread.thread_id if mock_scheduler.current_thread else 'None'}")
+    inspect(mock_scheduler.current_thread)
     assert mock_scheduler.current_thread.thread_id == "inventory_full_event"
     rprint(f"[DEBUG_LOG] Preempted! Current thread: {mock_scheduler.current_thread.thread_id}")
 

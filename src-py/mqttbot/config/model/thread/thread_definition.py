@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, List
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from mqttbot.config.model.metadata import WithMetadata
 from mqttbot.config.model.pattern.waypoint import Waypoint
@@ -11,7 +11,10 @@ from mqttbot.core.protocol.task_priority import ThreadPriority
 
 
 class ThreadDefinition(WithMetadata):
-    model_config = ConfigDict(use_enum_values=False, populate_by_name=True)
+    model_config = ConfigDict(
+        use_enum_values=False,
+        populate_by_name=True,
+    )
     thread_id: str | None = Field(default=None)
     priority: ThreadPriority = ThreadPriority.NORMAL
 

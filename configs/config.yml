@@ -73,13 +73,11 @@ pattern_config:
           method: sendCommand
           params:
             message: "give @p minecraft:sugar_cane 3000"
-        - type: command
-          service: baritone
-          method: collect
+        - type: collect
           params:
             block: minecraft:sugar_cane
             range: "5"
-        - "~ ~ ~-5"
+            origin: "~ ~ ~-5"
 
     - pattern_id: cane_row_02
       steps:

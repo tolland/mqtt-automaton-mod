@@ -16,6 +16,7 @@ from mqttbot.utils.tracing_tools import trace, trace_task_state
 # importlib.import_module("mqttbot.core.tasks")
 # prevent intellij from removing this import
 inspect = importlib.import_module("rich").inspect
+rprint = importlib.import_module("rich").print
 
 
 def task(name: str | None = None):
@@ -33,7 +34,13 @@ class TaskFactory:
         data = dict(data)
         task_type = data.pop("type")
         task_cls = TaskRegistry.get(task_type)
-        return task_cls(**data)
+        try:
+            return task_cls(**data)
+        except KeyError as e:
+            rprint(data)
+            raise TypeError(
+                f"Error creating task of type '{task_type}' with data {data}: {e}"
+            ) from e
 
 
 class TaskRegistry:

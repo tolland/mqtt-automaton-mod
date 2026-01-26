@@ -3,12 +3,13 @@ from typing import Iterator
 
 import mqttbot.core.tasks as _tasks  # noqa: F401
 from mqttbot.config.model.pattern.pattern_config import PatternsConfig
+from mqttbot.config.model.step.collect_step import CollectStep
 from mqttbot.config.model.step.pattern_step import PatternStep
 from mqttbot.config.model.step.service_step import ServiceStep
 from mqttbot.config.model.step.steps_discriminator import Step
-from mqttbot.core.tasks.task_base import TaskFactory
 from mqttbot.core.protocol.task import Task
 from mqttbot.core.protocol.task_compiler_protocol import TaskCompilerProtocol
+from mqttbot.core.tasks.task_base import TaskFactory
 
 inspect = importlib.import_module("rich").inspect
 
@@ -31,7 +32,13 @@ class TaskCompiler(TaskCompilerProtocol):
         if pattern is None:
             raise ValueError(f"Pattern '{p_name}' not found in library")
 
+        for step in pattern.hooks.on_pattern_start.steps:
+            yield from self.compile_step(step)
+
         for step in pattern.steps:
+            yield from self.compile_step(step)
+
+        for step in pattern.hooks.on_pattern_end.steps:
             yield from self.compile_step(step)
 
     def compile_step(self, step_config: "Step") -> Iterator[Task]:
@@ -53,6 +60,22 @@ class TaskCompiler(TaskCompilerProtocol):
                                 "x": coords[0],
                                 "y": coords[1],
                                 "z": coords[2],
+                            }
+                        }
+                    }
+                )
+            elif isinstance(step_config, CollectStep) and step_config.type == "collect":
+                coords = step_config.params.origin.resolve(self.current_pos)
+                self.current_pos = coords
+                config_def.update(
+                    {
+                        "params": {
+                            "block": step_config.params.block,
+                            "range": step_config.params.range,
+                            "origin": {
+                                "x": int(coords[0]),
+                                "y": int(coords[1]),
+                                "z": int(coords[2]),
                             }
                         }
                     }

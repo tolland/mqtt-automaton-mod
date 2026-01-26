@@ -8,6 +8,7 @@ from pydantic.config import ConfigDict
 from mqttbot.config.model.metadata import WithMetadata
 from mqttbot.config.model.step.pattern_step import PatternStep
 from mqttbot.config.model.step.steps_discriminator import Step
+from mqttbot.config.model.thread.hooks_collection import HooksCollection
 
 
 class Pattern(WithMetadata):
@@ -16,6 +17,7 @@ class Pattern(WithMetadata):
     pattern_id: str | None = None
     steps: list[Step]
     # Hooks
+    hooks: HooksCollection = Field(default_factory=HooksCollection)
     on_pattern_start_tasks: list[Step] = Field(default_factory=list, alias="on_pattern_start")
     on_pattern_end_tasks: list[Step] = Field(default_factory=list, alias="on_pattern_end")
 
@@ -29,3 +31,8 @@ class Pattern(WithMetadata):
             else:
                 normalized.append(item)
         return normalized
+
+    # def __rich_repr__(self) -> "rich.repr.Result":
+    #     yield "pattern_id", self.pattern_id
+    #     yield "steps", f"[{len(self.steps)} steps]"
+    #     yield "hooks", self.hooks

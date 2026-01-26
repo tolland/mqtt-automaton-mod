@@ -1,7 +1,7 @@
 import uuid
 from collections import deque
 from functools import total_ordering
-from typing import Any
+from typing import Any, Optional
 
 from loguru import logger
 from rich import inspect
@@ -51,6 +51,8 @@ class TaskThreadBase(ThreadInterface):
         self.task_queue: deque[Task] = deque()
         # store tasks for later execution
         self.wait_queue: deque[Task] = deque()
+        # store done for inspection
+        self.done_tasks: list[Task] = []
 
     def enqueue_task(self, task: Task) -> None:
         """Add task to this thread's queue and inject correlation_id"""
@@ -123,8 +125,7 @@ class TaskThreadBase(ThreadInterface):
                 self._advance_to_next_task(ctx)
                 return ThreadStatus.RUNNING
 
-            # Currently if we tey to step anything else, its a failure
-            # @TODO move this to proper state machine
+            # Currently if we try to step anything else, its a failure
             raise RuntimeError(f"Unexpected task status {current_task_status} in thread {self.thread_id}")
         raise RuntimeError(f"Thread {self.thread_id} is not active but step was called.")
 
@@ -132,9 +133,20 @@ class TaskThreadBase(ThreadInterface):
     def status(self) -> ThreadStatus:
         """Public status for the parent Thread/Scheduler."""
         return self._internal_status.external
+    @property
+
+    def status_internal(self) -> ThreadInternalStatus:
+        """Private status for the parent Thread/Scheduler.
+        Only use in testing and debugging.
+        """
+        return self._internal_status
 
     def start(self, ctx: Context) -> None:
-        """Begin execution of this thread"""
+        """Start this thread - transition to RUNNING and load initial tasks"""
+        # Load initial tasks from main source
+        initial_tasks = self.main_source_provider.get_tasks(self)
+        for task in initial_tasks:
+            self.enqueue_task(task)
         self._advance_to_next_task(ctx)
         self.transition_to(ThreadInternalStatus.RUNNING)
 
@@ -210,6 +222,7 @@ class TaskThreadBase(ThreadInterface):
     def _advance_to_next_task(self, ctx: Context) -> None:
         """Move to next task in queue"""
         if self.task_queue:
+            self.done_tasks.append(self.current_task) if self.current_task else None
             self.current_task = self.task_queue.popleft()
             rprint(self.current_task)
             self.current_task.enter(ctx)
@@ -227,6 +240,18 @@ class TaskThreadBase(ThreadInterface):
         # Use the transition map logic here
         self._internal_status = self._internal_status.transition_to(next_state)
 
+    def get(self, request_id: str) -> Optional[Task]:
+        """Get a Task by its ID from any queue."""
+        for task in (
+            [self.current_task] if self.current_task else [],
+            self.task_queue,
+            self.wait_queue,
+            self.done_tasks,
+        ):
+            for t in task:
+                if t.request_id == request_id:
+                    return t
+        return None
 
     def __lt__(self, other: "TaskThreadBase") -> bool:
         if self.priority.value != other.priority.value:
@@ -264,6 +289,7 @@ class TaskThreadBase(ThreadInterface):
         yield "uninterruptible", self.uninterruptible
         yield "current_task", type(self.current_task).__name__ if self.current_task else None
         yield "task_queue_len", len(self.task_queue)
+        yield "done_queue_len", len(self.done_tasks)
         yield "on_suspend_provider", self.on_suspend
         yield "on_resume_provider", self.on_resume
         yield "on_cancel_provider", self.on_cancel

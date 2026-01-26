@@ -232,7 +232,7 @@ def sample_event_thread(
     sample_config,
 ) -> "TaskThread":
 
-    pydantic_patterns = sample_config.pattern_config
+    patterns_configs = sample_config.pattern_config
     thread_configs = sample_config.thread_config
     event_configs = sample_config.event_handlers
 
@@ -240,7 +240,7 @@ def sample_event_thread(
 
     handler_config = event_manager.get_handler_config("inventory", "inventory_full")
 
-    task_compiler = TaskCompiler(pydantic_patterns)
+    task_compiler = TaskCompiler(patterns_configs)
     event_thread = TaskThread(
         thread_id="event-thread-1",
         main_source_provider=DynamicHandler(handler_config.steps, task_compiler),

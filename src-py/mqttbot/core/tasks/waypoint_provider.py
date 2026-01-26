@@ -1,24 +1,31 @@
 from typing import Iterator
 
 from mqttbot.config.model.pattern.waypoint import Waypoint
+from mqttbot.config.model.thread.thread_definition import ThreadDefinition
 from mqttbot.core.protocol.task import Task
 from mqttbot.core.protocol.task_compiler_protocol import TaskCompilerProtocol
 from mqttbot.core.protocol.task_provider import TaskProvider
 from mqttbot.core.protocol.thread import ThreadInterface
+from mqttbot.core.tasks.concrete import GotoTask
 
 
 class WaypointTaskSource(TaskProvider):
+    """
+    Waypoint Tasks are an initial Goto x,y,z followed by a series of steps
+    which may include Patterns which are relative coordinates incrementally
+    calculated from the last position.
+    """
 
-    def __init__(self, waypoints: list[Waypoint], compiler: "TaskCompilerProtocol"):
-        self.waypoints = waypoints
+    def __init__(self, definition: ThreadDefinition, compiler: "TaskCompilerProtocol"):
+        self.definition = definition
         self.index = 0
         self.compiler = compiler
 
     def get_tasks(self, thread: "ThreadInterface") -> Iterator[Task]:
-        if self.index >= len(self.waypoints):
+        if self.index >= len(self.definition.waypoints):
             return []
 
-        wp = self.waypoints[self.index]
+        wp = self.definition.waypoints[self.index]
         self.index += 1
 
         # Expand the waypoint into a batch of Goto and Pattern tasks
@@ -35,8 +42,17 @@ class WaypointTaskSource(TaskProvider):
         self,
     ) -> Iterator[Task]:
 
-        for wp in self.waypoints:
+        for step in self.definition.hooks.on_waypoints_start.steps:
+            yield from self.compiler.compile_step(step)
+
+        for wp in self.definition.waypoints:
+
+            for step in self.definition.hooks.on_waypoint_start.steps:
+                yield from self.compiler.compile_step(step)
+
             wp_pos = (wp.x, wp.y, wp.z)
+
+            yield GotoTask.create(*wp_pos)
 
             # Expand and add pattern tasks
             pattern_names = wp.patterns
@@ -44,6 +60,13 @@ class WaypointTaskSource(TaskProvider):
                 for task in self.compiler.compile_pattern(p_name, wp_pos):
                     wp_pos = self.compiler.current_pos
                     yield task
+
+            for step in self.definition.hooks.on_waypoint_end.steps:
+                yield from self.compiler.compile_step(step)
+
+        for step in self.definition.hooks.on_waypoints_end.steps:
+            yield from self.compiler.compile_step(step)
+
         return
 
         # for _step in pt.on_waypoints_end_steps:
@@ -51,5 +74,5 @@ class WaypointTaskSource(TaskProvider):
         #     pt.enqueue_task(buff)
 
     def __rich_repr__(self):
-        yield "waypoints_count", len(self.waypoints)
+        yield "waypoints_count", len(self.definition.waypoints)
         yield "index", self.index

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Literal, Any
 
-import rich
-from rich.repr import rich_repr
-
+from mqttbot.config.model.pattern.coords_axis import CoordAxis
+from mqttbot.config.model.pattern.coords import Coords
 from mqttbot.config.model.step.step_base import StepBase
 
 
@@ -21,7 +19,7 @@ class PatternStep(StepBase):
         x = CoordAxis.create(tokens[0])
         y = CoordAxis.create(tokens[1])
         z = CoordAxis.create(tokens[2])
-        return cls(type="pattern", coords=Coords(x, y, z), metadata={})
+        return cls(type="pattern", coords=Coords(x=x, y=y, z=z), metadata={})
 
     @property
     def relative_coords(self) -> tuple[float, float, float]:
@@ -45,46 +43,3 @@ class PatternStep(StepBase):
             "metadata": self.metadata.model_dump() if self.metadata else {},
         }
         return data
-
-
-@dataclass(frozen=True)
-class CoordAxis:
-    frame: Literal["absolute", "relative"]
-    value: float = 0
-
-    @staticmethod
-    def create(token: str) -> "CoordAxis":
-        if token.startswith("~"):
-            offset = int(token[1:]) if token[1:] else 0
-            return CoordAxis("relative", offset)
-        return CoordAxis("absolute", int(token))
-
-    def __rich_repr__(self) -> rich.repr.Result:
-        yield "frame", self.frame
-        yield "value", self.value
-
-
-@dataclass(frozen=True)
-class Coords:
-    x: CoordAxis
-    y: CoordAxis
-    z: CoordAxis
-
-    def resolve(self, origin: tuple[float, float, float]) -> tuple[float, float, float]:
-        ox, oy, oz = origin
-
-        def axis(a: CoordAxis, o: float) -> float:
-            if a.frame == "absolute":
-                return a.value
-            return o + a.value
-
-        return (
-            axis(self.x, ox),
-            axis(self.y, oy),
-            axis(self.z, oz),
-        )
-
-    def __rich_repr__(self) -> rich.repr.Result:
-        yield "x", f"{self.x.frame[0:3]}[{self.x.value}]"
-        yield "y", f"{self.y.frame[0:3]}[{self.y.value}]"
-        yield "z", f"{self.z.frame[0:3]}[{self.z.value}]"

@@ -15,7 +15,7 @@ class ThreadFactory:
         definition: ThreadDefinition,
     ) -> ThreadInterface:
         # 1. Wrap the main workload into a Source
-        main_source = WaypointTaskSource(definition.waypoints, self.compiler)
+        main_source = WaypointTaskSource(definition, self.compiler)
 
         # 2. Wrap the event steps into DynamicHandlers (Providers)
         # We 'bake' the compiler into them here

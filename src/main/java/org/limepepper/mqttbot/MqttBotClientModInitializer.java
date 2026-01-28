@@ -3,6 +3,7 @@ package org.limepepper.mqttbot;
 import net.fabricmc.api.ClientModInitializer;
 import org.limepepper.mqttbot.integrations.command.SendCommandHandler;
 import org.limepepper.mqttbot.integrations.inventory.InventoryQueryHandler;
+import org.limepepper.mqttbot.integrations.scan.ScanHandler;
 import org.limepepper.mqttbot.integrations.sleep.SleepMessageHandler;
 import org.limepepper.mqttbot.integrations.sleep.SleepUtil;
 import org.limepepper.mqttbot.integrations.warp.WarpMessageHandler;
@@ -32,6 +33,7 @@ public class MqttBotClientModInitializer implements ClientModInitializer {
         WarpMessageHandler.init();
         SendCommandHandler.init();
         InventoryQueryHandler.init();
+        ScanHandler.init();
         
         if(net.fabricmc.loader.api.FabricLoader.getInstance()
             .isModLoaded("baritone"))

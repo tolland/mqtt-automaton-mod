@@ -19,6 +19,11 @@ class ScanResult:
     center: tuple[float, float, float]
     radius: int
 
+    # World identity (for cache organization)
+    server: str  # Server address or world name
+    dimension: str  # e.g., "minecraft:overworld", "minecraft:the_nether"
+    seed: int = 0  # World seed for disambiguation
+
     entities: list[EntityData] = field(default_factory=list)
     blocks: list[BlockData] = field(default_factory=list)
 
@@ -36,6 +41,9 @@ class ScanResult:
             timestamp=data["timestamp"],
             center=tuple(data["center"]),
             radius=data["radius"],
+            server=data.get("server", "unknown"),
+            dimension=data.get("dimension", "minecraft:overworld"),
+            seed=data.get("seed", 0),
             entities=entities,
             blocks=blocks,
             entity_count=data.get("entity_count", len(entities)),
@@ -49,6 +57,9 @@ class ScanResult:
             "timestamp": self.timestamp,
             "center": list(self.center),
             "radius": self.radius,
+            "server": self.server,
+            "dimension": self.dimension,
+            "seed": self.seed,
             "entities": [e.to_dict() for e in self.entities],
             "blocks": [b.to_dict() for b in self.blocks],
             "entity_count": self.entity_count,

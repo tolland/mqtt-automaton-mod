@@ -101,6 +101,9 @@ public final class ScanHandler extends Action implements MqttMessageListener {
         result.addProperty("scan_type", "area_scan");
         result.addProperty("timestamp", System.currentTimeMillis());
 
+        // Add world identity
+        addWorldIdentity(result);
+
         // Add center position
         JsonArray centerPos = new JsonArray();
         centerPos.add(center.x);
@@ -142,6 +145,9 @@ public final class ScanHandler extends Action implements MqttMessageListener {
         JsonObject result = new JsonObject();
         result.addProperty("scan_type", "container_scan");
         result.addProperty("timestamp", System.currentTimeMillis());
+
+        // Add world identity
+        addWorldIdentity(result);
 
         JsonArray centerPos = new JsonArray();
         centerPos.add(center.x);
@@ -185,6 +191,9 @@ public final class ScanHandler extends Action implements MqttMessageListener {
         JsonObject result = new JsonObject();
         result.addProperty("scan_type", "entity_scan");
         result.addProperty("timestamp", System.currentTimeMillis());
+
+        // Add world identity
+        addWorldIdentity(result);
 
         JsonArray centerPos = new JsonArray();
         centerPos.add(center.x);
@@ -445,6 +454,41 @@ public final class ScanHandler extends Action implements MqttMessageListener {
     private boolean isWithinRadius(Vec3 pos, Vec3 center, double radius)
     {
         return pos.distanceTo(center) <= radius;
+    }
+
+    /**
+     * Add world identity information to response.
+     * Includes server address, dimension, and optionally seed.
+     */
+    private void addWorldIdentity(JsonObject result)
+    {
+        // Get dimension
+        String dimension = MC.level.dimension().location().toString();
+        result.addProperty("dimension", dimension);
+
+        // Get server address or world name
+        String serverAddress;
+        if (MC.isLocalServer()) {
+            // Singleplayer - use world name if available
+            if (MC.getSingleplayerServer() != null && MC.getSingleplayerServer().getWorldData() != null) {
+                serverAddress = MC.getSingleplayerServer().getWorldData().getLevelName();
+            } else {
+                serverAddress = "local";
+            }
+        } else {
+            // Multiplayer - use server address
+            if (MC.getCurrentServer() != null) {
+                serverAddress = MC.getCurrentServer().ip;
+            } else {
+                serverAddress = "unknown";
+            }
+        }
+        result.addProperty("server", serverAddress);
+
+        // Add seed if available (for cache organization like Baritone)
+        // Note: Seed may not always be available to client
+        long seed = MC.level.getBiomeManager().biomeZoomSeed;
+        result.addProperty("seed", seed);
     }
 
     /**

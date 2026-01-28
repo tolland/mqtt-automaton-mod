@@ -1,7 +1,7 @@
 package org.limepepper.mqttbot.presence;
 
 import com.google.gson.JsonObject;
-import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -31,10 +31,10 @@ public class DevicePresence {
     
     private final String deviceId;
     private final String baseTopic;
-    private final MqttClient mqttClient;
+    private final IMqttAsyncClient mqttClient;
     
-    private String availabilityTopic;
-    private String configTopic;
+    private final String availabilityTopic;
+    private final String configTopic;
     private String readinessTopic;
     private String stateTopic;
     private String heartbeatTopic;
@@ -50,7 +50,7 @@ public class DevicePresence {
      * @param mqttClient
      *            Connected MQTT client
      */
-    private DevicePresence(String deviceId, MqttClient mqttClient)
+    private DevicePresence(String deviceId, IMqttAsyncClient mqttClient)
     {
         this.deviceId = deviceId;
         this.baseTopic = "mqttbot/" + deviceId;
@@ -63,8 +63,9 @@ public class DevicePresence {
         this.heartbeatTopic = baseTopic + "/heartbeat";
     }
     
-    public static DevicePresence createInstance(String deviceId,
-        MqttClient mqttClient)
+    public static DevicePresence createInstance(
+        String deviceId,
+        IMqttAsyncClient mqttClient)
     {
         if(instances.containsKey(deviceId))
         {

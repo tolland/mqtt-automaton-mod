@@ -99,10 +99,7 @@ class CollectTask(TaskBase):
     def clone(self) -> "Task":
         """Create a copy of this task"""
         new_task = CollectTask(
-            service=self.service,
-            method=self.method,
             params=self.params,
-            service_config=self.service_config,
             metadata=self.metadata,
         )
         return new_task

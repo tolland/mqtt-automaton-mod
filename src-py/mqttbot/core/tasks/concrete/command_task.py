@@ -36,6 +36,7 @@ class CommandTask(TaskBase):
 
     def _step(self, ctx: Context) -> TaskStatus:
 
+        logger.info(f"[CommandTask] Sending {self.service}.{self.method} with {self.params}")
         if self._internal_status == TaskInternalState.READY:
             message = ServiceMessage(
                 service=self.service,

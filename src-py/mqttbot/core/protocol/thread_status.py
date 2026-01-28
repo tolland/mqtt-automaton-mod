@@ -100,6 +100,6 @@ class ThreadInternalStatus(Enum):
     def transition_to(self, next_state: "ThreadInternalStatus") -> "ThreadInternalStatus":
         if not self.can_transition_to(next_state):
             raise IllegalStateTransition(
-                f"Invalid transition: {self.name} -> {next_state.name}"
+                f"Invalid thread transition: {self.name} -> {next_state.name}"
             )
         return next_state

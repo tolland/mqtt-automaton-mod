@@ -124,5 +124,5 @@ class TaskInternalState(Enum):
 
     def transition_to(self, next_state: "TaskInternalState") -> "TaskInternalState":
         if not self.can_transition_to(next_state):
-            raise IllegalStateTransition(f"Invalid transition: {self.name} -> {next_state.name}")
+            raise IllegalStateTransition(f"Invalid task transition: {self.name} -> {next_state.name}")
         return next_state

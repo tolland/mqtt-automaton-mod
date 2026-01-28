@@ -11,10 +11,7 @@ import org.limepepper.mqttbot.action.InventoryFullFeature;
 import org.limepepper.mqttbot.actions.*;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.*;
-import org.limepepper.mqttbot.integrations.baritone.BaritoneCancel;
-import org.limepepper.mqttbot.integrations.baritone.BaritoneCollectHandler;
-import org.limepepper.mqttbot.integrations.baritone.BaritoneGotoHandler;
-import org.limepepper.mqttbot.integrations.baritone.BaritoneStateHandler;
+import org.limepepper.mqttbot.integrations.baritone.*;
 import org.limepepper.mqttbot.integrations.client.BotStateHandler;
 import org.limepepper.mqttbot.mqtt.MqttClientInternal;
 import org.limepepper.mqttbot.util.MqttBotLogger;
@@ -59,7 +56,8 @@ public enum MqttCore
                 // each of these is a command type from the client
                 BaritoneGotoHandler.create(), BaritoneCollectHandler.create(),
                 BaritoneCancel.create(), BaritoneStateHandler.create(),
-                BotStateHandler.create()));
+                BotStateHandler.create(),
+                BaritoneScanHandler.create()));
         
         // PlayerJoinCallback.EVENT.register(new PlayerJoinHandler());
         

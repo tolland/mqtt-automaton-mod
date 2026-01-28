@@ -1,6 +1,5 @@
 package org.limepepper.mqttbot.mqtt;
 
-import net.minecraft.client.Minecraft;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.limepepper.mqttbot.action.Action;
@@ -26,7 +25,7 @@ public class MqttClientInternal extends Action
     private static final MqttBotLogger LOGGER =
         new MqttBotLogger(MqttClientInternal.class);
     
-    private MqttClient mqttClient;
+    private IMqttAsyncClient mqttClient;
     int qos = 0;
     private DevicePresence presence;
     
@@ -47,22 +46,15 @@ public class MqttClientInternal extends Action
         }
     }
     
-    public static final Minecraft MC = Minecraft.getInstance();
-    
     void init() throws MqttException
     {
         LOGGER.info("Initializing MQTT client");
-        LOGGER.debugMqtt("MqttClientInternal.init() called");
         String broker = config.getMqttBroker();
         qos = config.getMqttQos();
         MemoryPersistence persistence = new MemoryPersistence();
         
-        LOGGER.debugMqtt("Creating MQTT client for user: {}",
-            CORE.getPlayerName());
-        
-        mqttClient = new MqttClient(broker, CORE.getPlayerName(), persistence);
-        
-        LOGGER.info("MQTT ClientId: {}", CORE.getPlayerName());
+        mqttClient =
+            new MqttAsyncClient(broker, CORE.getPlayerName(), persistence);
         
         presence =
             DevicePresence.createInstance(CORE.getPlayerName(), mqttClient);
@@ -85,9 +77,6 @@ public class MqttClientInternal extends Action
                         topic);
                     return;
                 }
-                LOGGER.debugMqtt(
-                    "MQTT message received on topic {}: {} - isRetained: {}",
-                    topic, message.toString(), message.isRetained());
                 handleMqttMessage(topic, message.toString());
             }
             
@@ -97,17 +86,22 @@ public class MqttClientInternal extends Action
             }
         });
         
-        mqttClient.connect(connOpts);
+        IMqttToken connectToken = mqttClient.connect(connOpts);
+        LOGGER.info("Connected to MQTT broker: {}", broker);
+        connectToken.waitForCompletion();
+        
         LOGGER.info("Connected to MQTT broker: {}", broker);
         
         // all command messages
-        mqttClient.subscribe("mqttbot/*/command");
+        IMqttToken subToken = mqttClient.subscribe("mqttbot/*/command", qos);
+        subToken.waitForCompletion();
         // commands for this specific bot
         String clientTopic =
             String.format("mqttbot/%s/command", CORE.getPlayerName());
         LOGGER.info("Subscribing to MQTT topics: mqttbot/bots/command, {}",
             clientTopic);
-        mqttClient.subscribe(clientTopic);
+        IMqttToken subClientToken = mqttClient.subscribe(clientTopic, qos);
+        subClientToken.waitForCompletion();
         
         LOGGER.debugMqtt(
             "Registering MqttClientInternal as MqttReplyListener");
@@ -153,7 +147,9 @@ public class MqttClientInternal extends Action
     {
         // Gracefully announce offline before disconnecting
         presence.announceOffline();
-        mqttClient.disconnect();
+        IMqttToken disconnectToken = mqttClient.disconnect();
+        disconnectToken.waitForCompletion(5000); // Wait on disconnect (cleanup)
+        mqttClient.close();
     }
     
     /**
@@ -205,18 +201,15 @@ public class MqttClientInternal extends Action
                 structuredMessage));
         }else
         {
-            // Fallback: try to handle as legacy format based on topic
-            LOGGER.warn(
-                "Received invalid/legacy message format: '{}' on topic: {}",
-                rawMessage, topic);
             throw new IllegalArgumentException(
-                "Invalid or unsupported MQTT message format");
+                String.format(
+                    "Invalid or unsupported MQTT message format: '%s' on topic: '%s'",
+                    rawMessage, topic));
         }
     }
     
     public void publish(String topic, String message)
     {
-        LOGGER.debugMqtt("Publishing MQTT message to topic: {}", topic);
         
         try
         {

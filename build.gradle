@@ -182,17 +182,6 @@ sourceSets {
     }
 }
 
-fabricApi {
-    configureTests {
-        createSourceSet = true
-        modId = "mqttbot-test"
-        enableGameTests = false
-        enableClientGameTests = true
-        eula = true
-        username = mcUsername as String
-    }
-}
-
 tasks.named("compileTestJava") {
     dependsOn("compileGametestJava")
 }
@@ -203,6 +192,17 @@ tasks.register("generateModJson", FabricModJsonV1Task) {
     json {
         modId = "examplemod"
         version = "1.0.0"
+    }
+}
+
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "mqttbot-test"
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+        username = mcUsername as String
     }
 }
 
@@ -233,16 +233,7 @@ loom {
         clientWithMods {
             inherit client
         }
-        clientWithMods2 {
-            inherit client
-        }
         clientGameTest {
-            source sourceSets.gametest
-            vmArgs.add("-Dfabric.client.gametest")
-            vmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")
-        }
-        clientGameTest2 {
-            inherit clientGameTest
             source sourceSets.gametest
             vmArgs.add("-Dfabric.client.gametest")
             vmArgs.add("-Dfabric.client.gametest.disableNetworkSynchronizer=true")

@@ -1,6 +1,5 @@
 package org.limepepper.mqttbot.util;
 
-import com.google.common.collect.ImmutableSet;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
@@ -10,16 +9,17 @@ import java.util.Set;
  * Predefined lists of blocks for various purposes.
  * Used for efficient filtering during world scans and interactions.
  */
-public enum BlockLists {
+public enum BlockLists
+{
     ;
-
+    
     public static String[] getInteractiveBlocks()
     {
         return new String[]{"minecraft:white_bed",
-
+        
         };
     }
-
+    
     public static String[] getAllInteractiveBlocks()
     {
         return new String[]{"minecraft:lectern",
@@ -32,45 +32,45 @@ public enum BlockLists {
             // "minecraft:ender_chest",
             // "minecraft:loom",
             "minecraft:stone_button[face=floor]",
-
+            
             // Sound/interaction blocks
             "minecraft:note_block", "minecraft:bell", "minecraft:jukebox",
-
+            
             // Redstone/display blocks
             "minecraft:comparator", "minecraft:repeater",
             "minecraft:tripwire_hook", "minecraft:observer",
-
+            
             // Amethyst & crystal variants
             // these appear to be farmable
             // "minecraft:amethyst_cluster",
             // "minecraft:large_amethyst_bud",
-
+            
             // Sculk variants
             "minecraft:sculk_sensor", "minecraft:calibrated_sculk_sensor",
             "minecraft:sculk_shrieker",
-
+            
             // Cauldron (can be filled/emptied)
             "minecraft:cauldron",
-
+            
             // Cartography table, smithing table (like lectern)
             "minecraft:cartography_table", "minecraft:smithing_table",
-
+            
             // Barrel (interactive storage)
             "minecraft:barrel",
-
+            
             // Decorated pot (can interact)
             "minecraft:decorated_pot",
-
+            
             // Campfire (can cook, add logs)
             "minecraft:campfire",
-
+            
             // Grindstone (interactive)
             "minecraft:grindstone",
-
+            
             // Composters (can add items)
             "minecraft:composter"};
     }
-
+    
     /**
      * All container blocks that can store items.
      * Used for chest sorting and inventory management.
@@ -104,10 +104,10 @@ public enum BlockLists {
         Blocks.BLAST_FURNACE,
         Blocks.SMOKER,
         Blocks.BREWING_STAND,
-        Blocks.CRAFTING_TABLE,  // Has no inventory but worth tracking
-        Blocks.CRAFTER  // 1.21+ block
+        Blocks.CRAFTING_TABLE, // Has no inventory but worth tracking
+        Blocks.CRAFTER // 1.21+ block
     );
-
+    
     /**
      * Sign blocks for reading labels.
      */
@@ -133,9 +133,8 @@ public enum BlockLists {
         Blocks.CHERRY_WALL_SIGN,
         Blocks.BAMBOO_WALL_SIGN,
         Blocks.CRIMSON_WALL_SIGN,
-        Blocks.WARPED_WALL_SIGN
-    );
-
+        Blocks.WARPED_WALL_SIGN);
+    
     /**
      * Crop blocks for farming automation.
      */
@@ -149,6 +148,5 @@ public enum BlockLists {
         Blocks.BAMBOO,
         Blocks.CACTUS,
         Blocks.SWEET_BERRY_BUSH,
-        Blocks.COCOA
-    );
+        Blocks.COCOA);
 }

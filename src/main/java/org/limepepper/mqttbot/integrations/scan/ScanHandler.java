@@ -6,9 +6,11 @@ import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -29,7 +31,7 @@ import java.util.Set;
 /**
  * Handles world scanning requests - dumps raw entity and block data
  * for interpretation by pybot.
- *
+ * <p>
  * Scans entities (item frames, etc.) and blocks (chests, signs, etc.)
  * within a specified radius and returns raw serialized data.
  */
@@ -495,16 +497,17 @@ public final class ScanHandler extends Action implements MqttMessageListener {
     private void addWorldIdentity(JsonObject result)
     {
         // Get dimension
-        String dimension = MC.level.dimension().location().toString();
-        result.addProperty("dimension", dimension);
+        // String dimension = MC.level.dimension().location().toString();
+        assert MC.level != null;
+        final ResourceKey<Level> dimensionId = MC.level.dimension();
+        result.addProperty("dimension", String.valueOf(dimensionId));
         
         // Get server address or world name
         String serverAddress;
         if(MC.isLocalServer())
         {
             // Singleplayer - use world name if available
-            if(MC.getSingleplayerServer() != null
-                && MC.getSingleplayerServer().getWorldData() != null)
+            if(MC.getSingleplayerServer() != null)
             {
                 serverAddress =
                     MC.getSingleplayerServer().getWorldData().getLevelName();

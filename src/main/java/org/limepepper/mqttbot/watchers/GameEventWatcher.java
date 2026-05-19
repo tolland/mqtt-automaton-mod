@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.minecraft.client.Minecraft;
 import org.limepepper.mqttbot.event.EventManager;
 import org.limepepper.mqttbot.events.ChatMessageListener;
 import org.limepepper.mqttbot.events.ClientDisconnectListener;
@@ -18,13 +19,15 @@ public class GameEventWatcher {
     
     private static final int CHECK_INTERVAL = 100;
     private static int tickCounter = 0;
+    private static final Minecraft MC = Minecraft.getInstance();
     
     public static void init()
     {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             String playerName = client.getUser().getName();
+            assert MC.level != null;
             String world = client.level != null
-                ? client.level.dimension().location().toString() : "unknown";
+                ? String.valueOf(MC.level.dimension()) : "unknown";
             EventManager
                 .fire(
                     new ClientJoinListener.ClientJoinEvent(playerName, world));
@@ -40,11 +43,15 @@ public class GameEventWatcher {
         ClientSendMessageEvents.CHAT.register((message -> EventManager
             .fire(new ChatMessageListener.ChatMessageEvent(message))));
         
-        ClientReceiveMessageEvents.CHAT.register((message, signedMessage,
-            sender, params, receptionTimestamp) -> LOGGER.info(
-                "Received chat message sent by {} at time {}: {}",
-                sender == null ? "null" : sender.getName(),
-                receptionTimestamp.toEpochMilli(), message.getString()));
+        ClientReceiveMessageEvents.CHAT.register(
+            (message,
+                signedMessage,
+                sender,
+                params,
+                receptionTimestamp) -> LOGGER.info(
+                    "Received chat message sent by {} at time {}: {}",
+                    sender == null ? "null" : sender.name(),
+                    receptionTimestamp.toEpochMilli(), message.getString()));
         
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             
@@ -62,7 +69,8 @@ public class GameEventWatcher {
         
         ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE
             .register((client, world) -> {
-                LOGGER.info("World loaded: {}", world.dimension().location());
+                LOGGER.info("World loaded: {}",
+                    String.valueOf(MC.level.dimension()));
             });
     }
 }

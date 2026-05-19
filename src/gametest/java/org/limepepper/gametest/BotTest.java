@@ -10,8 +10,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.fabricmc.fabric.api.client.gametest.v1.world.TestWorldBuilder;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
@@ -75,8 +75,8 @@ public class BotTest implements FabricClientGameTest {
             String mcVersion = SharedConstants.getCurrentVersion().name();
             creator.setName("E2E Test " + mcVersion);
             creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
-            creator.getGameRules().getRule(GameRules.RULE_SENDCOMMANDFEEDBACK)
-                .set(false, null);
+            creator.getGameRules().set(GameRules.SEND_COMMAND_FEEDBACK, false,
+                null);
             applyFlatPresetWithSmoothStone(creator);
         });
         

@@ -2,6 +2,7 @@ package org.limepepper.gametest;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import org.limepepper.gametest.facade.TestServerFacade;
@@ -20,12 +21,14 @@ import static org.limepepper.gametest.BotTestHelper.runWurstCommand;
 public class ExternalServerGameTest implements FabricClientGameTest {
     private static final Logger LOGGER =
         LoggerFactory.getLogger("external-server-test");
+    private static final Minecraft MC = Minecraft.getInstance();
     
     @Override
     public void runTest(ClientGameTestContext context)
     {
         // Wait for your Docker PaperMC server to be ready
         LOGGER.info("Waiting for external PaperMC server.. .");
+        
         if(!ExternalServerTestHelper.waitForServerReady("docker.lan", 25565,
             30))
         {
@@ -57,8 +60,9 @@ public class ExternalServerGameTest implements FabricClientGameTest {
                         "Client level is null after connection");
                 }
                 
+                assert MC.level != null;
                 LOGGER.info("Client level loaded: {}",
-                    clientLevel.dimension().location());
+                    String.valueOf(MC.level.dimension()));
                 
                 // Take a screenshot
                 context.takeScreenshot("external_server_spawn");
